@@ -4,6 +4,7 @@ import com.subtech.autojournal.model.Vehicle;
 import com.subtech.autojournal.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -29,4 +30,7 @@ public class VehiclesService {
     }
 
 
+    public List<Vehicle> getUserOwnedVehicles(String userId) {
+        return vehicleRepository.findByUserId(userId);
+    }
 }

@@ -1,25 +1,21 @@
 package com.subtech.autojournal.model;
 
-import com.subsoft.autojournal.model.VehicleRequest;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 @Entity(name = "Vehicle")
 @Getter
 @Setter
-@Table(name = "vehicle")
+@Table(name = "vehicles")
 @AllArgsConstructor
 @Builder
 @RequiredArgsConstructor
 public class Vehicle {
 
     @Id
-    @GenericGenerator(name="uuid", strategy = "uuid2")
+    @GenericGenerator(name = "uuid", strategy = "uuid2")
     @GeneratedValue(generator = "uuid")
     private String id;
 
@@ -34,6 +30,8 @@ public class Vehicle {
 
     private String serial;
 
-    private String ownerId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
 }

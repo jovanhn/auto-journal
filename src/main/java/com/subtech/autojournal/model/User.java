@@ -4,8 +4,6 @@ import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 @Entity(name = "User")
@@ -18,7 +16,7 @@ import java.util.Set;
 public class User {
 
     @Id
-    @GenericGenerator(name="uuid", strategy = "uuid2")
+    @GenericGenerator(name = "uuid", strategy = "uuid2")
     @GeneratedValue(generator = "uuid")
     private String id;
 
@@ -27,6 +25,13 @@ public class User {
 
     private String email;
 
+    // Mapped by needs to be the name of the Entity lowercase
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private Set<Vehicle> vehicles;
 }
 
 

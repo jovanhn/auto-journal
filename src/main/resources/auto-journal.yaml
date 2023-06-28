@@ -161,6 +161,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VehicleResponse'
+  /vehicles/owned-by/{userId}:
+    get:
+      tags:
+        - vehicles
+      summary: Get vehicles
+      description: This action is execute when user gets all his vehicle.
+      operationId: getUserOwnedVehicles
+      parameters:
+        - name: userId
+          in: path
+          description: 'The user whose vehicles are fetched. Use 1 for testing. '
+          required: true
+          schema:
+            type: string
+      responses:
+        default:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VehicleResponse'
 
 components:
   schemas:
