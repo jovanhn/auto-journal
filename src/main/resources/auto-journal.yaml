@@ -1,73 +1,85 @@
 openapi: 3.0.3
 info:
   title: Swagger AutoJournal - OpenAPI 3.0
-  description: |-
-    This is a sample AutoJournal Server based on the OpenAPI 3.0 specification.  You can find out more about
+  description: This is a sample AutoJournal Server based on the OpenAPI 3.0 specification.  You can find out more about
   version: 1.0.0
 servers:
   - url: https://localhost:8080/
 tags:
-
   - name: users
-    description: Operations about user
+    description: Operations for managing users data
+  - name: vehicles
+    description: Operations for managing vehicles data
 paths:
   /users:
     post:
       tags:
         - users
       summary: Create user
-      description: This can only be done by the logged in user.
+      description: This action is execute when user is creating its account.
       operationId: createUser
       requestBody:
         description: Created user object
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
-          application/xml:
-            schema:
-              $ref: '#/components/schemas/User'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/UserRequest'
       responses:
         default:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserResponse'
             application/xml:
               schema:
-                $ref: '#/components/schemas/User'
-  /users/{username}:
+                $ref: '#/components/schemas/UserResponse'
     get:
       tags:
-        - user
-      summary: Get user by user name
-      description: ''
-      operationId: getUserByName
+        - users
+      summary: Get user
+      description: This action is execute when user is creating its account.
+      operationId: getUserByQueryParam
       parameters:
         - name: username
-          in: path
-          description: 'The name that needs to be fetched. Use user1 for testing. '
-          required: true
+          in: query
+          description: 'The user that needs to be fetched by userId. Use 1 for testing. '
+          required: false
+          schema:
+            type: string
+        - name: email
+          in: query
+          description: 'The user that needs to be fetched by email. Use 1 for testing. '
+          required: false
           schema:
             type: string
       responses:
-        '200':
+        default:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-            application/xml:
+                $ref: '#/components/schemas/UserResponse'
+  /users/{userId}:
+    get:
+      tags:
+        - users
+      summary: Get user
+      operationId: getUserById
+      parameters:
+        - name: userId
+          in: path
+          description: 'The user that needs to be fetched by userId. Use 1 for testing. '
+          required: true
+          schema:
+            type: string
+      responses:
+        default:
+          description: successful operation
+          content:
+            application/json:
               schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Invalid username supplied
-        '404':
-          description: User not found
+                $ref: '#/components/schemas/UserResponse'
     put:
       tags:
         - users
@@ -75,24 +87,18 @@ paths:
       description: This can only be done by the logged in user.
       operationId: updateUser
       parameters:
-        - name: username
+        - name: userId
           in: path
-          description: name that need to be deleted
+          description: Id of a user that needs to be updated
           required: true
           schema:
             type: string
       requestBody:
-        description: Update an existent user in the store
+        description: Update an existent user
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
-          application/xml:
-            schema:
-              $ref: '#/components/schemas/User'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/UserRequest'
       responses:
         default:
           description: successful operation
@@ -103,7 +109,7 @@ paths:
       description: This can only be done by the logged in user.
       operationId: deleteUser
       parameters:
-        - name: username
+        - name: userId
           in: path
           description: The name that needs to be deleted
           required: true
@@ -114,20 +120,115 @@ paths:
           description: Invalid username supplied
         '404':
           description: User not found
+  /vehicles:
+    post:
+      tags:
+        - vehicles
+      summary: Create vehicle
+      description: This action is execute when user creates new vehicle.
+      operationId: createVehicle
+      requestBody:
+        description: Created vehicle object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+      responses:
+        default:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleResponse'
+  /vehicles/{vehicleId}:
+    get:
+      tags:
+        - vehicles
+      summary: Get vehicle
+      description: This action is execute when user gets particular vehicle.
+      operationId: getVehicle
+      parameters:
+        - name: vehicleId
+          in: path
+          description: 'The vehicle that needs to be fetched. Use 1 for testing. '
+          required: true
+          schema:
+            type: string
+      responses:
+        default:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleResponse'
+
 components:
   schemas:
-    User:
+    UserRequest:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-          example: 10
         name:
           type: string
           example: theUser
         email:
           type: string
           example: john@email.com
-      xml:
-        name: users
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 10j1sd-321321-dad11d2-d21x122
+        name:
+          type: string
+          example: theUser
+        email:
+          type: string
+          example: john@email.com
+    VehicleRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          example: moto-bike
+        brand:
+          type: string
+          example: BMW
+        model:
+          type: string
+          example: Africa
+        year:
+          type: integer
+          example: 1994
+        serial:
+          type: string
+          example: W021-D892-X994
+        ownerId:
+          type: string
+          example: someUserId
+    VehicleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: jkh3-312ml-311lj-833f
+        type:
+          type: string
+          example: moto-bike
+        brand:
+          type: string
+          example: BMW
+        model:
+          type: string
+          example: Africa
+        year:
+          type: integer
+          example: 1994
+        serial:
+          type: string
+          example: W021-D892-X994
+        ownerId:
+          type: string
+          example: someUserId
+
+
