@@ -1,0 +1,34 @@
+name: Deploy (Standard)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        type: choice
+        options:
+          - develop
+          - test
+          - main
+
+# Least privilege: the mock deployment needs no access to the repository or API.
+permissions: {}
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.branch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Print deployment info
+        run: |
+          echo "Workflow:     deploy-standard (no approval required)"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Branch:       ${{ inputs.branch }}"
+
+      - name: Mock deployment
+        run: |
+          echo "Deploying ${{ inputs.branch }}..."
+          sleep 5
+          echo "Deployment status: SUCCESS"
