@@ -1,0 +1,35 @@
+name: Team 2
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Message to print"
+        required: false
+        default: "Hello from Team 2"
+  push:
+    branches: [master]
+    paths:
+      - ".github/workflows/team-2.yml"
+
+jobs:
+  build-info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+
+      - name: Print info
+        run: |
+          echo "${{ github.event.inputs.message || 'Hello from Team 2' }}"
+          echo "Triggered by: ${{ github.actor }}"
+          java -version
+
+      - name: Show Maven project version
+        run: chmod +x mvnw && ./mvnw -q help:evaluate -Dexpression=project.version -DforceStdout || true
