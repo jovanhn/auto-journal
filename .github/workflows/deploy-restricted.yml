@@ -1,0 +1,55 @@
+name: Deploy (Restricted)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        type: choice
+        options:
+          - develop
+          - test
+          - main
+
+# Least privilege: the mock deployment needs no access to the repository or API.
+permissions: {}
+
+jobs:
+  authorize:
+    name: Authorize ${{ github.triggering_actor }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      # triggering_actor (not actor) so a re-run by someone else is also checked.
+      - name: Check triggering user is allowed
+        env:
+          ALLOWED_USERS: '["jovanhn"]'
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: |
+          if echo "$ALLOWED_USERS" | jq -e --arg u "$TRIGGERING_ACTOR" 'index($u) != null' > /dev/null; then
+            echo "User '$TRIGGERING_ACTOR' is allowed to run this deployment."
+          else
+            echo "::error::User '$TRIGGERING_ACTOR' is not allowed to run this deployment."
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy ${{ inputs.branch }}
+    needs: authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: restricted
+    steps:
+      - name: Print deployment info
+        run: |
+          echo "Workflow:     deploy-restricted"
+          echo "Triggered by: ${{ github.triggering_actor }}"
+          echo "Branch:       ${{ inputs.branch }}"
+          echo "Environment:  restricted"
+
+      - name: Mock deployment
+        run: |
+          echo "Deploying ${{ inputs.branch }}..."
+          sleep 5
+          echo "Deployment status: SUCCESS"
