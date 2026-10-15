@@ -7,7 +7,7 @@ This PoC shows how two manually triggered workflows in a shared deployment repos
 
 The approval gate is a GitHub **Environment** with a **required reviewers** protection rule. The workflows only perform mock deployments (echo and `sleep`). They use no credentials or external services.
 
-> **Status:** the workflows have been linted with `actionlint`. The approval behaviour has to be verified on GitHub using the test steps below before it is considered proven.
+> **Status:** the workflows pass `actionlint`, and every case in the test table was verified on GitHub on 2026-10-15. See [Test results](#test-results).
 
 ## How it works
 
@@ -104,11 +104,30 @@ To run a workflow, go to **Actions**, select the workflow, click **Run workflow*
 | 3 | Protected | develop | Trigger as trigger user | Runs immediately in `non-production` |
 | 4 | Protected | test | Trigger as trigger user | Runs immediately in `non-production` |
 | 5 | Protected | main | Trigger as trigger user | Run shows **Waiting** and no steps execute |
-| 6 | Protected | main | While #5 is waiting, the trigger user opens **Review deployments** | Cannot approve because of prevent self-review |
+| 6 | Protected | main | While #5 is waiting, the trigger user (not a reviewer) tries to approve | Refused, and the run keeps waiting |
 | 7 | Protected | main (approved) | Reviewer approves #5 | Job runs and logs `Environment: production` and `SUCCESS` |
 | 8 | Protected | main (rejected) | Trigger a new run, and the reviewer rejects it | Job never starts and the run ends as failed |
+| 9 | Protected | main | The **reviewer** triggers the run and tries to approve it | Refused because of prevent self-review |
 
 For each run, check the job log for the triggering user, the branch and the deployment status. Check the run summary for the review decision.
+
+## Test results
+
+Tested on 2026-10-15. `jovanhn` is the repository admin and trigger user. `supercodecrafter` is a collaborator with write access and the only required reviewer on `production`. Prevent self-review is on and admin bypass is off.
+
+| # | Run ID | Result |
+|---|---|---|
+| 1 | 38704925717 | Passed. Completed immediately: `Branch: develop`, `SUCCESS` |
+| 2 | 38704931582 | Passed. Completed immediately: `Branch: main`, `SUCCESS` |
+| 3 | 38704935929 | Passed. Completed immediately: `Environment: non-production` |
+| 4 | 38704940776 | Passed. Completed immediately: `Environment: non-production` |
+| 5 | 38710862714 | Passed. Status `waiting` with 0 steps executed, pending on `production` |
+| 6 | 38710862714 | Passed. The approve call as `jovanhn` was refused (`No pending deployment requests to approve or reject`) and the run stayed `waiting` |
+| 7 | 38710862714 | Passed. Approved by `supercodecrafter`, then completed `success` with `Environment: production` |
+| 8 | 38711063516 | Passed. Rejected by `supercodecrafter`. The job ended `failure` with **no steps executed** |
+| 9 | 38711165645 | Passed. Started by `supercodecrafter`, whose own approve call was refused. The run was then cancelled manually |
+
+**Lesson from #9:** with prevent self-review on and only one reviewer, that reviewer's own production deployments can never be approved. If admin bypass is also off, those runs can only be cancelled. List at least two reviewers, or a team, on `production`.
 
 ## GitHub Free plan limitations
 
