@@ -1,0 +1,130 @@
+# AGENTS.md — backend
+
+Kotlin, Spring Boot 4, Spring Modulith, Maven (wrapper `./mvnw`), Java 17, Flyway, PostgreSQL.
+See [docs/architecture.md](../docs/architecture.md) and ADRs 0003, 0004, 0005, 0010.
+
+## Architecture standard
+
+> * Architecture: Modular monolith using Spring Boot, Kotlin, and Spring Modulith. One
+>   application, one deployment, and one shared PostgreSQL database.
+> * Module organization: Organize packages by business domain, not by technical layer.
+> * Internal structure: Each module follows the existing layered architecture:
+>   `controller → service → dao → repository → entity`, with `dto` and `mapper`
+>   packages where needed.
+> * Public API: Expose cross-module functionality through explicitly defined interfaces
+>   and DTOs in the module's `api` package. Keep implementation details in `internal`.
+> * Module boundaries: Modules must not directly access other modules' internal
+>   services, repositories, or entities. Business operations must go through the owning
+>   module's public API.
+> * Database ownership: Each module owns its tables and write operations. Read-only
+>   cross-module SQL JOINs are permitted through `JdbcClient` in dedicated read DAOs.
+> * Transactions: Service layer owns transaction boundaries and business orchestration.
+> * Simplicity: Prefer synchronous module communication. Avoid unnecessary
+>   abstractions, events, and microservice patterns unless justified by a concrete
+>   requirement.
+> * Enforcement: Use Spring Modulith verification tests to validate module dependencies
+>   and integration tests for cross-module database queries.
+
+## Database access standard
+
+> Use Spring Data JPA for module-owned persistence and `JdbcClient` for complex or
+> cross-module reads. Do not introduce other database access APIs or frameworks
+> without architectural approval.
+
+## Module structure
+
+```
+com.example.autojournal                 @SpringBootApplication + @Modulithic(sharedModules = ["shared"])
+  <module>/
+    api/          public: interfaces + DTOs; ModuleMetadata.kt = @PackageInfo @NamedInterface("api")
+    internal/
+      controller/ implements generated com.example.contract.api.*Api; HTTP ↔ service via mappers; no logic, no @Transactional
+      service/    business logic; owns @Transactional; calls own DAOs + other modules' api only;
+                  also implements the module's public api interfaces
+      dao/        write DAOs wrap own JPA repositories; read DAOs use JdbcClient (only place for cross-module JOINs)
+      repository/ Spring Data JPA repositories for own entities only
+      entity/     JPA entities for own tables only; other modules referenced by ID (projectId: UUID)
+      dto/        internal DTOs          mapper/  plain Kotlin extension functions, no mapping libraries
+  shared/         OPEN shared module: error handling, paging, AssignedIdEntity. No business logic.
+com.example.contract                    generated (target/), outside the root → not a module. Never edit.
+```
+
+Adding a module: create `<module>/api/ModuleMetadata.kt` (copy from `projects`) and `<module>/internal/...`;
+add an Accepted ADR only if it changes the architecture. `ModularityTests` must stay green.
+
+## JPA vs JdbcClient
+
+**JPA** — writes and simple reads of the module's own tables (via a write DAO):
+
+```kotlin
+@Component
+class ProjectDao(private val repository: ProjectRepository) {
+    fun insert(project: ProjectEntity): ProjectEntity = repository.save(project)
+    fun findById(id: UUID): ProjectEntity? = repository.findById(id).orElse(null)
+}
+```
+
+**JdbcClient** — aggregates, complex reads, or anything that JOINs another module's table (read-only):
+
+```kotlin
+jdbcClient.sql(
+    """
+    SELECT p.id, COUNT(t.id) FILTER (WHERE t.status = 'OPEN') AS open_task_count
+    FROM autojournal.project p LEFT JOIN autojournal.task t ON t.project_id = p.id
+    GROUP BY p.id
+    """.trimIndent(),
+).query { rs, _ -> ... }.list()
+```
+
+Reference implementations: `projects/internal/dao/ProjectSummaryReadDao.kt` (cross-module read) and
+`tasks/internal/service/TaskService.kt` (cross-module call through `ProjectApi`).
+
+## Kotlin + JPA pitfalls
+
+- Entities are regular `class`es, never `data class` (equals/hashCode/toString over lazy state break JPA).
+- `kotlin-maven-allopen` + `noarg` (`spring`, `jpa`) are configured; don't add `open` or no-arg constructors by hand.
+- App-generated UUID ids: extend `shared.persistence.AssignedIdEntity` (implements `Persistable`) so `save()`
+  INSERTs instead of SELECT + merge.
+- No cross-module JPA relationships (`@ManyToOne` etc.). Within a module, prefer IDs too unless a relation is needed.
+- `open-in-view` is off: load everything you need inside the service transaction; return mapped DTOs.
+- JdbcClient SQL is schema-qualified (`autojournal.<table>`); Hibernate uses `default_schema`.
+- Hibernate only validates the schema (`ddl-auto=validate`) — every entity change needs a migration.
+
+## Migrations
+
+- `src/main/resources/db/migration/V<n>__<snake_case_description>.sql`, next free integer, e.g.
+  `V2__add_task_parent.sql`. **Never edit an applied migration.**
+- Unqualified names land in the `autojournal` schema. Never create objects in `public`.
+- Every `CREATE TABLE` is followed by `ALTER TABLE <t> ENABLE ROW LEVEL SECURITY;` (no policies).
+- Comment which module owns each new table, and update [docs/domain/entities.md](../docs/domain/entities.md).
+
+## Error handling
+
+`shared/error/GlobalExceptionHandler` renders RFC 9457 `ProblemDetail` as defined in the contract:
+
+| Situation                                   | Throw / source                        | Status |
+| ------------------------------------------- | ------------------------------------- | ------ |
+| Bean validation (body, params), bad JSON    | framework                             | 400 + `errors[{field,message}]` |
+| Resource missing                            | `NotFoundException`                   | 404    |
+| Business rule violated                      | `DomainRuleViolationException(msg, fieldErrors)` | 409 (+ `errors` if field-related) |
+
+Use field errors whose `field` matches the request property so the frontend can show them on the form field.
+
+## Testing
+
+- JUnit 5, MockK (unit), Spring Boot Test, Testcontainers PostgreSQL. **No H2.**
+- `@IntegrationTest` (full context + MockMvc + Testcontainers) for API and DAO integration tests; clean data
+  with `jdbcClient.truncateAll()` in `@BeforeEach`.
+- Required: `ModularityTests`; an integration test for every cross-module read DAO; API integration tests per module.
+- Test names describe behavior in backticks; write them from the spec's acceptance criteria.
+- Docker must be running (Testcontainers).
+
+## Commands
+
+| Command (in `backend/`)                 | What                                              |
+| --------------------------------------- | ------------------------------------------------- |
+| `./mvnw verify`                         | Compile, generate, all tests, Modulith, ktlint    |
+| `./mvnw generate-sources`               | Regenerate contract interfaces (`make gen`)       |
+| `./mvnw spring-boot:run`                | Run locally (profile `local`; `make db-up` first) |
+| `./mvnw ktlint:format`                  | Auto-format Kotlin                                |
+| `./mvnw test -Dtest=ModularityTests`    | Module boundary check only                        |
