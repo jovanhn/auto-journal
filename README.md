@@ -17,7 +17,9 @@ OpenAPI. Developed mainly by AI coding agents together with humans.
 
 - Docker (with Compose v2)
 - JDK 17 (the Maven wrapper downloads Maven itself)
-- Node — version in [`frontend/.nvmrc`](frontend/.nvmrc); enable pnpm with `corepack enable`
+- Node — version in [`frontend/.nvmrc`](frontend/.nvmrc)
+- pnpm 12.11.2 — the version pinned in each `package.json` `packageManager` field:
+  `npm install -g pnpm@12.11.2` (pnpm 12 ships as a native binary; older corepack releases cannot run it)
 - GNU make and a POSIX shell (on Windows: Git Bash)
 
 ## Quickstart

@@ -2,8 +2,8 @@
 
 ## Local setup
 
-Prerequisites: Docker (Compose v2), **JDK 17**, Node (version in `frontend/.nvmrc`) with pnpm via
-`corepack enable` (version pinned in each `package.json` `packageManager` field), GNU make, a POSIX shell
+Prerequisites: Docker (Compose v2), **JDK 17**, Node (version in `frontend/.nvmrc`), pnpm 12.11.2
+(`npm install -g pnpm@12.11.2`; pinned in each `package.json` `packageManager` field), GNU make, a POSIX shell
 (Git Bash on Windows).
 
 ```sh
