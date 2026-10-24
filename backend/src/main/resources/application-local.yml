@@ -1,0 +1,6 @@
+# Local development. Defaults match docker-compose.yml and .env.example.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/autojournal}
+    username: ${DB_USERNAME:autojournal}
+    password: ${DB_PASSWORD:autojournal}

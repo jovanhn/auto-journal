@@ -1,0 +1,29 @@
+# Common configuration for all profiles. Profile files:
+#   application-local.yml  default; env vars with defaults matching docker-compose.yml
+#   application-test.yml   tests (Testcontainers provides the datasource)
+#   application-prod.yml   env vars only, no defaults for secrets
+spring:
+  application:
+    name: autojournal
+  profiles:
+    default: local
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: autojournal
+  flyway:
+    schemas: autojournal
+    default-schema: autojournal
+    create-schemas: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

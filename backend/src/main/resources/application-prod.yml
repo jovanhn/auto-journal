@@ -1,0 +1,8 @@
+# Production (Supabase Postgres). Env vars only; no defaults for secrets. See docs/operations.md.
+# DB_URL example: jdbc:postgresql://<host>:5432/postgres?sslmode=require
+# Use the direct connection or the session-mode pooler, never transaction mode.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}

@@ -1,0 +1,4 @@
+# Tests. The datasource comes from Testcontainers via @ServiceConnection (TestcontainersConfiguration).
+logging:
+  level:
+    org.testcontainers: INFO
