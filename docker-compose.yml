@@ -1,0 +1,22 @@
+# Local development database only. Production uses Supabase Postgres (see docs/operations.md).
+# Major version matches current Supabase projects (Postgres 17).
+services:
+  postgres:
+    image: postgres:17.10-alpine
+    container_name: autojournal-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-autojournal}
+      POSTGRES_USER: ${POSTGRES_USER:-autojournal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autojournal}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - autojournal-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  autojournal-pgdata:
