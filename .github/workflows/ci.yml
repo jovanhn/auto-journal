@@ -22,6 +22,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
       contracts: ${{ steps.filter.outputs.contracts }}
+      e2e: ${{ steps.filter.outputs.e2e }}
     steps:
       - uses: actions/checkout@v7.0.1
       # docs/** is intentionally not part of any filter: docs-only changes trigger no build jobs.
@@ -36,6 +37,11 @@ jobs:
               - 'frontend/**'
               - 'contracts/**'
             contracts:
+              - 'contracts/**'
+            e2e:
+              - 'e2e/**'
+              - 'frontend/**'
+              - 'backend/**'
               - 'contracts/**'
 
   contracts:
@@ -105,11 +111,72 @@ jobs:
       - name: Build
         run: pnpm build
 
+  e2e:
+    name: E2E (Playwright)
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17.10-alpine
+        env:
+          POSTGRES_DB: autojournal
+          POSTGRES_USER: autojournal
+          POSTGRES_PASSWORD: autojournal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U autojournal -d autojournal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: |
+            frontend/pnpm-lock.yaml
+            e2e/pnpm-lock.yaml
+      - name: Build backend
+        working-directory: backend
+        run: ./mvnw -B -q -DskipTests package
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile && pnpm build
+      - name: Install Playwright
+        working-directory: e2e
+        run: pnpm install --frozen-lockfile && pnpm exec playwright install --with-deps chromium
+      # webServer reuses the Postgres service container and starts the backend jar + vite preview.
+      - name: Run E2E tests
+        working-directory: e2e
+        run: pnpm test
+      - name: Upload Playwright report and traces
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7
+
   # The only job to mark as a required status check. Skipped jobs count as success.
   ci-ok:
     name: ci-ok
     if: always()
-    needs: [changes, contracts, backend, frontend]
+    needs: [changes, contracts, backend, frontend, e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

@@ -69,7 +69,9 @@ fe-check: fe-gen ## Frontend CI checks: lint, typecheck, test, build
 e2e-install:
 	cd e2e && $(PNPM) install --frozen-lockfile && $(PNPM) exec playwright install chromium
 
-e2e: e2e-install ## Playwright critical flows against the full local stack
+e2e: e2e-install fe-gen ## Playwright critical flows against the full local stack (builds both apps first)
+	cd backend && $(MVNW) -B -q -DskipTests package
+	cd frontend && $(PNPM) build
 	cd e2e && $(PNPM) test
 
 # --- Aggregates -------------------------------------------------------------
