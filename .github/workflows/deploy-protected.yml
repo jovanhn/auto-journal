@@ -1,0 +1,38 @@
+name: Deploy (Protected)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        type: choice
+        options:
+          - develop
+          - test
+          - main
+
+# Least privilege: the mock deployment needs no access to the repository or API.
+permissions: {}
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.branch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # main -> production (required reviewers), everything else -> non-production (no rules).
+    # The approval gate is enforced by GitHub before this job starts.
+    environment: ${{ inputs.branch == 'main' && 'production' || 'non-production' }}
+    steps:
+      - name: Print deployment info
+        run: |
+          echo "Workflow:     deploy-protected"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Branch:       ${{ inputs.branch }}"
+          echo "Environment:  ${{ inputs.branch == 'main' && 'production' || 'non-production' }}"
+
+      - name: Mock deployment
+        run: |
+          echo "Deploying ${{ inputs.branch }}..."
+          sleep 5
+          echo "Deployment status: SUCCESS"
