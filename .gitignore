@@ -21,9 +21,8 @@ dist/
 *.tsbuildinfo
 *.log
 
-# Frontend generated code (Orval, TanStack Router)
+# Frontend generated code (Orval)
 frontend/src/shared/api/generated/
-frontend/src/routeTree.gen.ts
 frontend/coverage/
 
 # E2E
