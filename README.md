@@ -1,7 +1,9 @@
 # autojournal
 
 Full-stack monorepo: Kotlin + Spring Boot backend, React + TypeScript frontend, contract-first
-OpenAPI. Developed mainly by AI coding agents together with humans.
+OpenAPI. Developed mainly by AI coding agents together with humans. A small car-expense tracker built to
+prove a monorepo, a Spring Modulith backend, and AI-driven development — see the
+[goals](AGENTS.md#goals).
 
 | Path         | What                                                         |
 | ------------ | ------------------------------------------------------------ |
