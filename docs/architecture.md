@@ -99,5 +99,5 @@ See [frontend/AGENTS.md](../frontend/AGENTS.md) and ADRs 0006, 0007, 0011.
 
 - Only the backend connects to the database (ADR 0005). The frontend never uses supabase-js data access.
 - The contract is the source of truth for the API; generated code is never edited (ADR 0002).
-- Authentication is deferred (ADR 0008); `frontend/src/shared/api/http.ts` is the single place a token
+- Authentication: Supabase Auth JWTs validated by the backend (ADR 0013, not built yet); `frontend/src/shared/api/http.ts` is the single place a token
   will be attached.

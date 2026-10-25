@@ -1,6 +1,6 @@
 # 0013. Authentication with Supabase Auth from the first feature
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-25
 
 ## Context

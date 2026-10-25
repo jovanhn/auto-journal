@@ -1,6 +1,6 @@
 # 0008. Authentication deferred; future plan: Supabase Auth + backend resource server
 
-- **Status:** Accepted
+- **Status:** Superseded by [0013](0013-authentication-supabase-auth-from-first-feature.md)
 - **Date:** 2026-10-24
 
 ## Context

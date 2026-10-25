@@ -57,7 +57,7 @@ Spring profiles: `local` (default; env vars with docker-compose defaults), `test
   roles can read nothing even if the schema were exposed. The backend connects as the table owner and
   bypasses RLS.
 - **Secrets:** the service-role key and database credentials stay server-side only. The frontend will
-  only ever hold the Supabase **anon** key, for Supabase Auth (ADR 0008).
+  only ever hold the Supabase **anon** key, for Supabase Auth (ADR 0013).
 - **Health:** only `/actuator/health` is exposed.
 
 ## CI

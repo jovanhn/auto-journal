@@ -1,6 +1,6 @@
 # 0014. Multi-currency amounts with fixed exchange rates from configuration
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-25
 
 ## Context
