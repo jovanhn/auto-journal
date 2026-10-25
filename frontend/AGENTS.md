@@ -57,6 +57,11 @@ Never put server data in Redux. Use `useAppDispatch` / `useAppSelector` from `@/
 
 ## Components and UI
 
+- **Design:** follow [docs/design/design.md](../docs/design/design.md) (tokens, components, screen shells)
+  and the screen sources in `docs/design/screens/src/`. Mobile-first (390 px). Translate mock colors and sizes
+  to the theme CSS variables and Tailwind classes; never copy the mocks' hex values or inline styles. New
+  design tokens go into `src/index.css` (light and dark), not into components.
+
 - One component per file, PascalCase filename, named export, explicit props type. (shadcn primitives in
   `shared/ui/` keep their lowercase CLI filenames.)
 - Pages compose; feature hooks fetch; presentational components get data via props and never fetch.

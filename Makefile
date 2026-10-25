@@ -8,7 +8,7 @@ PNPM  := pnpm
 .DEFAULT_GOAL := help
 
 .PHONY: help db-up db-down install gen contracts-lint be-run be-test be-check \
-        fe-install fe-gen fe-run fe-test fe-check e2e-install e2e lint test check
+        fe-install fe-gen fe-run fe-test fe-check e2e-install e2e design-unpack lint test check
 
 help: ## List targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-16s %s\n", $$1, $$2}'
@@ -73,6 +73,11 @@ e2e: e2e-install fe-gen ## Playwright critical flows against the full local stac
 	cd backend && $(MVNW) -B -q -DskipTests package
 	cd frontend && $(PNPM) build
 	cd e2e && $(PNPM) test
+
+# --- Design -----------------------------------------------------------------
+
+design-unpack: ## Extract readable screen sources from the Claude Design export
+	node docs/design/tools/unpack-bundle.mjs $(wildcard docs/design/screens/*.html)
 
 # --- Aggregates -------------------------------------------------------------
 
