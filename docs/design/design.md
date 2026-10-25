@@ -178,6 +178,8 @@ the affected part:
   for every page (frontend Definition of Done).
 - **Not designed:** dark theme (ADR 0011 requires light + dark), the "Plan an expense" form, the "Mark as paid"
   flow, editing/deleting a vehicle or expense, validation/error states in forms.
+- **Not designed:** Sign in and Settings (display currency, sign out) screens (specs/auth.md); currency
+  select on amount fields (ADR 0014). Built from existing tokens/components until designed.
 - **Wider screens:** mobile-first, but nothing defines tablet/desktop (centered 390–480 px column?).
 - **Category colors** for Repairs, Insurance, Registration & tax, Other.
 - **"Due soon" threshold** — when does a planned item switch to the warning style (24 days is warning,

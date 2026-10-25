@@ -36,6 +36,14 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `SERVER_PORT`            | backend          | `8080`                                          | optional                      |
 | `SPRING_PROFILES_ACTIVE` | backend          | `local` (default profile)                       | `prod`                        |
 | `VITE_API_BASE_URL`      | frontend (build) | `/api`                                          | URL of the backend `/api`     |
+| `SUPABASE_URL`           | backend          | project URL (from `.env`)                       | project URL (JWT issuer `<url>/auth/v1`) |
+| `VITE_SUPABASE_URL`      | frontend (build) | project URL                                     | project URL                   |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | frontend (build) | project publishable key                  | project publishable key       |
+| `EXCHANGE_RATE_RSD_PER_EUR`, `EXCHANGE_RATE_USD_PER_EUR` | backend | `117.00`, `1.10`              | set by the owner (ADR 0014)   |
+| `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | e2e | test user in the Supabase project               | CI secrets only               |
+
+The Supabase and E2E variables are planned (specs/auth.md, ADR 0015) and are wired into the apps when auth
+is implemented.
 
 Spring profiles: `local` (default; env vars with docker-compose defaults), `test` (Testcontainers),
 `prod` (env vars only, no defaults for secrets — the app fails to start if they are missing).
