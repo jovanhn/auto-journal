@@ -3,17 +3,34 @@
 Instructions for AI coding agents (Codex, Claude Code, …) and humans. `CLAUDE.md` files only import the
 `AGENTS.md` next to them. Each sub-project has its own `AGENTS.md`; read it before working there.
 
+## Goals
+
+autojournal exists to prove an approach, not only to ship an app:
+
+1. **Monorepo:** backend, frontend, contract, e2e and docs in one repo, with a single `make check` gate and
+   CI path filters.
+2. **Modulith backend:** Spring Modulith modules with real boundaries (each talks to the others only through
+   its `api` package), checked by the build.
+3. **AI-driven development:** features are built mostly by AI agents, working from docs
+   (domain → specs → contract → code), and humans review the result.
+4. **A simple, useful product:** a private, mobile-first app for tracking car expenses.
+
+When these pull against each other, the simpler product wins. Don't add features just to show off the
+architecture.
+
 ## What this is
 
-**autojournal** is a small private app for tracking car expenses. A user adds one or more vehicles (nickname,
-make, model, year, optional plate, current odometer, purchase price and date) and logs expenses per vehicle
-(date, amount, category, optional odometer and note). Categories are fixed: Fuel, Service, Repairs, Insurance,
-Registration & tax, Tires, Parking & tolls, Other. The app shows yearly and monthly totals, a breakdown by
-category, average monthly cost, and cost per km. Car value currently equals the purchase price; it will later
-be estimated from age and market data. Users can also plan upcoming expenses (due date, estimated amount,
-one-time or yearly), mark them as paid to turn them into real expenses, and see a 12-month cost projection.
+**autojournal** is a small private app for tracking car expenses. A user signs in (Supabase Auth), adds one or
+more vehicles (nickname, make, model, year, optional plate, odometer at purchase, purchase price and date) and
+logs expenses per vehicle (date, amount, currency, category, optional odometer and note). Categories are fixed:
+Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking & tolls, Other. Amounts can be in EUR,
+RSD or USD (fixed exchange rates from config); totals are shown in the user's display currency. The app shows
+yearly and monthly totals, a breakdown by category, average monthly cost, and cost per km. Car value currently
+equals the purchase price; it will later be estimated from age and market data. Users can also plan upcoming
+expenses (due date, estimated amount, one-time or every N months), mark them as paid to turn them into real
+expenses, and see a 12-month cost projection. The domain is defined in [docs/domain](docs/domain).
 
-Keep the scope minimal: no accounts, sync, receipt photos, notifications, or multi-currency for now. The UI is
+Keep the scope minimal: no shared vehicles, sync, receipt photos, notifications, or live exchange rates for now. The UI is
 mobile-first; follow [docs/design/design.md](docs/design/design.md) and the reference screens in
 `docs/design/screens/` (Garage, Expenses, Insights, Planned, Add expense, Add vehicle) for layout,
 navigation, and styling.

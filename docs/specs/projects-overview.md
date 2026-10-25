@@ -90,5 +90,5 @@ Implemented in `contracts/openapi.yaml`: `GET/POST /api/projects`, `GET /api/pro
 
 ## Out of scope
 
-- Editing or deleting projects and tasks; closing tasks (specs/close-task.md); subtasks (specs/subtasks.md);
-  authentication; sorting/filtering.
+- Editing or deleting projects and tasks; closing tasks; subtasks; authentication; sorting/filtering.
+  (This spec documents the example scaffold, removed when the `vehicles` module exists.)
