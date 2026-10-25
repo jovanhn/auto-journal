@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Add expense</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#16181D}a:hover{color:#000000}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F4F4F2; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #16181D; overflow: hidden">
+  <div style="padding: 16px 20px 12px; display: flex; align-items: center; justify-content: space-between; background: #FFFFFF; border-bottom: 1px solid #E2E3E0">
+    <a href="Expenses.dc.html" style="min-height: 44px; display: flex; align-items: center; font-size: 15px; text-decoration: none; color: #5B606B">Cancel</a>
+    <div style="font-size: 17px; font-weight: 600">New expense</div>
+    <a href="Expenses.dc.html" style="min-height: 44px; display: flex; align-items: center; font-size: 15px; font-weight: 600; text-decoration: none; color: {{accent}}">Save</a>
+  </div>
+
+  <div style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0">
+      <label for="amount" style="font-size: 13px; color: #5B606B">Amount</label>
+      <div style="display: flex; align-items: baseline; gap: 6px">
+        <span style="font-size: 32px; font-weight: 600; color: #5B606B">€</span>
+        <input id="amount" type="text" inputmode="decimal" placeholder="0.00" style="width: 180px; border: none; background: transparent; font-family: inherit; font-size: 44px; font-weight: 600; color: #16181D; text-align: left; outline: none; font-variant-numeric: tabular-nums">
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="vehicle" style="font-size: 13px; font-weight: 600; color: #5B606B">Vehicle</label>
+      <sc-raw-select id="vehicle" style="min-height: 48px; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D">
+        <option>Golf</option>
+        <option>Octavia</option>
+      </sc-raw-select>
+    </div>
+
+    <fieldset style="border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+      <legend style="font-size: 13px; font-weight: 600; color: #5B606B; padding: 0; margin-bottom: 8px">Category</legend>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{categories}}" as="cat" hint-placeholder-count="8">
+          <sc-if value="{{cat.selected}}" hint-placeholder-val="{{false}}">
+            <button type="button" aria-pressed="true" sc-camel-on-click="{{cat.pick}}" style="min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1.5px solid {{accent}}; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer">{{cat.label}}</button>
+          </sc-if>
+          <sc-if value="{{cat.unselected}}" hint-placeholder-val="{{true}}">
+            <button type="button" aria-pressed="false" sc-camel-on-click="{{cat.pick}}" style="min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #D4D6D1; background: #FFFFFF; color: #16181D; font-family: inherit; font-size: 14px; font-weight: 500; text-align: left; cursor: pointer">{{cat.label}}</button>
+          </sc-if>
+        </sc-for>
+      </div>
+    </fieldset>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="date" style="font-size: 13px; font-weight: 600; color: #5B606B">Date</label>
+        <input id="date" type="date" value="2026-10-21" style="min-height: 48px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="odo" style="font-size: 13px; font-weight: 600; color: #5B606B">Odometer (km)</label>
+        <input id="odo" type="text" inputmode="numeric" placeholder="184,320" style="min-height: 48px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #16181D">
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="note" style="font-size: 13px; font-weight: 600; color: #5B606B">Note (optional)</label>
+      <textarea id="note" rows="3" placeholder="e.g. Shell, full tank" style="padding: 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D; resize: none"></textarea>
+    </div>
+  </div>
+
+  <div style="padding: 12px 20px 24px; background: #F4F4F2">
+    <a href="Expenses.dc.html" style="min-height: 52px; border-radius: 14px; background: {{accent}}; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Save expense</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1F4FD8&quot;,&quot;options&quot;:[&quot;#1F4FD8&quot;,&quot;#0F766E&quot;,&quot;#B4490F&quot;,&quot;#16181D&quot;]},&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { picked: 'fuel' };
+  }
+  renderVals() {
+    const list = [
+      ['fuel', 'Fuel'], ['service', 'Service'], ['repairs', 'Repairs'], ['insurance', 'Insurance'],
+      ['registration', 'Registration & tax'], ['tires', 'Tires'], ['parking', 'Parking & tolls'], ['other', 'Other']
+    ];
+    const picked = this.state.picked;
+    return {
+      accent: this.props.accent ?? '#1F4FD8',
+      categories: list.map(([id, label]) => ({
+        label,
+        selected: picked === id,
+        unselected: picked !== id,
+        pick: () => this.setState({ picked: id })
+      }))
+    };
+  }
+}
+</script>
+
+</body></html>

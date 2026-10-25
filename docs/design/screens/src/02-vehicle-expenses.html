@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Golf · Expenses</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#16181D}a:hover{color:#000000}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F4F4F2; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #16181D; overflow: hidden; position: relative">
+  <div style="padding: 16px 20px 12px; display: flex; align-items: center; gap: 4px; background: #FFFFFF; border-bottom: 1px solid #E2E3E0">
+    <a href="Main.dc.html" aria-label="Back to garage" style="width: 44px; height: 44px; margin-left: -12px; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <div style="display: flex; flex-direction: column">
+      <div style="font-size: 20px; font-weight: 600">Golf</div>
+      <div style="font-size: 13px; color: #5B606B">VW Golf 7 · 2016 · 184,320 km</div>
+    </div>
+  </div>
+
+  <div style="flex: 1; overflow-y: auto; padding: 16px 20px 120px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <div style="background: #FFFFFF; border: 1px solid #E2E3E0; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 12px; color: #5B606B">This year</div>
+        <div style="font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums">€2,148</div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E3E0; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 12px; color: #5B606B">This month</div>
+        <div style="font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums">€246</div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E3E0; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 12px; color: #5B606B">Per km</div>
+        <div style="font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums">€0.16</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <button type="button" aria-label="Previous period" style="width: 44px; height: 44px; border: none; background: transparent; color: #16181D; cursor: pointer; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+      </button>
+      <div style="font-size: 15px; font-weight: 600">2026 · All categories</div>
+      <button type="button" aria-label="Next period" style="width: 44px; height: 44px; border: none; background: transparent; color: #16181D; cursor: pointer; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+      </button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #5B606B; padding: 0 4px">
+        <span>October</span><span style="font-variant-numeric: tabular-nums">€246.30</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E3E0; border-radius: 16px; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #EDEEEB">
+          <div style="width: 10px; height: 10px; border-radius: 5px; background: {{accent}}; flex-shrink: 0"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <div style="font-size: 15px; font-weight: 500">Fuel</div>
+            <div style="font-size: 12px; color: #5B606B">Oct 18 · <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace">184,320 km</span></div>
+          </div>
+          <div style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">€52.40</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #EDEEEB">
+          <div style="width: 10px; height: 10px; border-radius: 5px; background: {{accent}}; flex-shrink: 0"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <div style="font-size: 15px; font-weight: 500">Fuel</div>
+            <div style="font-size: 12px; color: #5B606B">Oct 9 · <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace">183,750 km</span></div>
+          </div>
+          <div style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">€48.90</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px">
+          <div style="width: 10px; height: 10px; border-radius: 5px; background: #16181D; flex-shrink: 0"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <div style="font-size: 15px; font-weight: 500">Service · Oil &amp; filters</div>
+            <div style="font-size: 12px; color: #5B606B">Oct 3 · <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace">183,410 km</span></div>
+          </div>
+          <div style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">€145.00</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #5B606B; padding: 0 4px">
+        <span>September</span><span style="font-variant-numeric: tabular-nums">€436.10</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E3E0; border-radius: 16px; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #EDEEEB">
+          <div style="width: 10px; height: 10px; border-radius: 5px; background: #8A8F99; flex-shrink: 0"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <div style="font-size: 15px; font-weight: 500">Parking &amp; tolls</div>
+            <div style="font-size: 12px; color: #5B606B">Sep 27 · City centre</div>
+          </div>
+          <div style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">€6.00</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #EDEEEB">
+          <div style="width: 10px; height: 10px; border-radius: 5px; background: {{accent}}; flex-shrink: 0"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <div style="font-size: 15px; font-weight: 500">Fuel</div>
+            <div style="font-size: 12px; color: #5B606B">Sep 21 · <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace">183,020 km</span></div>
+          </div>
+          <div style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">€50.10</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px">
+          <div style="width: 10px; height: 10px; border-radius: 5px; background: #B4490F; flex-shrink: 0"></div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <div style="font-size: 15px; font-weight: 500">Tires · Winter set</div>
+            <div style="font-size: 12px; color: #5B606B">Sep 4 · <span style="font-family: 'IBM Plex Mono', ui-monospace, monospace">182,600 km</span></div>
+          </div>
+          <div style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">€380.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <a href="AddExpense.dc.html" style="position: absolute; right: 20px; bottom: 92px; height: 52px; padding: 0 20px; border-radius: 26px; background: {{accent}}; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 14px rgba(22, 24, 29, 0.18)">
+    <svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+    Add expense
+  </a>
+
+  <nav aria-label="Vehicle sections" style="height: 72px; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E2E3E0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr))">
+    <a href="Expenses.dc.html" aria-current="page" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 600; color: {{accent}}">
+      <svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"></path></svg>
+      Expenses
+    </a>
+    <a href="Insights.dc.html" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 500; color: #5B606B">
+      <svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg>
+      Insights
+    </a>
+    <a href="Planned.dc.html" style="text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 500; color: #5B606B">
+      <svg width="22" height="22" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+      Planned
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1F4FD8&quot;,&quot;options&quot;:[&quot;#1F4FD8&quot;,&quot;#0F766E&quot;,&quot;#B4490F&quot;,&quot;#16181D&quot;]},&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#1F4FD8' };
+  }
+}
+</script>
+
+</body></html>

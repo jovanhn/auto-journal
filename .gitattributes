@@ -3,3 +3,5 @@
 *.bat text eol=crlf
 mvnw text eol=lf
 *.jar binary
+# Claude Design export: one huge minified bundle; review docs/design/screens/src/ instead
+docs/design/screens/*.html -diff linguist-generated

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Add vehicle</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#16181D}a:hover{color:#000000}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F4F4F2; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #16181D; overflow: hidden">
+  <div style="padding: 16px 20px 12px; display: flex; align-items: center; justify-content: space-between; background: #FFFFFF; border-bottom: 1px solid #E2E3E0">
+    <a href="Main.dc.html" style="min-height: 44px; display: flex; align-items: center; font-size: 15px; text-decoration: none; color: #5B606B">Cancel</a>
+    <div style="font-size: 17px; font-weight: 600">New vehicle</div>
+    <a href="Main.dc.html" style="min-height: 44px; display: flex; align-items: center; font-size: 15px; font-weight: 600; text-decoration: none; color: {{accent}}">Save</a>
+  </div>
+
+  <div style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="nick" style="font-size: 13px; font-weight: 600; color: #5B606B">Nickname</label>
+      <input id="nick" type="text" placeholder="e.g. Golf, Family car" style="min-height: 48px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D">
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="make" style="font-size: 13px; font-weight: 600; color: #5B606B">Make</label>
+        <input id="make" type="text" placeholder="Volkswagen" style="min-height: 48px; box-sizing: border-box; width: 100%; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="model" style="font-size: 13px; font-weight: 600; color: #5B606B">Model</label>
+        <input id="model" type="text" placeholder="Golf 7" style="min-height: 48px; box-sizing: border-box; width: 100%; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D">
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="year" style="font-size: 13px; font-weight: 600; color: #5B606B">Year</label>
+        <input id="year" type="text" inputmode="numeric" placeholder="2016" style="min-height: 48px; box-sizing: border-box; width: 100%; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <label for="plate" style="font-size: 13px; font-weight: 600; color: #5B606B">Plate (optional)</label>
+        <input id="plate" type="text" placeholder="AB-123-CD" style="min-height: 48px; box-sizing: border-box; width: 100%; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #16181D">
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <label for="odo" style="font-size: 13px; font-weight: 600; color: #5B606B">Current odometer (km)</label>
+      <input id="odo" type="text" inputmode="numeric" placeholder="184,320" style="min-height: 48px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 15px; color: #16181D">
+      <div style="font-size: 12px; color: #5B606B">Used as the starting point for cost per km.</div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E2E3E0; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <div style="font-size: 15px; font-weight: 600">Purchase</div>
+        <div style="font-size: 12px; color: #5B606B">Shown as the car’s value for now.</div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <label for="price" style="font-size: 13px; font-weight: 600; color: #5B606B">Price paid (€)</label>
+          <input id="price" type="text" inputmode="decimal" placeholder="8,500" style="min-height: 48px; box-sizing: border-box; width: 100%; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <label for="pdate" style="font-size: 13px; font-weight: 600; color: #5B606B">Date bought</label>
+          <input id="pdate" type="date" style="min-height: 48px; box-sizing: border-box; width: 100%; padding: 0 12px; border: 1px solid #D4D6D1; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; color: #16181D">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 12px 20px 24px; background: #F4F4F2">
+    <a href="Main.dc.html" style="min-height: 52px; border-radius: 14px; background: {{accent}}; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">Add to garage</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1F4FD8&quot;,&quot;options&quot;:[&quot;#1F4FD8&quot;,&quot;#0F766E&quot;,&quot;#B4490F&quot;,&quot;#16181D&quot;]},&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#1F4FD8' };
+  }
+}
+</script>
+
+</body></html>
