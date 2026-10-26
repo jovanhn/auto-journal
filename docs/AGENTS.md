@@ -18,6 +18,8 @@ Source-of-truth order: `domain` → `specs` → `contracts/openapi.yaml` → cod
 - Copy `specs/_template.md` to `specs/<feature-name>.md` (kebab-case). Keep every section; write "none" or
   "n/a" rather than deleting one.
 - **Status:** `Planned` → `In progress` (when work starts) → `Implemented` (when merged with tests).
+  Planned specs also name their **release** (v1 = MVP: auth, vehicles, expenses; v2 = insights;
+  v3 = planned expenses). Build releases in order; keep each spec as small as its goal allows.
 - Business rules reference IDs in `domain/business-rules.md`; add new rules there first.
 - Acceptance criteria are numbered Given/When/Then; tests are written from them.
 - **E2E** lists critical user flows only (or "none"); each becomes a plan in `e2e/plans/`.

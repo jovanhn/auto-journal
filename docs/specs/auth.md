@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned
+Planned — release **v1 (MVP)**
 
 ## Goal
 

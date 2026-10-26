@@ -182,13 +182,13 @@ the affected part:
   select on amount fields (ADR 0014). Built from existing tokens/components until designed.
 - **Wider screens:** mobile-first, but nothing defines tablet/desktop (centered 390–480 px column?).
 - **Category colors** for Repairs, Insurance, Registration & tax, Other.
-- **"Due soon" threshold** — when does a planned item switch to the warning style (24 days is warning,
-  4 months is neutral)? Behavior → belongs in `docs/domain/business-rules.md`.
 - **Fonts:** IBM Plex Sans/Mono replace the system font stack chosen in ADR 0011 and require either a
   Google Fonts link or a font package — needs an ADR before adopting.
-- **Behavior shown by the mocks that domain/specs must define:** cost per km and distance basis, "running
-  costs" in the 12-month projection, the Garage "avg / month" basis, the Expenses period switcher (year only?
-  category filter?).
+- **Behavior shown by the mocks, now decided in domain/specs** (the mocks differ; specs win): "due soon" =
+  within 30 days or overdue (BR-PL6); cost per km is lifetime incl. purchase price (BR-I4); the projection
+  has **no** running costs (BR-I5); Garage and Insights "avg / month" = year total ÷ months elapsed
+  (BR-I3, BR-I6); the Expenses period switcher is year only, no category filter; Add expense has no vehicle
+  picker; Expenses tiles are This year, This month and (from v2) Per km.
 
 ## Changelog
 

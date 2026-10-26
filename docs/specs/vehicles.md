@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned
+Planned — release **v1 (MVP)**
 
 ## Goal
 
@@ -97,7 +97,8 @@ Depends on: specs/auth.md (every request is scoped to the signed-in user).
 - Delete is idempotent from the user's view: deleting an already-deleted vehicle responds 404.
 - Concurrent rename to the same nickname: the unique index decides; the loser gets 409, never 500.
 - Deleting a vehicle must also delete rows of later modules (expenses, planned expenses). Those modules add
-  their cleanup when they are built (database `ON DELETE CASCADE` or a module event — decided in their spec).
+  their cleanup when they are built: database `ON DELETE CASCADE` on their `vehicle_id` (decided in
+  specs/expenses.md and specs/planned-expenses.md).
 
 ## API impact
 
