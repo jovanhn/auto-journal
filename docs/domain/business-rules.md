@@ -27,13 +27,14 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
-| BR-V1 | Nickname, make, model, year, odometer at purchase, purchase price and purchase date are required; plate is optional. | **Planned** |
+| BR-V1 | Nickname, make, model, year, odometer at start, purchase price and purchase date are required; plate is optional. | **Planned** |
 | BR-V2 | Year is between 1900 and next calendar year.                                                  | **Planned** |
-| BR-V3 | Purchase date is not in the future; odometer at purchase is ≥ 0.                              | **Planned** |
+| BR-V3 | Purchase date is not in the future; odometer at start (the reading when the vehicle is added) is ≥ 0. | **Planned** |
 | BR-V4 | Nickname is unique among one user's vehicles, case-insensitive. Plate is not unique.          | **Planned** |
-| BR-V5 | Current odometer = the highest of the odometer at purchase and all of the vehicle's expense odometer readings. It is never entered directly. | **Planned** |
+| BR-V5 | Current odometer = the highest of the odometer at start and all of the vehicle's expense odometer readings. It is never entered directly. | **Planned** |
 | BR-V6 | A vehicle can be edited and deleted. Deleting (after confirmation in the UI) also deletes its expenses and planned expenses. | **Planned** |
 | BR-V7 | Car value equals the purchase price (for now).                                                | **Planned** |
+| BR-V8 | A user's vehicles are listed in the order they were added (oldest first).                     | **Planned** |
 
 ## Expenses
 
@@ -64,8 +65,9 @@ All figures are per vehicle, in the display currency (BR-C6), from expenses by t
 | BR-I1 | Yearly total and monthly totals = sum of the expenses in that year / month.                  | **Planned** |
 | BR-I2 | Category breakdown = sum per category for the selected period, with its share of the total.   | **Planned** |
 | BR-I3 | Average monthly cost = total expenses ÷ months tracked, counting every calendar month from the month the vehicle was added to the app (`created_at`) through the current month, including months without expenses. | **Planned** |
-| BR-I4 | Cost per km = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at purchase). Not shown when distance driven is 0. | **Planned** |
+| BR-I4 | Cost per km = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at start). Not shown when distance driven is 0. | **Planned** |
 | BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only: one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | **Planned** |
+| BR-I6 | All-cars summary (Garage): this year's total = sum of all the user's expenses dated in the current calendar year, across vehicles; average per month = that total ÷ the number of months elapsed this year, including the current month. | **Planned** |
 
 ## Interpretation notes (assumptions, confirm before changing)
 

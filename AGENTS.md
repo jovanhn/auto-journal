@@ -21,7 +21,7 @@ architecture.
 ## What this is
 
 **autojournal** is a small private app for tracking car expenses. A user signs in (Supabase Auth), adds one or
-more vehicles (nickname, make, model, year, optional plate, odometer at purchase, purchase price and date) and
+more vehicles (nickname, make, model, year, optional plate, odometer at start, purchase price and date) and
 logs expenses per vehicle (date, amount, currency, category, optional odometer and note). Categories are fixed:
 Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking & tolls, Other. Amounts can be in EUR,
 RSD or USD (fixed exchange rates from config); totals are shown in the user's display currency. The app shows

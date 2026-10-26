@@ -33,14 +33,15 @@ Identity (email, password, sessions) lives in Supabase Auth, not in autojournal 
 | `model`                    | text (1–50)    | Required, trimmed                                              |
 | `year`                     | integer        | 1900 … next calendar year                                      |
 | `plate`                    | text (≤ 20)    | Optional; blank stored as null; not unique                     |
-| `odometer_at_purchase`     | integer (km)   | Required, ≥ 0                                                  |
+| `odometer_at_start`        | integer (km)   | Required, ≥ 0; the reading when the vehicle was added          |
 | `purchase_price_amount`    | numeric(12,2)  | Required, ≥ 0                                                  |
 | `purchase_price_currency`  | currency       | Required; defaults to the user's display currency in the UI    |
 | `purchase_price_rate_to_eur` | numeric      | Rate snapshot, set when the price is saved                     |
 | `purchase_date`            | date           | Required, not in the future                                    |
 | `created_at`               | timestamptz    | Set on creation                                                |
 
-Derived, not stored: **current odometer** = max(`odometer_at_purchase`, max(expense `odometer`)).
+Derived, not stored: **current odometer** = max(`odometer_at_start`, max(expense `odometer`)).
+Vehicles are listed in the order they were added (`created_at` ascending).
 
 ## Expense — module `expenses`, table `expense`
 

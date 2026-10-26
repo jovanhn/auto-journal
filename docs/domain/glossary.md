@@ -6,7 +6,7 @@
 | ---------------------- | ---------------------------------------------------------------------------------------------------- |
 | **User**               | A person signed in through Supabase Auth. Owns vehicles; sees only their own data.                   |
 | **User preferences**   | Per-user app settings stored by autojournal. For now only the display currency.                      |
-| **Vehicle**            | A car owned by exactly one user: nickname, make, model, year, optional plate, odometer at purchase, purchase price and date. |
+| **Vehicle**            | A car owned by exactly one user: nickname, make, model, year, optional plate, odometer at start, purchase price and date. |
 | **Garage**             | The list of the user's vehicles (home screen).                                                       |
 | **Expense**            | A real, paid cost of a vehicle: date, amount, currency, category, optional odometer and note.        |
 | **Category**           | Fixed classification of an expense or planned expense: Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking & tolls, Other. |
@@ -18,9 +18,9 @@
 | **Display currency**   | The currency a user sees totals in and the default currency for new amounts. Per user; default `EUR`. |
 | **Exchange rate**      | Fixed conversion rate between currencies, set in application configuration (not by users).           |
 | **Rate snapshot**      | The exchange rate stored with an expense (and a vehicle's purchase price) when it is saved, so past totals don't change when rates change. |
-| **Odometer at purchase** | The vehicle's odometer reading when the user got it; starting point for distance driven.           |
-| **Current odometer**   | Derived: the highest of the odometer at purchase and all of the vehicle's expense odometer readings. Never entered directly. |
-| **Distance driven**    | Current odometer − odometer at purchase.                                                             |
+| **Odometer at start**  | The vehicle's odometer reading when it was added to the app; starting point for distance driven.     |
+| **Current odometer**   | Derived: the highest of the odometer at start and all of the vehicle's expense odometer readings. Never entered directly. |
+| **Distance driven**    | Current odometer − odometer at start (distance since the vehicle was added).                         |
 | **Car value**          | For now equal to the purchase price. Later estimated from age and market data.                       |
 | **Cost per km**        | (Total expenses + purchase price) ÷ distance driven, in the display currency.                        |
 | **Average monthly cost** | Total expenses ÷ number of months since the vehicle was added to the app, including months without expenses. |
