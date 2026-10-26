@@ -84,7 +84,7 @@ shown as Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking &
 
 - A user has zero or more vehicles; a vehicle has exactly one owner.
 - A vehicle has zero or more expenses and zero or more planned expenses.
-- Deleting a vehicle deletes its expenses and planned expenses.
+- Deleting a vehicle deletes its expenses and planned expenses (FK `ON DELETE CASCADE` on `vehicle_id`).
 - Paying a planned expense creates an expense; the two are not linked afterwards.
 
 ## Example scaffold (removed when the `vehicles` module exists)

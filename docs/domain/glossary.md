@@ -22,8 +22,9 @@
 | **Current odometer**   | Derived: the highest of the odometer at start and all of the vehicle's expense odometer readings. Never entered directly. |
 | **Distance driven**    | Current odometer − odometer at start (distance since the vehicle was added).                         |
 | **Car value**          | For now equal to the purchase price. Later estimated from age and market data.                       |
-| **Cost per km**        | (Total expenses + purchase price) ÷ distance driven, in the display currency.                        |
-| **Average monthly cost** | Total expenses ÷ number of months since the vehicle was added to the app, including months without expenses. |
+| **Cost per km**        | (Total expenses + purchase price) ÷ distance driven, over the vehicle's whole history, in the display currency. |
+| **Average monthly cost** | A year's total expenses ÷ months elapsed in that year (12 for a past year, through the current month for this year), including months without expenses. |
+| **Due soon**           | A planned expense due within the next 30 days, or already overdue.                                   |
 
 ## Example scaffold (removed when the `vehicles` module exists)
 

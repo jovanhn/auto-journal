@@ -55,18 +55,20 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | BR-PL3 | After mark as paid, a one-time planned expense is removed; a recurring one moves its due date forward by N months. | **Planned** |
 | BR-PL4 | A planned expense can be edited and deleted without being paid.                             | **Planned** |
 | BR-PL5 | A planned expense whose due date has passed stays listed (overdue) until paid or deleted.    | **Planned** |
+| BR-PL6 | A planned expense is *due soon* when its due date is within the next 30 days or has passed (overdue). | **Planned** |
 
 ## Insights
 
-All figures are per vehicle, in the display currency (BR-C6), from expenses by their date.
+All figures are in the display currency (BR-C6), from expenses by their date. Vehicle figures are for one
+vehicle and, unless stated otherwise, for one selected calendar year.
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
 | BR-I1 | Yearly total and monthly totals = sum of the expenses in that year / month.                  | **Planned** |
 | BR-I2 | Category breakdown = sum per category for the selected period, with its share of the total.   | **Planned** |
-| BR-I3 | Average monthly cost = total expenses ÷ months tracked, counting every calendar month from the month the vehicle was added to the app (`created_at`) through the current month, including months without expenses. | **Planned** |
-| BR-I4 | Cost per km = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at start). Not shown when distance driven is 0. | **Planned** |
-| BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only: one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | **Planned** |
+| BR-I3 | Average monthly cost = the selected year's total ÷ months elapsed in that year: 12 for a past year, January through the current month for the current year (months without expenses count). | **Planned** |
+| BR-I4 | Cost per km (lifetime, all years) = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at start). Not shown when distance driven is 0. | **Planned** |
+| BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only (no estimated running costs): one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | **Planned** |
 | BR-I6 | All-cars summary (Garage): this year's total = sum of all the user's expenses dated in the current calendar year, across vehicles; average per month = that total ÷ the number of months elapsed this year, including the current month. | **Planned** |
 
 ## Interpretation notes (assumptions, confirm before changing)
