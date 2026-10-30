@@ -21,7 +21,7 @@ data class VehicleData(
 /** A vehicle with its derived figures, as returned by the service. */
 data class VehicleView(
     val vehicle: VehicleEntity,
-    /** BR-V5; equals the odometer at start until the expenses module adds readings. */
+    /** BR-V5: max(odometer at start, expense odometer readings). */
     val currentOdometer: Int,
     /** BR-V7: the car value (= purchase price) in the user's display currency. */
     val value: BigDecimal,
