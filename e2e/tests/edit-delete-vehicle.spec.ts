@@ -18,7 +18,7 @@ test.describe('Edit and delete vehicle', () => {
     await page.getByRole('link', { name: new RegExp(`^${original}`) }).click();
     await expect(page.getByRole('heading', { name: original, level: 1 })).toBeVisible();
 
-    await page.getByRole('link', { name: 'Edit' }).click();
+    await page.getByRole('link', { name: 'Edit vehicle' }).click();
     const nickname = page.getByLabel('Nickname');
     await expect(nickname).toHaveValue(original);
     await nickname.fill(renamed);
@@ -28,15 +28,18 @@ test.describe('Edit and delete vehicle', () => {
     await expect(page.getByRole('heading', { name: renamed, level: 1 })).toBeVisible();
 
     // 2. Cancelling the confirmation keeps the vehicle
-    await page.getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('link', { name: 'Edit vehicle' }).click();
+    await expect(nickname).toHaveValue(renamed);
+    await page.getByRole('button', { name: 'Delete vehicle' }).click();
     const dialog = page.getByRole('alertdialog', { name: `Delete ${renamed}?` });
     await expect(dialog).toContainText('expenses and planned expenses');
     await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole('heading', { name: renamed, level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Edit vehicle', level: 1 })).toBeVisible();
+    await expect(nickname).toHaveValue(renamed);
 
     // 3. Delete
-    await page.getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'Delete vehicle' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete vehicle' }).click();
 
     await expect(page).toHaveURL(isHome);
