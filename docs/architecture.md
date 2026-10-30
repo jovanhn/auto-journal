@@ -45,7 +45,8 @@ Root package `com.example.autojournal` (`@Modulithic`). Generated contract code 
 | ---------- | ------------------------------------ | ---------------------------------- | ----------- | --------------- |
 | `projects` | Projects; project summaries          | `ProjectApi`, `ProjectRef`         | `project`   | `shared`        |
 | `tasks`    | Tasks within a project               | — (none needed yet)                | `task`      | `projects::api`, `shared` |
-| `shared`   | Error handling, paging, entity base  | open module (all packages visible) | —           | —               |
+| `users`    | User profile (display currency); `GET/PATCH /api/me` | — (none needed yet) | `user_profile` | `shared` |
+| `shared`   | Error handling, paging, entity base, security (JWT resource server), `Currency` | open module (all packages visible) | —           | —               |
 
 All tables live in the `autojournal` schema. Database-level foreign keys across modules are allowed
 (`task.project_id → project.id`); JPA relationships across modules are not.
