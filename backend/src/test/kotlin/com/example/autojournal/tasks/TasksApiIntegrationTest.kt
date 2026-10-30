@@ -1,6 +1,7 @@
 package com.example.autojournal.tasks
 
 import com.example.autojournal.IntegrationTest
+import com.example.autojournal.signedInAs
 import com.example.autojournal.truncateAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,6 +28,7 @@ class TasksApiIntegrationTest
             val body =
                 mockMvc
                     .post("/api/projects") {
+                        signedInAs()
                         contentType = MediaType.APPLICATION_JSON
                         content = """{"name": "Garden"}"""
                     }.andReturn()
@@ -38,6 +40,7 @@ class TasksApiIntegrationTest
         fun `adds an OPEN task to a project and lists it`() {
             mockMvc
                 .post("/api/projects/$projectId/tasks") {
+                    signedInAs()
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"title": "Water plants"}"""
                 }.andExpect {
@@ -47,7 +50,7 @@ class TasksApiIntegrationTest
                     jsonPath("$.projectId") { value(projectId) }
                 }
 
-            mockMvc.get("/api/projects/$projectId/tasks").andExpect {
+            mockMvc.get("/api/projects/$projectId/tasks") { signedInAs() }.andExpect {
                 status { isOk() }
                 jsonPath("$.totalItems") { value(1) }
                 jsonPath("$.items[0].title") { value("Water plants") }
@@ -58,6 +61,7 @@ class TasksApiIntegrationTest
         fun `returns 404 when adding a task to an unknown project`() {
             mockMvc
                 .post("/api/projects/${UUID.randomUUID()}/tasks") {
+                    signedInAs()
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"title": "Water plants"}"""
                 }.andExpect {
@@ -68,7 +72,7 @@ class TasksApiIntegrationTest
 
         @Test
         fun `returns 404 when listing tasks of an unknown project`() {
-            mockMvc.get("/api/projects/${UUID.randomUUID()}/tasks").andExpect {
+            mockMvc.get("/api/projects/${UUID.randomUUID()}/tasks") { signedInAs() }.andExpect {
                 status { isNotFound() }
             }
         }
@@ -77,6 +81,7 @@ class TasksApiIntegrationTest
         fun `rejects a title longer than 200 characters with 400 and a field error`() {
             mockMvc
                 .post("/api/projects/$projectId/tasks") {
+                    signedInAs()
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"title": "${"x".repeat(201)}"}"""
                 }.andExpect {
@@ -87,7 +92,7 @@ class TasksApiIntegrationTest
 
         @Test
         fun `rejects a malformed project id with 400`() {
-            mockMvc.get("/api/projects/not-a-uuid/tasks").andExpect {
+            mockMvc.get("/api/projects/not-a-uuid/tasks") { signedInAs() }.andExpect {
                 status { isBadRequest() }
             }
         }

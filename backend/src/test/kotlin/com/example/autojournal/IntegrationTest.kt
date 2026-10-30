@@ -7,12 +7,12 @@ import org.springframework.test.context.ActiveProfiles
 
 /**
  * Meta-annotation for integration tests: full application context, MockMvc, and Testcontainers
- * Postgres. The container is shared across test classes via Spring's context cache.
+ * Postgres, and JWTs signed with a local test key ([TestJwt]). The container is shared across test classes via Spring's context cache.
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestcontainersConfiguration::class)
+@Import(TestcontainersConfiguration::class, TestJwtConfiguration::class)
 annotation class IntegrationTest

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
-import tools.jackson.databind.exc.MismatchedInputException
+import tools.jackson.databind.DatabindException
 
 /**
  * Maps exceptions to RFC 9457 `ProblemDetail` responses exactly as defined in contracts/openapi.yaml:
@@ -87,8 +87,10 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         status: HttpStatusCode,
         request: WebRequest,
     ): ResponseEntity<Any>? {
-        val mismatch = ex.mostSpecificCause as? MismatchedInputException
-        val field = mismatch?.path?.mapNotNull { it.propertyName }?.joinToString(".")
+        // The first Jackson exception carries the JSON path; its own cause may be a plain exception
+        // (e.g. IllegalArgumentException from a generated enum's @JsonCreator for an unknown value).
+        val mappingError = generateSequence(ex.cause) { it.cause }.filterIsInstance<DatabindException>().firstOrNull()
+        val field = mappingError?.path?.mapNotNull { it.propertyName }?.joinToString(".")
         val errors = if (field.isNullOrEmpty()) emptyList() else listOf(FieldViolation(field, "is missing or has an invalid value"))
         return validationProblem(errors, detail = "Malformed request body.")
     }

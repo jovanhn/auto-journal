@@ -1,6 +1,7 @@
 package com.example.autojournal.projects
 
 import com.example.autojournal.IntegrationTest
+import com.example.autojournal.signedInAs
 import com.example.autojournal.truncateAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,6 +27,7 @@ class ProjectsApiIntegrationTest
         fun `creates a project and returns it`() {
             mockMvc
                 .post("/api/projects") {
+                    signedInAs()
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"name": "  Garden  ", "description": "Veggies"}"""
                 }.andExpect {
@@ -43,6 +45,7 @@ class ProjectsApiIntegrationTest
 
             mockMvc
                 .post("/api/projects") {
+                    signedInAs()
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"name": "gARDEN"}"""
                 }.andExpect {
@@ -58,6 +61,7 @@ class ProjectsApiIntegrationTest
         fun `rejects a blank name with 400 and a field error`() {
             mockMvc
                 .post("/api/projects") {
+                    signedInAs()
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"name": "   "}"""
                 }.andExpect {
@@ -71,6 +75,7 @@ class ProjectsApiIntegrationTest
         fun `rejects a missing name with 400 and a field error`() {
             mockMvc
                 .post("/api/projects") {
+                    signedInAs()
                     contentType = MediaType.APPLICATION_JSON
                     content = """{}"""
                 }.andExpect {
@@ -83,11 +88,12 @@ class ProjectsApiIntegrationTest
         fun `lists project summaries with task counts`() {
             val id = createProject("Garden")
             mockMvc.post("/api/projects/$id/tasks") {
+                signedInAs()
                 contentType = MediaType.APPLICATION_JSON
                 content = """{"title": "Water plants"}"""
             }
 
-            mockMvc.get("/api/projects?page=0&size=10").andExpect {
+            mockMvc.get("/api/projects?page=0&size=10") { signedInAs() }.andExpect {
                 status { isOk() }
                 jsonPath("$.page") { value(0) }
                 jsonPath("$.size") { value(10) }
@@ -100,7 +106,7 @@ class ProjectsApiIntegrationTest
 
         @Test
         fun `rejects an out-of-range page size with 400`() {
-            mockMvc.get("/api/projects?size=1000").andExpect {
+            mockMvc.get("/api/projects?size=1000") { signedInAs() }.andExpect {
                 status { isBadRequest() }
                 jsonPath("$.errors[0].field") { value("size") }
             }
@@ -108,7 +114,7 @@ class ProjectsApiIntegrationTest
 
         @Test
         fun `returns 404 for an unknown project`() {
-            mockMvc.get("/api/projects/${UUID.randomUUID()}").andExpect {
+            mockMvc.get("/api/projects/${UUID.randomUUID()}") { signedInAs() }.andExpect {
                 status { isNotFound() }
                 jsonPath("$.status") { value(404) }
             }
@@ -117,7 +123,7 @@ class ProjectsApiIntegrationTest
         @Test
         fun `gets a project by id`() {
             val id = createProject("Garden")
-            mockMvc.get("/api/projects/$id").andExpect {
+            mockMvc.get("/api/projects/$id") { signedInAs() }.andExpect {
                 status { isOk() }
                 jsonPath("$.name") { value("Garden") }
             }
@@ -127,6 +133,7 @@ class ProjectsApiIntegrationTest
             val body =
                 mockMvc
                     .post("/api/projects") {
+                        signedInAs()
                         contentType = MediaType.APPLICATION_JSON
                         content = """{"name": "$name"}"""
                     }.andExpect { status { isCreated() } }
