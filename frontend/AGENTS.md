@@ -9,7 +9,7 @@ src/
   app/        providers, Redux store + typed hooks, query client, root route, router (code-based)
   features/   <feature>/ components/, hooks/, routes/ (route defs + pages), <name>Slice.ts, schemas.ts
   shared/     api/ (http.ts mutator, generated/ ← Orval, never edit), ui/ (shadcn primitives + shared
-              components), lib/ (cn, form helpers)
+              components), lib/ (cn, form helpers, money formatting)
   test/       setup, MSW server, fixtures, renderApp
 ```
 
@@ -39,21 +39,23 @@ Never put server data in Redux. Use `useAppDispatch` / `useAppSelector` from `@/
 - Feature hooks wrap generated hooks (`features/<f>/hooks/useX.ts`); components never call generated hooks
   or `fetch` directly.
 - Query keys: use the generated `get<Operation>QueryKey(...)` functions. Invalidate by prefix — call the
-  key function without params, e.g. `queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() })`.
-  Mutations invalidate every query whose data they change (e.g. creating a task invalidates that project's
-  task lists and the project summaries).
+  key function without params, e.g. `queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() })`.
+  Mutations invalidate every query whose data they change (e.g. `useUpdateVehicle` invalidates the vehicle
+  list and `getGetVehicleQueryKey(vehicleId)`).
 - Never use supabase-js or any other client to access data.
 
 ## Forms standard
 
 - React Hook Form + Zod (`zodResolver`). Schemas start from generated Zod schemas
-  (`@/shared/api/generated/zod/...`) and extend only for UI-only rules (see `features/projects/schemas.ts`).
+  (`@/shared/api/generated/zod/...`) and extend only for UI-only rules. When inputs hold text (numbers,
+  money), re-declare the fields as strings but take every limit from the generated contract constants
+  (see `features/vehicles/schemas.ts`).
 - `mode: 'onBlur'`, `reValidateMode: 'onChange'`; disable submit while `formState.isSubmitting`.
 - Server errors: `catch (e) { applyServerErrors(e, form.setError, FIELDS) }`; render
   `<FormErrorAlert message={form.formState.errors.root?.server?.message} />` for non-field errors.
 - Markup: shadcn `Field` / `FieldLabel` / `FieldError` + RHF `Controller`; every input has a label;
   `aria-invalid` on invalid inputs.
-- Forms take `onSubmit(values) => Promise`; the page performs the mutation (see `CreateProjectForm`).
+- Forms take `onSubmit(values) => Promise`; the page performs the mutation (see `VehicleForm` and `AddVehiclePage`).
 
 ## Components and UI
 
@@ -73,7 +75,7 @@ Never put server data in Redux. Use `useAppDispatch` / `useAppSelector` from `@/
 ## Testing
 
 - Vitest + React Testing Library + MSW. Render the real app with `renderApp(url)`; mock HTTP with
-  `server.use(http.get(api('/projects'), ...))` — unhandled requests fail the test.
+  `server.use(http.get(api('/vehicles'), ...))` — unhandled requests fail the test.
 - Query by role/label/text, not class names or test IDs. Use `userEvent`.
 - Cover: data rendering, empty and error states, form validation, server field errors.
 
