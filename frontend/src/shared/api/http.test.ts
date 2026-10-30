@@ -1,6 +1,7 @@
 import { http as mswHttp, HttpResponse } from 'msw';
 import { api, server } from '@/test/server';
 import { problem } from '@/test/fixtures';
+import { fakeAuth } from '@/test/fakeSession';
 import { ApiError, http } from './http';
 
 describe('http mutator', () => {
@@ -40,5 +41,43 @@ describe('http mutator', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).status).toBe(502);
+  });
+
+  it('attaches the access token of the signed-in user', async () => {
+    let authorization: string | null = null;
+    server.use(
+      mswHttp.get(api('/me'), ({ request }) => {
+        authorization = request.headers.get('Authorization');
+        return HttpResponse.json({});
+      }),
+    );
+
+    await http('/api/me');
+
+    expect(authorization).toBe('Bearer test-access-token');
+  });
+
+  it('sends no token when signed out', async () => {
+    fakeAuth.signedOut();
+    let authorization: string | null = 'unset';
+    server.use(
+      mswHttp.get(api('/me'), ({ request }) => {
+        authorization = request.headers.get('Authorization');
+        return HttpResponse.json({});
+      }),
+    );
+
+    await http('/api/me');
+
+    expect(authorization).toBeNull();
+  });
+
+  it('signs the user out when the token is rejected with 401', async () => {
+    server.use(mswHttp.get(api('/me'), () => HttpResponse.json(problem(401), { status: 401 })));
+
+    const error = await http('/api/me').catch((e: unknown) => e);
+
+    expect((error as ApiError).status).toBe(401);
+    expect(fakeAuth.isSignedIn()).toBe(false);
   });
 });

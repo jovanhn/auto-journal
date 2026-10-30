@@ -1,6 +1,6 @@
 import { createRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { rootRoute } from '@/app/rootRoute';
+import { authenticatedRoute } from '@/app/authenticatedRoute';
 import { ProjectDetailPage } from './ProjectDetailPage';
 import { ProjectsPage } from './ProjectsPage';
 
@@ -11,14 +11,14 @@ const paginationSearchSchema = z.object({
 });
 
 export const projectsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedRoute,
   path: '/',
   validateSearch: paginationSearchSchema,
   component: ProjectsPage,
 });
 
 export const projectDetailRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedRoute,
   path: '/projects/$projectId',
   validateSearch: paginationSearchSchema,
   component: ProjectDetailPage,

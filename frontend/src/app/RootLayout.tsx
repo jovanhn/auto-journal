@@ -1,27 +1,31 @@
-import { Link, Outlet } from '@tanstack/react-router';
-import { ThemeToggle } from '@/features/theme/components/ThemeToggle';
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Outlet, useRouter } from '@tanstack/react-router';
 import { useApplyTheme } from '@/features/theme/hooks/useApplyTheme';
-import { useAppSelector } from './hooks';
 import { selectThemeMode } from '@/features/theme/themeSlice';
+import { onSignedOut } from '@/shared/auth/session';
 import { Toaster } from '@/shared/ui/sonner';
+import { useAppSelector } from './hooks';
 
 export function RootLayout() {
   useApplyTheme();
   const themeMode = useAppSelector(selectThemeMode);
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  // However the user is signed out (button, failed refresh, 401), drop their cached data and show sign-in.
+  useEffect(
+    () =>
+      onSignedOut(() => {
+        queryClient.clear();
+        void router.navigate({ to: '/sign-in' });
+      }),
+    [queryClient, router],
+  );
 
   return (
     <div className="min-h-svh">
-      <header className="border-b">
-        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
-          <Link to="/" className="font-semibold">
-            autojournal
-          </Link>
-          <ThemeToggle />
-        </div>
-      </header>
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <Outlet />
-      </main>
+      <Outlet />
       <Toaster theme={themeMode} richColors />
     </div>
   );

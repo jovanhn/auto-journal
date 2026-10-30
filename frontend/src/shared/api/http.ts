@@ -3,8 +3,10 @@
  *
  * - Base URL comes from VITE_API_BASE_URL (default `/api`, proxied to the backend by Vite).
  * - Non-2xx responses are parsed as RFC 9457 ProblemDetail and thrown as a typed {@link ApiError}.
- * - This is the only place where an Authorization header will be added (Supabase Auth, ADR 0008).
+ * - This is the only place the access token is attached (Supabase Auth, ADR 0013). A 401 signs the
+ *   user out once; the app then shows sign-in (no retry loop).
  */
+import { getSession, signOut } from '@/shared/auth/session';
 import type { FieldError, ProblemDetail } from './generated/model';
 
 const API_PREFIX = '/api';
@@ -54,7 +56,8 @@ const parseBody = async (res: Response): Promise<unknown> => {
 export const http = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const headers = new Headers(init?.headers);
   headers.set('Accept', 'application/json, application/problem+json');
-  // Future: headers.set('Authorization', `Bearer ${token}`) — keep auth here and nowhere else.
+  const session = await getSession();
+  if (session) headers.set('Authorization', `Bearer ${session.accessToken}`);
 
   let res: Response;
   try {
@@ -62,6 +65,9 @@ export const http = async <T>(url: string, init?: RequestInit): Promise<T> => {
   } catch {
     throw new ApiError({ title: 'Network error', status: 0, detail: 'Could not reach the server.' });
   }
+
+  // The token was rejected (expired and not refreshable, or the user was removed): sign out.
+  if (res.status === 401 && session) await signOut();
 
   const body = await parseBody(res);
   if (!res.ok) {
