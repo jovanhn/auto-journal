@@ -7,34 +7,34 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
-| BR-U1 | Every API request requires a signed-in user (Supabase Auth, email + password).                | **Planned** |
-| BR-U2 | A user sees and changes only their own vehicles and everything under them. Another user's data responds as not found (404). | **Planned** |
-| BR-U3 | A user profile is created on the user's first authenticated request, with display currency `EUR`. | **Planned** |
-| BR-U4 | A user can change their display currency to any supported currency.                           | **Planned** |
+| BR-U1 | Every API request requires a signed-in user (Supabase Auth, email + password).                | `shared/security/SecurityConfig` (JWT resource server, every `/api` request authenticated) → 401 |
+| BR-U2 | A user sees and changes only their own vehicles and everything under them. Another user's data responds as not found (404). | `VehicleService` (every query scoped to `owner_id`) → 404 |
+| BR-U3 | A user profile is created on the user's first authenticated request, with display currency `EUR`. | `UserProfileService.getOrCreate` (insert if absent) |
+| BR-U4 | A user can change their display currency to any supported currency.                           | `PATCH /api/me` → `UserProfileService`; contract enum → 400 |
 
 ## Money and currency
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
-| BR-C1 | Supported currencies are `EUR`, `RSD`, `USD`. Amounts have 2 decimals and are ≥ 0.            | **Planned** |
-| BR-C2 | Every amount carries its own currency; new amounts default to the user's display currency.    | **Planned** |
-| BR-C3 | Exchange rates are fixed values in application configuration (ADR 0014); users cannot edit them. | **Planned** |
-| BR-C4 | An expense and a vehicle's purchase price store a rate snapshot when saved; conversions of them always use that snapshot. Editing the amount or currency takes a new snapshot. | **Planned** |
+| BR-C1 | Supported currencies are `EUR`, `RSD`, `USD`. Amounts have 2 decimals and are ≥ 0.            | Contract (`Currency` enum, `Money.amount` decimal-string pattern), bean validation → 400; `shared.money.Currency`; DB checks |
+| BR-C2 | Every amount carries its own currency; new amounts default to the user's display currency.    | Contract `Money { amount, currency }`; UI form default from `GET /api/me` (vehicle purchase price; expenses: planned) |
+| BR-C3 | Exchange rates are fixed values in application configuration (ADR 0014); users cannot edit them. | `shared.money.ExchangeRates` (`autojournal.exchange-rates.*`, env `EXCHANGE_RATE_*`) |
+| BR-C4 | An expense and a vehicle's purchase price store a rate snapshot when saved; conversions of them always use that snapshot. Editing the amount or currency takes a new snapshot. | `VehicleService` (`purchase_price_rate_to_eur`); expenses: **Planned** |
 | BR-C5 | Planned expenses (estimates) are converted with the current configured rates.                 | **Planned** |
-| BR-C6 | Totals, sums and derived figures are shown in the user's display currency.                    | **Planned** |
+| BR-C6 | Totals, sums and derived figures are shown in the user's display currency.                    | `VehicleService` (car value via `UserProfileApi.displayCurrency` + `ExchangeRates.convert`); totals: **Planned** |
 
 ## Vehicles
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
-| BR-V1 | Nickname, make, model, year, odometer at start, purchase price and purchase date are required; plate is optional. | **Planned** |
-| BR-V2 | Year is between 1900 and next calendar year.                                                  | **Planned** |
-| BR-V3 | Purchase date is not in the future; odometer at start (the reading when the vehicle is added) is ≥ 0. | **Planned** |
-| BR-V4 | Nickname is unique among one user's vehicles, case-insensitive. Plate is not unique.          | **Planned** |
-| BR-V5 | Current odometer = the highest of the odometer at start and all of the vehicle's expense odometer readings. It is never entered directly. | **Planned** |
-| BR-V6 | A vehicle can be edited and deleted. Deleting (after confirmation in the UI) also deletes its expenses and planned expenses. | **Planned** |
-| BR-V7 | Car value equals the purchase price (for now).                                                | **Planned** |
-| BR-V8 | A user's vehicles are listed in the order they were added (oldest first).                     | **Planned** |
+| BR-V1 | Nickname, make, model, year, odometer at start, purchase price and purchase date are required; plate is optional. | Contract (`required`, `minLength`, non-blank pattern), bean validation → 400 |
+| BR-V2 | Year is between 1900 and next calendar year.                                                  | Contract `minimum` → 400; upper bound `VehicleService` (UTC `Clock`) → 400 field `year` |
+| BR-V3 | Purchase date is not in the future; odometer at start (the reading when the vehicle is added) is ≥ 0. | `VehicleService` (UTC `Clock`) → 400 field `purchaseDate`; contract `minimum` → 400 |
+| BR-V4 | Nickname is unique among one user's vehicles, case-insensitive. Plate is not unique.          | `VehicleService` → 409 with field error `nickname`; unique index `(owner_id, lower(nickname))` |
+| BR-V5 | Current odometer = the highest of the odometer at start and all of the vehicle's expense odometer readings. It is never entered directly. | `VehicleService` (read-only `currentOdometer`); equals odometer at start until expenses exist |
+| BR-V6 | A vehicle can be edited and deleted. Deleting (after confirmation in the UI) also deletes its expenses and planned expenses. | `PUT`/`DELETE /api/vehicles/{vehicleId}`; UI confirm dialog; cascade to expenses/planned expenses comes with those modules (FK `ON DELETE CASCADE`) |
+| BR-V7 | Car value equals the purchase price (for now).                                                | `VehicleService` (purchase price converted at its snapshot to the display currency) |
+| BR-V8 | A user's vehicles are listed in the order they were added (oldest first).                     | `VehicleRepository` (`created_at` ascending)  |
 
 ## Expenses
 
@@ -79,13 +79,3 @@ vehicle and, unless stated otherwise, for one selected calendar year.
   changes (accepted). Results are rounded half-up to 2 decimals only for display; sums use full precision.
 - Error mapping: validation → 400, missing (or another user's) resource → 404, business-rule violation → 409,
   all as RFC 9457 `ProblemDetail` with optional field `errors` (see contracts/AGENTS.md).
-
-## Example scaffold (removed when the `vehicles` module exists)
-
-| ID      | Rule                                                                 | Enforced                                                         |
-| ------- | -------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| BR-P1   | A project name is required.                                          | Contract (`minLength`, non-blank pattern), bean validation → 400 |
-| BR-P2   | Project names are unique, case-insensitive.                          | `ProjectService` → 409 with field error `name`; unique index     |
-| BR-T1   | A task title is 1–200 characters.                                    | Contract (`minLength`/`maxLength`), bean validation → 400        |
-| BR-T2   | A task belongs to exactly one project, which must exist.             | `TaskService` via `ProjectApi` → 404; FK `task.project_id`       |
-| BR-T3   | A new task is `OPEN`.                                                | `TaskEntity` default                                             |

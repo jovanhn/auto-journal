@@ -1,6 +1,7 @@
 # Architecture
 
-autojournal is a task board: projects contain tasks. It is a monorepo with a Kotlin/Spring Boot
+autojournal is a private app for tracking car expenses: a user keeps their vehicles and logs expenses per
+vehicle (see [domain](domain/)). It is a monorepo with a Kotlin/Spring Boot
 modular-monolith backend, a React SPA frontend, and a contract-first OpenAPI spec between them.
 
 ```
@@ -43,20 +44,22 @@ Root package `com.example.autojournal` (`@Modulithic`). Generated contract code 
 
 | Module     | Responsibility                       | Public API (`api` named interface) | Owns tables | Depends on      |
 | ---------- | ------------------------------------ | ---------------------------------- | ----------- | --------------- |
-| `projects` | Projects; project summaries          | `ProjectApi`, `ProjectRef`         | `project`   | `shared`        |
-| `tasks`    | Tasks within a project               | — (none needed yet)                | `task`      | `projects::api`, `shared` |
-| `users`    | User profile (display currency); `GET/PATCH /api/me` | — (none needed yet) | `user_profile` | `shared` |
-| `shared`   | Error handling, paging, entity base, security (JWT resource server), `Currency` | open module (all packages visible) | —           | —               |
+| `users`    | User profile (display currency); `GET/PATCH /api/me` | `UserProfileApi` (`displayCurrency(userId)`) | `user_profile` | `shared` |
+| `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD | — (none needed yet)    | `vehicle`   | `users::api`, `shared` |
+| `shared`   | Error handling, security (JWT resource server, `CurrentUser`), money (`Currency`, `ExchangeRates`), UTC `Clock`, entity base | open module (all packages visible) | — | — |
 
 All tables live in the `autojournal` schema. Database-level foreign keys across modules are allowed
-(`task.project_id → project.id`); JPA relationships across modules are not.
+(e.g. the planned `expense.vehicle_id → vehicle.id`); JPA relationships across modules are not.
 
-Reference examples in the code:
+Reference examples in the code (`vehicles` is the reference module):
 
-- **Cross-module read:** `projects/internal/dao/ProjectSummaryReadDao` — `JdbcClient` query that
-  read-only JOINs the `tasks` module's `task` table to compute task counts.
-- **Cross-module call:** `tasks/internal/service/TaskService` — checks that a project exists through
-  `projects.api.ProjectApi`, never through the projects repository.
+- **Cross-module call:** `vehicles/internal/service/VehicleService` — gets the user's display currency
+  through `users.api.UserProfileApi` (implemented by `users/internal/service/UserProfileApiService`), never
+  through the users repository.
+- **Write DAO:** `vehicles/internal/dao/VehicleDao` — wraps the module's JPA repository; `saveAndFlush` makes
+  a unique-index violation surface in the service (→ 409 on `nickname`).
+- **Cross-module read:** none yet. The first `JdbcClient` read DAO (read-only JOIN of another module's
+  table) comes with expenses/insights.
 
 ## Request flow
 
@@ -66,16 +69,17 @@ sequenceDiagram
     participant V as Vite dev server / static host
     participant C as Controller (implements generated *Api)
     participant S as Service (@Transactional)
-    participant P as Other module's api (ProjectApi)
+    participant P as Other module's api (UserProfileApi)
     participant D as DAO
     participant DB as PostgreSQL (schema autojournal)
 
-    B->>V: fetch /api/projects/{id}/tasks (generated Orval hook → http.ts)
-    V->>C: proxy /api → :8080
+    B->>V: POST /api/vehicles + Bearer JWT (generated Orval hook → http.ts)
+    V->>C: proxy /api → :8080 (JWT validated, CurrentUser)
     C->>S: mapper: request DTO → internal dto
-    S->>P: findById(projectId)
-    P-->>S: ProjectRef? (404 if null)
-    S->>D: insert(TaskEntity)
+    S->>D: existsNickname(ownerId, nickname) (409 if taken)
+    S->>D: insert(VehicleEntity)
+    S->>P: displayCurrency(ownerId)
+    P-->>S: Currency (for the car value)
     D->>DB: JPA (own tables) / JdbcClient (cross-module reads)
     DB-->>D: rows
     D-->>S: entity
@@ -100,5 +104,5 @@ See [frontend/AGENTS.md](../frontend/AGENTS.md) and ADRs 0006, 0007, 0011.
 
 - Only the backend connects to the database (ADR 0005). The frontend never uses supabase-js data access.
 - The contract is the source of truth for the API; generated code is never edited (ADR 0002).
-- Authentication: Supabase Auth JWTs validated by the backend (ADR 0013, not built yet); `frontend/src/shared/api/http.ts` is the single place a token
-  will be attached.
+- Authentication: Supabase Auth JWTs validated by the backend (ADR 0013); `frontend/src/shared/api/http.ts`
+  is the single place the token is attached.

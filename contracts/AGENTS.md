@@ -6,12 +6,12 @@ compatibility). Lint: `make contracts-lint` (Redocly, config in `redocly.yaml`).
 ## Conventions
 
 - **Paths:** everything under `/api`. Plural, kebab-case resource nouns; nest only for ownership
-  (`/api/projects/{projectId}/tasks`). Path params are camelCase IDs (`projectId`, `format: uuid`).
-- **operationId:** required on every operation, camelCase verb + noun: `listProjects`, `getProject`,
-  `createProject`, `listProjectTasks`, `createTask`. They become backend method names and frontend hook names
-  (`useListProjects`) — renaming one is a breaking change for code.
-- **Tags:** exactly one per operation, equal to the owning backend module (`projects`, `tasks`). The tag
-  decides the generated interface (`ProjectsApi`) and frontend file.
+  (`/api/vehicles/{vehicleId}/expenses`). Path params are camelCase IDs (`vehicleId`, `format: uuid`).
+- **operationId:** required on every operation, camelCase verb + noun: `listVehicles`, `getVehicle`,
+  `createVehicle`, `updateVehicle`, `deleteVehicle`. They become backend method names and frontend hook names
+  (`useListVehicles`) — renaming one is a breaking change for code.
+- **Tags:** exactly one per operation, equal to the owning backend module (`users`, `vehicles`). The tag
+  decides the generated interface (`VehiclesApi`) and frontend file.
 - **Schemas:** PascalCase names; properties camelCase; list `required` explicitly; use `nullable: true` for
   optional values that may be null; put limits (`minLength`, `maxLength`, `pattern`, `minimum`, `maximum`)
   in the contract — they drive bean validation and frontend Zod schemas.
@@ -26,8 +26,10 @@ validation or business-rule errors. Reuse the shared responses: `BadRequest` (40
 
 ## Pagination
 
-Query params `page` (zero-based, default 0) and `size` (1–100, default 20) via the shared `Page` / `Size`
-parameters. Response envelope: `{ items, page, size, totalItems }` named `<Thing>Page`.
+Lists are not paginated for now (a user has a handful of vehicles; `listVehicles` returns `Vehicle[]`).
+When a spec needs pagination, add shared `Page` (`page`, zero-based, default 0) and `Size` (`size`, 1–100,
+default 20) query parameters under `components.parameters` and return an envelope
+`{ items, page, size, totalItems }` named `<Thing>Page`. Changing an existing list to a page is breaking.
 
 ## Breaking change policy
 
