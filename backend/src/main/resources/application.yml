@@ -28,6 +28,12 @@ spring:
     default-schema: autojournal
     create-schemas: true
 
+autojournal:
+  # Units of each currency per 1 EUR; fixed, set by the owner (ADR 0014). Changing them needs a redeploy.
+  exchange-rates:
+    rsd-per-eur: ${EXCHANGE_RATE_RSD_PER_EUR:117.00}
+    usd-per-eur: ${EXCHANGE_RATE_USD_PER_EUR:1.10}
+
 server:
   port: ${SERVER_PORT:8080}
 

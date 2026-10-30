@@ -6,7 +6,7 @@ import org.springframework.modulith.Modulithic
 
 /**
  * Modular monolith root. Every direct sub-package is a Spring Modulith application module
- * (`projects`, `tasks`, ...); `shared` is a shared module every module may depend on.
+ * (`users`, `vehicles`, ...); `shared` is a shared module every module may depend on.
  */
 @Modulithic(sharedModules = ["shared"])
 @SpringBootApplication

@@ -19,7 +19,7 @@ import tools.jackson.databind.DatabindException
 
 /**
  * Maps exceptions to RFC 9457 `ProblemDetail` responses exactly as defined in contracts/openapi.yaml:
- * validation -> 400 with `errors`, not found -> 404, domain rule violation -> 409.
+ * validation (bean or [InvalidRequestException]) -> 400 with `errors`, not found -> 404, domain rule violation -> 409.
  */
 @RestControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
@@ -31,6 +31,10 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(DomainRuleViolationException::class)
     fun handleDomainRuleViolation(ex: DomainRuleViolationException): ResponseEntity<ProblemDetail> =
         problem(HttpStatus.CONFLICT, ex.message, ex.fieldErrors)
+
+    @ExceptionHandler(InvalidRequestException::class)
+    fun handleInvalidRequest(ex: InvalidRequestException): ResponseEntity<ProblemDetail> =
+        problem(HttpStatus.BAD_REQUEST, ex.message, ex.fieldErrors)
 
     /** Parameter constraints (e.g. `size <= 100`) checked by `@Validated` on the generated interfaces. */
     @ExceptionHandler(ConstraintViolationException::class)
