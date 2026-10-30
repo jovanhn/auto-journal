@@ -6,14 +6,14 @@ import { ApiError, http } from './http';
 
 describe('http mutator', () => {
   it('re-roots contract paths on the configured base URL and returns JSON', async () => {
-    server.use(mswHttp.get(api('/projects'), () => HttpResponse.json({ ok: true })));
+    server.use(mswHttp.get(api('/vehicles'), () => HttpResponse.json({ ok: true })));
 
-    await expect(http<{ ok: boolean }>('/api/projects')).resolves.toEqual({ ok: true });
+    await expect(http<{ ok: boolean }>('/api/vehicles')).resolves.toEqual({ ok: true });
   });
 
   it('parses ProblemDetail error responses into a typed ApiError', async () => {
     server.use(
-      mswHttp.post(api('/projects'), () =>
+      mswHttp.post(api('/vehicles'), () =>
         HttpResponse.json(
           problem(409, {
             title: 'Conflict',
@@ -25,7 +25,7 @@ describe('http mutator', () => {
       ),
     );
 
-    const error = await http('/api/projects', { method: 'POST' }).catch((e: unknown) => e);
+    const error = await http('/api/vehicles', { method: 'POST' }).catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiError);
     const apiError = error as ApiError;
@@ -35,9 +35,9 @@ describe('http mutator', () => {
   });
 
   it('wraps non-ProblemDetail errors in an ApiError with the HTTP status', async () => {
-    server.use(mswHttp.get(api('/projects'), () => new HttpResponse('boom', { status: 502 })));
+    server.use(mswHttp.get(api('/vehicles'), () => new HttpResponse('boom', { status: 502 })));
 
-    const error = await http('/api/projects').catch((e: unknown) => e);
+    const error = await http('/api/vehicles').catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).status).toBe(502);

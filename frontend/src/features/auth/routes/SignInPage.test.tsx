@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { aUserProfile, page } from '@/test/fixtures';
+import { aUserProfile } from '@/test/fixtures';
 import { fakeAuth, TEST_EMAIL, TEST_PASSWORD } from '@/test/fakeSession';
 import { renderApp } from '@/test/renderApp';
 import { api, server } from '@/test/server';
@@ -20,7 +20,7 @@ describe('SignInPage', () => {
   });
 
   it('signs in and lands on the home page', async () => {
-    server.use(http.get(api('/projects'), () => HttpResponse.json(page([]))));
+    server.use(http.get(api('/vehicles'), () => HttpResponse.json([])));
     const user = userEvent.setup();
     const { router } = renderApp('/sign-in');
 
@@ -28,7 +28,7 @@ describe('SignInPage', () => {
     await user.type(screen.getByLabelText('Password'), TEST_PASSWORD);
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
-    expect(await screen.findByRole('heading', { name: 'Projects' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Garage' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/');
     expect(fakeAuth.isSignedIn()).toBe(true);
   });
@@ -74,10 +74,10 @@ describe('SignInPage', () => {
 
   it('sends a signed-in user away from the sign-in page', async () => {
     fakeAuth.signedIn();
-    server.use(http.get(api('/projects'), () => HttpResponse.json(page([]))));
+    server.use(http.get(api('/vehicles'), () => HttpResponse.json([])));
     const { router } = renderApp('/sign-in');
 
-    expect(await screen.findByRole('heading', { name: 'Projects' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Garage' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/');
   });
 });
