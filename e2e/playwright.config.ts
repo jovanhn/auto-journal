@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { FRONTEND_URL } from './fixtures/urls';
+import { FRONTEND_URL, STORAGE_STATE } from './fixtures/urls';
 
 /**
  * E2E for critical user flows only (see CRITICAL_FLOWS.md).
@@ -13,7 +13,6 @@ const isCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: '.',
-  testMatch: ['seed.spec.ts', 'tests/**/*.spec.ts'],
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
@@ -24,7 +23,16 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    // Signs the E2E user in once (E2E_USER_EMAIL / E2E_USER_PASSWORD); the other tests reuse the session.
+    { name: 'setup', testMatch: 'auth.setup.ts', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'chromium',
+      testMatch: ['seed.spec.ts', 'tests/**/*.spec.ts'],
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'], storageState: STORAGE_STATE },
+    },
+  ],
   webServer: [
     {
       name: 'postgres',
