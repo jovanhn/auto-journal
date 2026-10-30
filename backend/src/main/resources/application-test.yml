@@ -1,4 +1,6 @@
 # Tests. The datasource comes from Testcontainers via @ServiceConnection (TestcontainersConfiguration).
+# JWTs are signed and verified with a local test key (TestJwtConfiguration); Supabase is never called.
+SUPABASE_URL: https://test.supabase.co
 logging:
   level:
     org.testcontainers: INFO

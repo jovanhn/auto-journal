@@ -14,6 +14,15 @@ spring:
     properties:
       hibernate:
         default_schema: autojournal
+  security:
+    oauth2:
+      resourceserver:
+        # Supabase Auth (ADR 0013, 0015): ES256-signed access tokens, keys from the project's JWKS.
+        jwt:
+          issuer-uri: ${SUPABASE_URL}/auth/v1
+          jwk-set-uri: ${SUPABASE_URL}/auth/v1/.well-known/jwks.json
+          jws-algorithms: ES256
+          audiences: authenticated
   flyway:
     schemas: autojournal
     default-schema: autojournal
