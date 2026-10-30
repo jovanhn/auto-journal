@@ -19,15 +19,14 @@ test.describe('Sign in', () => {
     await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Sign in' }).click();
 
-    // Home is the Projects overview until the Garage screen ships (see the plan).
     await expect(page).toHaveURL(isHome);
-    await expect(page.getByRole('heading', { name: 'Projects', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Garage', level: 1 })).toBeVisible();
     const settingsLink = page.getByRole('link', { name: 'Settings' });
     await expect(settingsLink).toBeVisible();
 
     await page.reload();
     await expect(page).toHaveURL(isHome);
-    await expect(page.getByRole('heading', { name: 'Projects', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Garage', level: 1 })).toBeVisible();
 
     await settingsLink.click();
     await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible();

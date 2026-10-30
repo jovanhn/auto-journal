@@ -10,9 +10,7 @@
 Starting state: the app is running; the E2E test user (`E2E_USER_EMAIL` / `E2E_USER_PASSWORD`) exists in
 Supabase Auth. The browser has no stored session.
 
-Note: the spec says the user lands on the **Garage**. Until the vehicles feature replaces it, the home page
-(`/`) is the **Projects** overview; the test asserts the home URL and its heading, and the heading assertion
-changes to *Garage* when that screen ships.
+The home page (`/`) is the **Garage** (specs/vehicles.md replaced the earlier Projects overview).
 
 ### 1. Sign in and land on the home page
 
@@ -22,7 +20,7 @@ changes to *Garage* when that screen ships.
 4. Click **Sign in**.
 
 Expected:
-- The URL is `/` and the home page heading is visible.
+- The URL is `/` and the **Garage** heading is visible.
 - The app bar shows the **Settings** link.
 
 ### 2. Reload keeps the session
@@ -30,7 +28,7 @@ Expected:
 1. Reload the page.
 
 Expected:
-- The URL is still `/` and the home page heading is visible (no redirect to sign-in).
+- The URL is still `/` and the **Garage** heading is visible (no redirect to sign-in).
 
 ### 3. Sign out returns to sign-in
 
