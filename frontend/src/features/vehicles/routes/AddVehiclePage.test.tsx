@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { CreateVehicleRequest } from '@/shared/api/generated/model';
-import { aUserProfile, aVehicle, problem } from '@/test/fixtures';
+import { anExpenseSummary, aUserProfile, aVehicle, problem } from '@/test/fixtures';
 import { renderApp } from '@/test/renderApp';
 import { api, server } from '@/test/server';
 
@@ -35,6 +35,7 @@ describe('AddVehiclePage', () => {
     const vehicles = [] as ReturnType<typeof aVehicle>[];
     server.use(
       http.get(api('/vehicles'), () => HttpResponse.json(vehicles)),
+      http.get(api('/expenses/summary'), () => HttpResponse.json(anExpenseSummary())),
       http.post(api('/vehicles'), async ({ request }) => {
         sent = (await request.json()) as CreateVehicleRequest;
         const vehicle = aVehicle({ nickname: sent.nickname });

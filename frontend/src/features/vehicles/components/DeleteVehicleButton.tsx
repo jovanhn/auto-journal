@@ -22,8 +22,8 @@ export function DeleteVehicleButton({ nickname, deleting, onConfirm }: DeleteVeh
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" className="text-destructive" disabled={deleting}>
-          {deleting ? 'Deleting…' : 'Delete'}
+        <Button variant="outline" size="lg" className="text-destructive" disabled={deleting}>
+          {deleting ? 'Deleting…' : 'Delete vehicle'}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

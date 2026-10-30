@@ -27,6 +27,17 @@ export function formatMoney({ amount, currency }: Money): string {
   }).format(value);
 }
 
+/** A money value in lists, always with cents: `€52.40`, `€246.30` (design.md, copy conventions). */
+export function formatMoneyCents({ amount, currency }: Money): string {
+  return formatter(`${currency}:cents`, {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(amount));
+}
+
 /** An amount exactly as entered, with its currency code: `1,000,000.00 RSD`. */
 export function formatMoneyExact({ amount, currency }: Money): string {
   const number = formatter('exact', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(

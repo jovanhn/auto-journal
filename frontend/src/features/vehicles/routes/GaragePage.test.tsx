@@ -1,14 +1,15 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { aVehicle, problem } from '@/test/fixtures';
+import { anExpenseSummary, aVehicle, eur, problem } from '@/test/fixtures';
 import { renderApp } from '@/test/renderApp';
 import { api, server } from '@/test/server';
 
-// specs/vehicles.md — acceptance criteria 1, 5, 6 and 7 (UI side).
+// specs/vehicles.md — acceptance criteria 1, 5, 6 and 7; specs/expenses.md — AC 10 (UI side).
 describe('GaragePage', () => {
   it('lists the vehicles in the order returned, with make, model, year, odometer and value', async () => {
     server.use(
+      http.get(api('/expenses/summary'), () => HttpResponse.json(anExpenseSummary())),
       http.get(api('/vehicles'), () =>
         HttpResponse.json([
           aVehicle({ nickname: 'Golf' }),
@@ -41,7 +42,10 @@ describe('GaragePage', () => {
   });
 
   it('shows an empty state inviting to add the first vehicle', async () => {
-    server.use(http.get(api('/vehicles'), () => HttpResponse.json([])));
+    server.use(
+      http.get(api('/expenses/summary'), () => HttpResponse.json(anExpenseSummary())),
+      http.get(api('/vehicles'), () => HttpResponse.json([])),
+    );
 
     renderApp('/');
 
@@ -55,6 +59,7 @@ describe('GaragePage', () => {
   it('shows an error with retry when the list cannot be loaded', async () => {
     let fail = true;
     server.use(
+      http.get(api('/expenses/summary'), () => HttpResponse.json(anExpenseSummary())),
       http.get(api('/vehicles'), () =>
         fail
           ? HttpResponse.json(problem(500, { detail: 'Database unavailable' }), { status: 500 })
@@ -71,5 +76,47 @@ describe('GaragePage', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByText('Golf')).toBeInTheDocument();
+  });
+
+  it('shows this year across all cars and each card total, 0 for a car without expenses', async () => {
+    const golf = aVehicle({ nickname: 'Golf' });
+    const clio = aVehicle({ nickname: 'Clio' });
+    server.use(
+      http.get(api('/vehicles'), () => HttpResponse.json([golf, clio])),
+      http.get(api('/expenses/summary'), () =>
+        HttpResponse.json(
+          anExpenseSummary({
+            year: 2026,
+            total: eur('1200.00'),
+            averagePerMonth: eur('120.00'),
+            vehicles: [{ vehicleId: golf.id, total: eur('1200.00') }],
+          }),
+        ),
+      ),
+    );
+
+    renderApp('/');
+
+    const hero = await screen.findByRole('region', { name: 'All cars this year' });
+    expect(hero).toHaveTextContent('All cars · 2026 so far');
+    expect(hero).toHaveTextContent('€1,200');
+    expect(hero).toHaveTextContent('2 vehicles · avg €120 / month');
+    const items = within(screen.getByRole('list', { name: 'Vehicles' })).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('€1,200this year');
+    expect(items[1]).toHaveTextContent('€0this year');
+  });
+
+  it('shows an error when the totals of this year cannot be loaded', async () => {
+    server.use(
+      http.get(api('/vehicles'), () => HttpResponse.json([aVehicle({ nickname: 'Golf' })])),
+      http.get(api('/expenses/summary'), () =>
+        HttpResponse.json(problem(500, { detail: 'Database unavailable' }), { status: 500 }),
+      ),
+    );
+
+    renderApp('/');
+
+    expect(await screen.findByText("Could not load this year's totals")).toBeInTheDocument();
+    expect(screen.getByText('Golf')).toBeInTheDocument();
   });
 });

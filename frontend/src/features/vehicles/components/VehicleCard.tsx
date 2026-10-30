@@ -1,14 +1,16 @@
 import { Link } from '@tanstack/react-router';
 import { Car } from 'lucide-react';
-import type { Vehicle } from '@/shared/api/generated/model';
+import type { Money, Vehicle } from '@/shared/api/generated/model';
 import { formatKm, formatMoney } from '@/shared/lib/money';
 
 type VehicleCardProps = {
   vehicle: Vehicle;
+  /** This year's spend in the display currency; not shown while the summary is unavailable. */
+  yearTotal?: Money;
 };
 
-/** Garage card (design: `VehicleCard`); the whole card links to the vehicle. Spend and next-due come later. */
-export function VehicleCard({ vehicle }: VehicleCardProps) {
+/** Garage card (design: `VehicleCard`); the whole card links to the vehicle. Next-due comes with planned expenses. */
+export function VehicleCard({ vehicle, yearTotal }: VehicleCardProps) {
   return (
     <Link
       to="/vehicles/$vehicleId"
@@ -18,7 +20,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
       <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-subtle text-primary">
         <Car aria-hidden="true" />
       </span>
-      <span className="flex min-w-0 flex-col gap-0.5">
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-[17px] font-semibold">{vehicle.nickname}</span>
         <span className="truncate text-sm text-muted-foreground tabular-nums">
           {vehicle.make} {vehicle.model} · {vehicle.year} · {formatKm(vehicle.currentOdometer)}
@@ -27,6 +29,12 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           Value <span className="font-medium text-foreground tabular-nums">{formatMoney(vehicle.value)}</span>
         </span>
       </span>
+      {yearTotal && (
+        <span className="flex shrink-0 flex-col items-end gap-0.5 self-start">
+          <span className="text-[17px] font-semibold tabular-nums">{formatMoney(yearTotal)}</span>
+          <span className="text-xs text-muted-foreground">this year</span>
+        </span>
+      )}
     </Link>
   );
 }
