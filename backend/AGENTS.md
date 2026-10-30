@@ -82,7 +82,7 @@ jdbcClient.sql(
 
 Reference implementations: `vehicles/internal/dao/VehicleDao.kt` (write DAO) and
 `vehicles/internal/service/VehicleService.kt` (cross-module call through `users.api.UserProfileApi`).
-There is no cross-module read DAO yet; the first one comes with expenses/insights.
+Cross-module read DAO: `expenses/internal/dao/ExpenseSummaryReadDao.kt` (JOINs `vehicle`, read-only).
 
 ## Kotlin + JPA pitfalls
 

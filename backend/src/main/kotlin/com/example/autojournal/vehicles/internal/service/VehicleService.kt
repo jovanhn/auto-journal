@@ -7,6 +7,7 @@ import com.example.autojournal.shared.error.NotFoundException
 import com.example.autojournal.shared.money.Currency
 import com.example.autojournal.shared.money.ExchangeRates
 import com.example.autojournal.users.api.UserProfileApi
+import com.example.autojournal.vehicles.internal.dao.ExpenseOdometerReadDao
 import com.example.autojournal.vehicles.internal.dao.VehicleDao
 import com.example.autojournal.vehicles.internal.dto.VehicleData
 import com.example.autojournal.vehicles.internal.dto.VehicleView
@@ -22,6 +23,7 @@ import java.util.UUID
 @Service
 class VehicleService(
     private val vehicleDao: VehicleDao,
+    private val expenseOdometerReadDao: ExpenseOdometerReadDao,
     private val userProfileApi: UserProfileApi,
     private val exchangeRates: ExchangeRates,
     private val clock: Clock,
@@ -30,14 +32,19 @@ class VehicleService(
     @Transactional
     fun list(ownerId: UUID): List<VehicleView> {
         val displayCurrency = userProfileApi.displayCurrency(ownerId)
-        return vehicleDao.findAllOwned(ownerId).map { it.toView(displayCurrency) }
+        val vehicles = vehicleDao.findAllOwned(ownerId)
+        val readings = expenseOdometerReadDao.maxReadings(vehicles.map { it.id })
+        return vehicles.map { it.toView(displayCurrency, readings[it.id]) }
     }
 
     @Transactional
     fun get(
         ownerId: UUID,
         vehicleId: UUID,
-    ): VehicleView = findOwned(ownerId, vehicleId).toView(userProfileApi.displayCurrency(ownerId))
+    ): VehicleView {
+        val vehicle = findOwned(ownerId, vehicleId)
+        return vehicle.toView(userProfileApi.displayCurrency(ownerId), maxReading(vehicle))
+    }
 
     @Transactional
     fun create(
@@ -88,7 +95,7 @@ class VehicleService(
         if (priceChanged) vehicle.purchasePriceRateToEur = exchangeRates.rateToEur(data.purchasePriceCurrency)
         vehicle.purchaseDate = data.purchaseDate
         onDuplicateNickname { vehicleDao.flush() }
-        return vehicle.toView(userProfileApi.displayCurrency(ownerId))
+        return vehicle.toView(userProfileApi.displayCurrency(ownerId), maxReading(vehicle))
     }
 
     /** BR-V6. Later modules delete their rows of this vehicle with `ON DELETE CASCADE`. */
@@ -137,13 +144,18 @@ class VehicleService(
             listOf(FieldViolation("nickname", "You already have a vehicle with this nickname.")),
         )
 
-    private fun VehicleEntity.toView(displayCurrency: Currency) =
-        VehicleView(
-            vehicle = this,
-            currentOdometer = odometerAtStart,
-            value = exchangeRates.convert(purchasePriceAmount, purchasePriceRateToEur, displayCurrency),
-            valueCurrency = displayCurrency,
-        )
+    private fun maxReading(vehicle: VehicleEntity): Int? = expenseOdometerReadDao.maxReadings(listOf(vehicle.id))[vehicle.id]
+
+    /** BR-V5: [maxReading] is the vehicle's highest expense odometer reading, if any. */
+    private fun VehicleEntity.toView(
+        displayCurrency: Currency,
+        maxReading: Int? = null,
+    ) = VehicleView(
+        vehicle = this,
+        currentOdometer = maxOf(odometerAtStart, maxReading ?: 0),
+        value = exchangeRates.convert(purchasePriceAmount, purchasePriceRateToEur, displayCurrency),
+        valueCurrency = displayCurrency,
+    )
 
     private companion object {
         /** Never a real id, so "except" matches no vehicle when creating. */
