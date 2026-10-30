@@ -3,9 +3,8 @@ import { authenticatedRoute } from '@/app/authenticatedRoute';
 import { AddVehiclePage } from './AddVehiclePage';
 import { EditVehiclePage } from './EditVehiclePage';
 import { GaragePage } from './GaragePage';
-import { VehiclePage } from './VehiclePage';
 
-/** The Garage is the home page. */
+/** The Garage is the home page. The vehicle page itself (its Expenses tab) belongs to the expenses feature. */
 export const garageRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/',
@@ -16,12 +15,6 @@ export const addVehicleRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/new',
   component: AddVehiclePage,
-});
-
-export const vehicleRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/vehicles/$vehicleId',
-  component: VehiclePage,
 });
 
 export const editVehicleRoute = createRoute({

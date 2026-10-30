@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import { CURRENCIES } from '@/shared/lib/currency';
 import { applyServerErrors } from '@/shared/lib/form';
@@ -31,6 +31,8 @@ type VehicleFormProps = {
   submittingLabel: string;
   /** Performs the mutation; a rejected promise (e.g. ApiError) is mapped onto the form. */
   onSubmit: (values: VehicleFormValues) => Promise<unknown>;
+  /** Shown below the submit button (Edit vehicle: Delete). */
+  footer?: ReactNode;
 };
 
 /** Add vehicle / Edit vehicle form (design screen 06). */
@@ -40,6 +42,7 @@ export function VehicleForm({
   submitLabel,
   submittingLabel,
   onSubmit,
+  footer,
 }: VehicleFormProps) {
   const form = useForm<VehicleFormInput, unknown, VehicleFormValues>({
     resolver: zodResolver(vehicleFormSchema),
@@ -117,6 +120,7 @@ export function VehicleForm({
         <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? submittingLabel : submitLabel}
         </Button>
+        {footer}
       </FieldGroup>
     </form>
   );

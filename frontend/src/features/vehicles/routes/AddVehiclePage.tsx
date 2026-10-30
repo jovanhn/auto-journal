@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { ErrorState } from '@/shared/ui/ErrorState';
 import { LoadingState } from '@/shared/ui/LoadingState';
-import { FormPageHeader } from '../components/FormPageHeader';
+import { FormPageHeader } from '@/shared/ui/FormPageHeader';
 import { VehicleForm } from '../components/VehicleForm';
 import { useCreateVehicle } from '../hooks/useCreateVehicle';
 import { useDisplayCurrency } from '../hooks/useDisplayCurrency';
