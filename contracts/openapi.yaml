@@ -18,10 +18,8 @@ security:
 tags:
   - name: users
     description: Users module (user profile and preferences)
-  - name: projects
-    description: Projects module
-  - name: tasks
-    description: Tasks module
+  - name: vehicles
+    description: Vehicles module (the user's cars)
 
 paths:
   /api/me:
@@ -60,42 +58,39 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/projects:
+  /api/vehicles:
     get:
-      tags: [projects]
-      operationId: listProjects
-      summary: List project summaries with task counts
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Size'
+      tags: [vehicles]
+      operationId: listVehicles
+      summary: List the signed-in user's vehicles, oldest first (not paginated)
       responses:
         '200':
-          description: A page of project summaries
+          description: The user's vehicles in the order they were added
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectSummaryPage'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
-      tags: [projects]
-      operationId: createProject
-      summary: Create a project
+      tags: [vehicles]
+      operationId: createVehicle
+      summary: Add a vehicle
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateProjectRequest'
+              $ref: '#/components/schemas/CreateVehicleRequest'
       responses:
         '201':
-          description: The created project
+          description: The created vehicle
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Project'
+                $ref: '#/components/schemas/Vehicle'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -103,68 +98,62 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
-  /api/projects/{projectId}:
+  /api/vehicles/{vehicleId}:
     get:
-      tags: [projects]
-      operationId: getProject
-      summary: Get a project
+      tags: [vehicles]
+      operationId: getVehicle
+      summary: Get a vehicle
       parameters:
-        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/VehicleId'
       responses:
         '200':
-          description: The project
+          description: The vehicle
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Project'
+                $ref: '#/components/schemas/Vehicle'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-
-  /api/projects/{projectId}/tasks:
-    get:
-      tags: [tasks]
-      operationId: listProjectTasks
-      summary: List tasks of a project
+    put:
+      tags: [vehicles]
+      operationId: updateVehicle
+      summary: Replace a vehicle's data
       parameters:
-        - $ref: '#/components/parameters/ProjectId'
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Size'
-      responses:
-        '200':
-          description: A page of tasks
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskPage'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      tags: [tasks]
-      operationId: createTask
-      summary: Add a task to a project
-      parameters:
-        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/VehicleId'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTaskRequest'
+              $ref: '#/components/schemas/UpdateVehicleRequest'
       responses:
-        '201':
-          description: The created task
+        '200':
+          description: The updated vehicle
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: '#/components/schemas/Vehicle'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [vehicles]
+      operationId: deleteVehicle
+      summary: Delete a vehicle and everything recorded for it
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '204':
+          description: Deleted
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -181,34 +170,13 @@ components:
       description: Supabase Auth access token.
 
   parameters:
-    ProjectId:
-      name: projectId
+    VehicleId:
+      name: vehicleId
       in: path
       required: true
       schema:
         type: string
         format: uuid
-    Page:
-      name: page
-      in: query
-      required: false
-      description: Zero-based page index.
-      schema:
-        type: integer
-        format: int32
-        minimum: 0
-        default: 0
-    Size:
-      name: size
-      in: query
-      required: false
-      description: Page size.
-      schema:
-        type: integer
-        format: int32
-        minimum: 1
-        maximum: 100
-        default: 20
 
   responses:
     Unauthorized:
@@ -291,116 +259,110 @@ components:
         displayCurrency:
           $ref: '#/components/schemas/Currency'
 
-    Project:
+    Money:
       type: object
-      required: [id, name, createdAt]
+      description: An amount in a currency (domain BR-C1). `amount` is a decimal string, so no precision is lost.
+      required: [amount, currency]
       properties:
-        id:
+        amount:
           type: string
-          format: uuid
-        name:
-          type: string
-        description:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-    ProjectSummary:
-      type: object
-      required: [id, name, openTaskCount, doneTaskCount]
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        description:
-          type: string
-          nullable: true
-        openTaskCount:
-          type: integer
-          format: int64
-          minimum: 0
-        doneTaskCount:
-          type: integer
-          format: int64
-          minimum: 0
-    ProjectSummaryPage:
-      type: object
-      required: [items, page, size, totalItems]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProjectSummary'
-        page:
-          type: integer
-          format: int32
-        size:
-          type: integer
-          format: int32
-        totalItems:
-          type: integer
-          format: int64
-    CreateProjectRequest:
-      type: object
-      required: [name]
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 100
-          pattern: '.*\S.*'
-          description: Unique across projects (case-insensitive).
-        description:
-          type: string
-          maxLength: 2000
-          nullable: true
+          pattern: '^\d{1,10}(\.\d{1,2})?$'
+          example: '8500.00'
+        currency:
+          $ref: '#/components/schemas/Currency'
 
-    TaskStatus:
-      type: string
-      enum: [OPEN, DONE]
-    Task:
+    Vehicle:
       type: object
-      required: [id, projectId, title, status, createdAt]
+      required:
+        - id
+        - nickname
+        - make
+        - model
+        - year
+        - plate
+        - odometerAtStart
+        - currentOdometer
+        - purchasePrice
+        - value
+        - purchaseDate
+        - createdAt
       properties:
         id:
           type: string
           format: uuid
-        projectId:
+        nickname:
           type: string
-          format: uuid
-        title:
+        make:
           type: string
-        status:
-          $ref: '#/components/schemas/TaskStatus'
+        model:
+          type: string
+        year:
+          type: integer
+          format: int32
+        plate:
+          type: string
+          nullable: true
+        odometerAtStart:
+          type: integer
+          format: int32
+          description: Kilometres when the vehicle was added.
+        currentOdometer:
+          type: integer
+          format: int32
+          description: max(odometer at start, expense odometer readings) (BR-V5).
+        purchasePrice:
+          $ref: '#/components/schemas/Money'
+        value:
+          description: Car value (= purchase price, BR-V7) converted to the user's display currency with the price's rate snapshot.
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        purchaseDate:
+          type: string
+          format: date
         createdAt:
           type: string
           format: date-time
-    TaskPage:
+    CreateVehicleRequest:
       type: object
-      required: [items, page, size, totalItems]
+      required: [nickname, make, model, year, odometerAtStart, purchasePrice, purchaseDate]
       properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Task'
-        page:
-          type: integer
-          format: int32
-        size:
-          type: integer
-          format: int32
-        totalItems:
-          type: integer
-          format: int64
-    CreateTaskRequest:
-      type: object
-      required: [title]
-      properties:
-        title:
+        nickname:
           type: string
           minLength: 1
-          maxLength: 200
+          maxLength: 50
           pattern: '.*\S.*'
+          description: Unique among the user's vehicles (case-insensitive, trimmed).
+        make:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '.*\S.*'
+        model:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '.*\S.*'
+        year:
+          type: integer
+          format: int32
+          minimum: 1900
+          description: At most next calendar year (checked by the server).
+        plate:
+          type: string
+          maxLength: 20
+          nullable: true
+          description: Optional; blank is stored as null.
+        odometerAtStart:
+          type: integer
+          format: int32
+          minimum: 0
+        purchasePrice:
+          $ref: '#/components/schemas/Money'
+        purchaseDate:
+          type: string
+          format: date
+          description: Not in the future (checked by the server).
+    UpdateVehicleRequest:
+      description: Same fields as CreateVehicleRequest.
+      allOf:
+        - $ref: '#/components/schemas/CreateVehicleRequest'
