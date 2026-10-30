@@ -13,6 +13,11 @@ class NotFoundException(
     constructor(resource: String, id: Any) : this("$resource $id not found")
 }
 
+/** Input breaks a rule only the server can check (e.g. a date against today). Mapped to 400 like bean validation. */
+class InvalidRequestException(
+    val fieldErrors: List<FieldViolation>,
+) : RuntimeException("Request validation failed.")
+
 /** A business rule was violated. Mapped to 409; [fieldErrors] are shown on form fields by the frontend. */
 class DomainRuleViolationException(
     message: String,
