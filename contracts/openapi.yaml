@@ -20,6 +20,8 @@ tags:
     description: Users module (user profile and preferences)
   - name: vehicles
     description: Vehicles module (the user's cars)
+  - name: expenses
+    description: Expenses module (what each car costs)
 
 paths:
   /api/me:
@@ -161,6 +163,136 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/vehicles/{vehicleId}/expenses:
+    get:
+      tags: [expenses]
+      operationId: listExpenses
+      summary: List a vehicle's expenses of one calendar year, with yearly and monthly totals
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+        - name: year
+          in: query
+          required: false
+          description: Calendar year, 1900 … current year (upper bound checked by the server). Defaults to the current year.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1900
+      responses:
+        '200':
+          description: The year's expenses, newest date first, and totals in the display currency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseYear'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [expenses]
+      operationId: createExpense
+      summary: Add an expense to a vehicle
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+      responses:
+        '201':
+          description: The created expense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/expenses/summary:
+    get:
+      tags: [expenses]
+      operationId: getExpenseSummary
+      summary: This year's totals across all the user's vehicles (Garage)
+      responses:
+        '200':
+          description: The current year's total, average per month and per-vehicle totals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/expenses/{expenseId}:
+    get:
+      tags: [expenses]
+      operationId: getExpense
+      summary: Get an expense
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      responses:
+        '200':
+          description: The expense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [expenses]
+      operationId: updateExpense
+      summary: Replace an expense's data
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+      responses:
+        '200':
+          description: The updated expense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [expenses]
+      operationId: deleteExpense
+      summary: Delete an expense
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -172,6 +304,13 @@ components:
   parameters:
     VehicleId:
       name: vehicleId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ExpenseId:
+      name: expenseId
       in: path
       required: true
       schema:
@@ -366,3 +505,118 @@ components:
       description: Same fields as CreateVehicleRequest.
       allOf:
         - $ref: '#/components/schemas/CreateVehicleRequest'
+
+    Category:
+      type: string
+      enum: [FUEL, SERVICE, REPAIRS, INSURANCE, REGISTRATION_TAX, TIRES, PARKING_TOLLS, OTHER]
+      description: Fixed expense categories (BR-E3), shared with planned expenses.
+    ExpenseRequest:
+      type: object
+      required: [date, amount, category]
+      properties:
+        date:
+          type: string
+          format: date
+          description: Not in the future (checked by the server); may be before the purchase date.
+        amount:
+          $ref: '#/components/schemas/Money'
+        category:
+          $ref: '#/components/schemas/Category'
+        odometer:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: Optional reading in km; may be lower than the current odometer (BR-E4).
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional; trimmed, blank is stored as null.
+    Expense:
+      type: object
+      required: [id, vehicleId, date, amount, displayAmount, category, odometer, note, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        amount:
+          description: The amount as entered, in its original currency.
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        displayAmount:
+          description: The amount converted with its rate snapshot to the user's display currency (BR-C4, BR-C6).
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        category:
+          $ref: '#/components/schemas/Category'
+        odometer:
+          type: integer
+          format: int32
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    ExpenseYear:
+      type: object
+      description: One vehicle's expenses of a calendar year; all totals in the display currency (BR-I1).
+      required: [year, firstYear, yearTotal, monthTotals, expenses]
+      properties:
+        year:
+          type: integer
+          format: int32
+        firstYear:
+          type: integer
+          format: int32
+          description: Year of the vehicle's earliest expense, or the current year if it has none.
+        yearTotal:
+          $ref: '#/components/schemas/Money'
+        monthTotals:
+          type: array
+          description: Totals for January … December.
+          minItems: 12
+          maxItems: 12
+          items:
+            $ref: '#/components/schemas/Money'
+        expenses:
+          type: array
+          description: Newest date first; for the same date, newest created first.
+          items:
+            $ref: '#/components/schemas/Expense'
+    ExpenseSummary:
+      type: object
+      description: The current year across all the user's vehicles, in the display currency (BR-I6).
+      required: [year, total, averagePerMonth, vehicles]
+      properties:
+        year:
+          type: integer
+          format: int32
+        total:
+          $ref: '#/components/schemas/Money'
+        averagePerMonth:
+          description: total ÷ months elapsed this year, including the current month.
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        vehicles:
+          type: array
+          description: Vehicles with expenses this year; a vehicle that is missing has a total of 0.
+          items:
+            $ref: '#/components/schemas/VehicleExpenseTotal'
+    VehicleExpenseTotal:
+      type: object
+      required: [vehicleId, total]
+      properties:
+        vehicleId:
+          type: string
+          format: uuid
+        total:
+          $ref: '#/components/schemas/Money'
