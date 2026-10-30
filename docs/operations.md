@@ -42,8 +42,10 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `EXCHANGE_RATE_RSD_PER_EUR`, `EXCHANGE_RATE_USD_PER_EUR` | backend | `117.00`, `1.10`              | set by the owner (ADR 0014)   |
 | `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | e2e | test user in the Supabase project               | CI secrets only               |
 
-The Supabase and E2E variables are planned (specs/auth.md, ADR 0015) and are wired into the apps when auth
-is implemented.
+The Supabase and E2E variables come from the single Supabase project (specs/auth.md, ADR 0015). Locally,
+all three apps read the repo-root `.env`: the backend via `spring.config.import` (profile `local`), the
+frontend via Vite `envDir: '..'`, and e2e via `fixtures/env.ts`. The backend validates Supabase-issued
+JWTs (ES256, JWKS at `<SUPABASE_URL>/auth/v1/.well-known/jwks.json`); tests sign tokens with a local key.
 
 Spring profiles: `local` (default; env vars with docker-compose defaults), `test` (Testcontainers),
 `prod` (env vars only, no defaults for secrets — the app fails to start if they are missing).
@@ -73,3 +75,7 @@ Spring profiles: `local` (default; env vars with docker-compose defaults), `test
 `.github/workflows/ci.yml` — path-filtered jobs (`contracts`, `backend`, `frontend`, `e2e`) plus the `ci-ok`
 gate. Configure **only `ci-ok`** as the required status check. Dependabot updates Maven, npm
 (`frontend`, `contracts`, `e2e`) and GitHub Actions weekly, grouped. See ADR 0009.
+
+The `e2e` job signs in a real Supabase user and needs these repository secrets: `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` (the test user is created by hand in the
+Supabase dashboard; sign-up is closed).
