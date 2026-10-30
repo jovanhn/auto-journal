@@ -2,7 +2,9 @@
 
 ## Status
 
-Planned — release **v1 (MVP)**, after specs/auth.md and specs/vehicles.md
+Implemented — release **v1 (MVP)**
+
+E2E: `add-edit-delete-expense` (reviewed plan and test, see `e2e/CRITICAL_FLOWS.md`).
 
 ## Goal
 

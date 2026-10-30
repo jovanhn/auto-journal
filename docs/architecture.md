@@ -45,11 +45,12 @@ Root package `com.example.autojournal` (`@Modulithic`). Generated contract code 
 | Module     | Responsibility                       | Public API (`api` named interface) | Owns tables | Depends on      |
 | ---------- | ------------------------------------ | ---------------------------------- | ----------- | --------------- |
 | `users`    | User profile (display currency); `GET/PATCH /api/me` | `UserProfileApi` (`displayCurrency(userId)`) | `user_profile` | `shared` |
-| `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD | — (none needed yet)    | `vehicle`   | `users::api`, `shared` |
+| `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD; current odometer from expense readings | `VehicleApi` (`isOwnedBy(vehicleId, ownerId)`) | `vehicle`   | `users::api`, `shared` (reads `expense` read-only) |
+| `expenses` | A vehicle's expenses; year list with totals; Garage summary; `/api/vehicles/{vehicleId}/expenses`, `/api/expenses` | — (none needed yet) | `expense` | `vehicles::api`, `users::api`, `shared` (reads `vehicle` read-only) |
 | `shared`   | Error handling, security (JWT resource server, `CurrentUser`), money (`Currency`, `ExchangeRates`), UTC `Clock`, entity base | open module (all packages visible) | — | — |
 
 All tables live in the `autojournal` schema. Database-level foreign keys across modules are allowed
-(e.g. the planned `expense.vehicle_id → vehicle.id`); JPA relationships across modules are not.
+(e.g. `expense.vehicle_id → vehicle.id ON DELETE CASCADE`); JPA relationships across modules are not.
 
 Reference examples in the code (`vehicles` is the reference module):
 
@@ -58,8 +59,12 @@ Reference examples in the code (`vehicles` is the reference module):
   through the users repository.
 - **Write DAO:** `vehicles/internal/dao/VehicleDao` — wraps the module's JPA repository; `saveAndFlush` makes
   a unique-index violation surface in the service (→ 409 on `nickname`).
-- **Cross-module read:** none yet. The first `JdbcClient` read DAO (read-only JOIN of another module's
-  table) comes with expenses/insights.
+- **Cross-module read:** `expenses/internal/dao/ExpenseSummaryReadDao` — a `JdbcClient` read DAO that JOINs
+  the `vehicle` table (owned by `vehicles`) read-only to sum one owner's expenses per vehicle;
+  `vehicles/internal/dao/ExpenseOdometerReadDao` reads the highest expense odometer per vehicle (BR-V5).
+  Both are covered by `ExpensesApiIntegrationTest` (AC 9, 10, 12).
+- **Ownership through another module's api:** `ExpenseService` checks that a vehicle belongs to the user via
+  `vehicles.api.VehicleApi` (implemented by `vehicles/internal/service/VehicleApiService`).
 
 ## Request flow
 
