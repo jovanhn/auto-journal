@@ -1,8 +1,6 @@
 extends:
   - recommended
 rules:
-  # No authentication yet (ADR 0008). Re-enable when Supabase Auth is added.
-  security-defined: off
   operation-4xx-response: error
   tag-description: error
   operation-operationId: error
