@@ -25,13 +25,3 @@
 | **Cost per km**        | (Total expenses + purchase price) ÷ distance driven, over the vehicle's whole history, in the display currency. |
 | **Average monthly cost** | A year's total expenses ÷ months elapsed in that year (12 for a past year, through the current month for this year), including months without expenses. |
 | **Due soon**           | A planned expense due within the next 30 days, or already overdue.                                   |
-
-## Example scaffold (removed when the `vehicles` module exists)
-
-| Term             | Meaning                                                                                  |
-| ---------------- | ---------------------------------------------------------------------------------------- |
-| **Project**      | A named container for tasks. Names are unique, case-insensitive.                         |
-| **Task**         | A unit of work that belongs to exactly one project. Has a title and a status (`OPEN`/`DONE`). |
-| **Project summary** | A project together with its open- and done-task counts, as shown in the projects list. |
-
-The planned project/task features (`specs/close-task.md`, `specs/subtasks.md`) will not be built.

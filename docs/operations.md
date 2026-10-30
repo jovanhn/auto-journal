@@ -39,7 +39,7 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `SUPABASE_URL`           | backend          | project URL (from `.env`)                       | project URL (JWT issuer `<url>/auth/v1`) |
 | `VITE_SUPABASE_URL`      | frontend (build) | project URL                                     | project URL                   |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | frontend (build) | project publishable key                  | project publishable key       |
-| `EXCHANGE_RATE_RSD_PER_EUR`, `EXCHANGE_RATE_USD_PER_EUR` | backend | `117.00`, `1.10`              | set by the owner (ADR 0014)   |
+| `EXCHANGE_RATE_RSD_PER_EUR`, `EXCHANGE_RATE_USD_PER_EUR` | backend (`autojournal.exchange-rates.rsd-per-eur` / `usd-per-eur` → `shared.money.ExchangeRates`) | `117.00`, `1.10` | set by the owner (ADR 0014); a change affects only new rate snapshots and display conversions |
 | `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | e2e | test user in the Supabase project               | CI secrets only               |
 
 The Supabase and E2E variables come from the single Supabase project (specs/auth.md, ADR 0015). Locally,

@@ -125,5 +125,5 @@ Run from the repo root (GNU make + POSIX shell; Git Bash on Windows).
 
 [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`, imperative mood.
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `build`, `perf`.
-Scopes: `backend`, `frontend`, `contracts`, `e2e`, `docs`, `design`, or a module (`projects`, `tasks`).
+Scopes: `backend`, `frontend`, `contracts`, `e2e`, `docs`, `design`, or a module (`users`, `vehicles`).
 One logical change per commit. Mark breaking changes with `!` and a `BREAKING CHANGE:` footer.

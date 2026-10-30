@@ -2,7 +2,9 @@
 
 ## Status
 
-Planned — release **v1 (MVP)**
+Implemented — release **v1 (MVP)**
+
+E2E: `add-vehicle` and `edit-delete-vehicle` (reviewed plans and tests, see `e2e/CRITICAL_FLOWS.md`).
 
 ## Goal
 
