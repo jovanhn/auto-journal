@@ -11,7 +11,7 @@ import { useCreateProject } from '../hooks/useCreateProject';
 import { useProjectSummaries } from '../hooks/useProjectSummaries';
 import type { CreateProjectFormValues } from '../schemas';
 
-const route = getRouteApi('/');
+const route = getRouteApi('/_app/');
 
 export function ProjectsPage() {
   const { page, size } = route.useSearch();

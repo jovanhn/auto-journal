@@ -6,6 +6,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // One .env for the whole repo (repo root); only VITE_* variables reach the client.
+  envDir: '..',
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },

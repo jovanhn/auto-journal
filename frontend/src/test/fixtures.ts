@@ -1,4 +1,4 @@
-import type { ProblemDetail, Project, ProjectSummary, Task } from '@/shared/api/generated/model';
+import type { ProblemDetail, Project, ProjectSummary, Task, UserProfile } from '@/shared/api/generated/model';
 
 let seq = 0;
 const nextId = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
@@ -26,6 +26,12 @@ export const aTask = (overrides: Partial<Task> = {}): Task => ({
   title: `Task ${seq}`,
   status: 'OPEN',
   createdAt: '2026-01-01T00:00:00Z',
+  ...overrides,
+});
+
+export const aUserProfile = (overrides: Partial<UserProfile> = {}): UserProfile => ({
+  userId: '00000000-0000-4000-8000-000000000001',
+  displayCurrency: 'EUR',
   ...overrides,
 });
 

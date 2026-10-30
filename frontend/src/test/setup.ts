@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
+import { fakeAuth } from './fakeSession';
 import { server } from './server';
+
+// Component tests never call Supabase: the auth module is replaced by an in-memory fake.
+vi.mock('@/shared/auth/session', () => import('./fakeSession'));
 
 // jsdom does not implement matchMedia (used for the system color scheme by the app and sonner).
 Object.defineProperty(window, 'matchMedia', {
@@ -21,6 +25,9 @@ Object.defineProperty(window, 'matchMedia', {
 // Every request must be handled explicitly by the test.
 beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' });
+});
+beforeEach(() => {
+  fakeAuth.signedIn();
 });
 afterEach(() => {
   cleanup();

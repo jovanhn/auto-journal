@@ -14,7 +14,7 @@ import { useProject } from '../hooks/useProject';
 import { useProjectTasks } from '../hooks/useProjectTasks';
 import type { CreateTaskFormValues } from '../schemas';
 
-const route = getRouteApi('/projects/$projectId');
+const route = getRouteApi('/_app/projects/$projectId');
 
 export function ProjectDetailPage() {
   const { projectId } = route.useParams();
