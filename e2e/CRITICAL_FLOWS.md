@@ -5,5 +5,6 @@ Edge cases belong in backend and frontend tests.
 
 | Flow | Spec | Plan | Test |
 | ---- | ---- | ---- | ---- |
-| `projects-overview` — create a project and see it in the list; duplicate name shown on the field | [docs/specs/projects-overview.md](../docs/specs/projects-overview.md#e2e) | [plans/projects-overview.md](plans/projects-overview.md) | [tests/projects-overview.spec.ts](tests/projects-overview.spec.ts) |
 | `sign-in` — sign in and reach home; reload keeps the session; sign out returns to sign-in | [docs/specs/auth.md](../docs/specs/auth.md#e2e) | [plans/sign-in.md](plans/sign-in.md) | [tests/sign-in.spec.ts](tests/sign-in.spec.ts) |
+| `add-vehicle` — add a vehicle and see it in the Garage after the earlier ones | [docs/specs/vehicles.md](../docs/specs/vehicles.md#e2e) | [plans/add-vehicle.md](plans/add-vehicle.md) | [tests/add-vehicle.spec.ts](tests/add-vehicle.spec.ts) |
+| `edit-delete-vehicle` — rename a vehicle, then delete it with confirmation | [docs/specs/vehicles.md](../docs/specs/vehicles.md#e2e) | [plans/edit-delete-vehicle.md](plans/edit-delete-vehicle.md) | [tests/edit-delete-vehicle.spec.ts](tests/edit-delete-vehicle.spec.ts) |

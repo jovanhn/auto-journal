@@ -2,13 +2,12 @@ import { expect, test } from './fixtures/test';
 
 /**
  * Seed test used by the Playwright planner/generator agents: brings the app into a usable state
- * (a project with tasks exists) and opens the projects overview.
+ * (the E2E user has a vehicle) and opens the Garage.
  */
 test('seed', async ({ page, api, uniqueName }) => {
-  const project = await api.createProject(uniqueName('Seed project'), 'Created by the seed test');
-  await api.createTask(project.id, 'First task');
-  await api.createTask(project.id, 'Second task');
+  const vehicle = await api.createVehicle(uniqueName('Seed car'));
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Projects', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Garage', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: new RegExp(vehicle.nickname) })).toBeVisible();
 });

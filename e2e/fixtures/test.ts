@@ -2,23 +2,29 @@ import { test as base, expect, request as requestFactory, type APIRequestContext
 import { e2eUser, supabase } from './env';
 import { API_URL } from './urls';
 
-type Project = { id: string; name: string; description: string | null };
-type Task = { id: string; projectId: string; title: string; status: 'OPEN' | 'DONE' };
+type Currency = 'EUR' | 'RSD' | 'USD';
+type Vehicle = { id: string; nickname: string; make: string; model: string; year: number };
 
 /** Test data is created through the backend API, never by clicking through setup screens. */
 export class Api {
   constructor(private readonly request: APIRequestContext) {}
 
-  async createProject(name: string, description?: string): Promise<Project> {
-    const res = await this.request.post(`${API_URL}/projects`, { data: { name, description } });
+  /** Adds a vehicle for the E2E user; unspecified fields get valid defaults. */
+  async createVehicle(nickname: string, overrides: Record<string, unknown> = {}): Promise<Vehicle> {
+    const res = await this.request.post(`${API_URL}/vehicles`, {
+      data: {
+        nickname,
+        make: 'VW',
+        model: 'Golf 7',
+        year: 2016,
+        odometerAtStart: 184320,
+        purchasePrice: { amount: '8500', currency: 'EUR' satisfies Currency },
+        purchaseDate: '2023-05-10',
+        ...overrides,
+      },
+    });
     expect(res.status(), await res.text()).toBe(201);
-    return (await res.json()) as Project;
-  }
-
-  async createTask(projectId: string, title: string): Promise<Task> {
-    const res = await this.request.post(`${API_URL}/projects/${projectId}/tasks`, { data: { title } });
-    expect(res.status(), await res.text()).toBe(201);
-    return (await res.json()) as Task;
+    return (await res.json()) as Vehicle;
   }
 }
 
