@@ -5,19 +5,61 @@ info:
   description: |
     Contract-first API for autojournal. Backend interfaces and the frontend client are generated
     from this file. See contracts/AGENTS.md for conventions and the breaking-change policy.
+
+    Every operation requires a Supabase Auth access token (ADR 0013): `Authorization: Bearer <jwt>`.
   license:
     name: Proprietary
     url: https://example.com/license
 servers:
   - url: /
     description: Same origin as the frontend (proxied to the backend locally)
+security:
+  - bearerAuth: []
 tags:
+  - name: users
+    description: Users module (user profile and preferences)
   - name: projects
     description: Projects module
   - name: tasks
     description: Tasks module
 
 paths:
+  /api/me:
+    get:
+      tags: [users]
+      operationId: getMe
+      summary: Get the signed-in user's profile (created on first call)
+      responses:
+        '200':
+          description: The user's profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [users]
+      operationId: updateMe
+      summary: Change the signed-in user's preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfileRequest'
+      responses:
+        '200':
+          description: The updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /api/projects:
     get:
       tags: [projects]
@@ -35,6 +77,8 @@ paths:
                 $ref: '#/components/schemas/ProjectSummaryPage'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [projects]
       operationId: createProject
@@ -54,6 +98,8 @@ paths:
                 $ref: '#/components/schemas/Project'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
 
@@ -73,6 +119,8 @@ paths:
                 $ref: '#/components/schemas/Project'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -94,6 +142,8 @@ paths:
                 $ref: '#/components/schemas/TaskPage'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     post:
@@ -117,10 +167,19 @@ paths:
                 $ref: '#/components/schemas/Task'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase Auth access token.
+
   parameters:
     ProjectId:
       name: projectId
@@ -152,6 +211,12 @@ components:
         default: 20
 
   responses:
+    Unauthorized:
+      description: Missing, expired or invalid access token
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
     BadRequest:
       description: Invalid request (validation errors are listed in `errors`)
       content:
@@ -204,6 +269,27 @@ components:
           description: Request field name, as in the request body (e.g. `name`).
         message:
           type: string
+
+    Currency:
+      type: string
+      enum: [EUR, RSD, USD]
+      description: Supported currencies (domain BR-C1).
+    UserProfile:
+      type: object
+      required: [userId, displayCurrency]
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The Supabase Auth user id.
+        displayCurrency:
+          $ref: '#/components/schemas/Currency'
+    UpdateUserProfileRequest:
+      type: object
+      required: [displayCurrency]
+      properties:
+        displayCurrency:
+          $ref: '#/components/schemas/Currency'
 
     Project:
       type: object
