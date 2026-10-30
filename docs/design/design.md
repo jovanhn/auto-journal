@@ -181,7 +181,8 @@ the affected part:
 - **Not designed:** Sign in and Settings (display currency, sign out) screens (specs/auth.md); currency
   select on amount fields (ADR 0014). Built from existing tokens/components until designed.
 - **Wider screens:** mobile-first, but nothing defines tablet/desktop (centered 390–480 px column?).
-- **Category colors** for Repairs, Insurance, Registration & tax, Other.
+- **Category colors** for Repairs, Insurance, Registration & tax, Other (until designed they use the
+  Parking & tolls grey, token `--category-neutral`).
 - **Fonts:** IBM Plex Sans/Mono replace the system font stack chosen in ADR 0011 and require either a
   Google Fonts link or a font package — needs an ADR before adopting.
 - **Behavior shown by the mocks, now decided in domain/specs** (the mocks differ; specs win): "due soon" =
