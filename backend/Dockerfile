@@ -1,7 +1,7 @@
 # Backend image (ADR 0016). Build context is the repo root, because the build generates code from
 # contracts/openapi.yaml:  docker build -f backend/Dockerfile -t autojournal-backend .
 
-FROM eclipse-temurin:17-jdk AS build
+FROM eclipse-temurin:24-jdk AS build
 WORKDIR /workspace/backend
 COPY backend/.mvn .mvn
 COPY backend/mvnw backend/pom.xml ./
@@ -12,7 +12,7 @@ COPY backend/src src
 RUN ./mvnw -B -q -DskipTests package \
     && java -Djarmode=tools -jar target/autojournal-*.jar extract --layers --launcher --destination /workspace/extracted
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:24-jre
 LABEL org.opencontainers.image.source="https://github.com/jovanhn/auto-journal"
 RUN useradd --system --uid 10001 app
 WORKDIR /app
