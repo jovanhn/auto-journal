@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { Money } from '@/shared/api/generated/model';
-import { anExpense, anExpenseYear, aVehicle, eur, problem } from '@/test/fixtures';
+import { anExpense, anExpenseYear, aVehicle, aVehicleInsights, eur, problem } from '@/test/fixtures';
 import { renderApp } from '@/test/renderApp';
 import { api, server } from '@/test/server';
 
@@ -46,6 +46,7 @@ describe('VehicleExpensesPage', () => {
     });
     let requestedYear: string | null = null;
     server.use(
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
       http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
       http.get(api(`/vehicles/${vehicle.id}/expenses`), ({ request }) => {
         requestedYear = new URL(request.url).searchParams.get('year');
@@ -89,6 +90,7 @@ describe('VehicleExpensesPage', () => {
   it('switches years within the first year and the current year', async () => {
     const years: string[] = [];
     server.use(
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
       http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
       http.get(api(`/vehicles/${vehicle.id}/expenses`), ({ request }) => {
         const year = Number(new URL(request.url).searchParams.get('year'));
@@ -111,6 +113,7 @@ describe('VehicleExpensesPage', () => {
 
   it('shows an empty year with zero tiles and an invitation to add an expense', async () => {
     server.use(
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
       http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
       http.get(api(`/vehicles/${vehicle.id}/expenses`), () => HttpResponse.json(anExpenseYear())),
     );
@@ -133,6 +136,7 @@ describe('VehicleExpensesPage', () => {
       displayAmount: eur('10.00'),
     });
     server.use(
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
       http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
       http.get(api(`/vehicles/${vehicle.id}/expenses`), () =>
         HttpResponse.json(
@@ -161,9 +165,31 @@ describe('VehicleExpensesPage', () => {
     expect(screen.getAllByText('€10.00')).toHaveLength(2);
   });
 
+  it('shows the lifetime cost per km, or a dash before any distance is driven (insights AC 6–7)', async () => {
+    let costPerKm: Money | null = eur('0.85');
+    server.use(
+      http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
+      http.get(api(`/vehicles/${vehicle.id}/expenses`), () => HttpResponse.json(anExpenseYear())),
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () =>
+        HttpResponse.json(aVehicleInsights({ costPerKm, distanceKm: costPerKm ? 13120 : 0 })),
+      ),
+    );
+
+    const { unmount } = renderApp(`/vehicles/${vehicle.id}`);
+    expect(await screen.findByText('€0.85')).toBeInTheDocument();
+    expect(screen.getByText('Per km').nextSibling).toHaveTextContent('€0.85');
+    unmount();
+
+    costPerKm = null;
+    renderApp(`/vehicles/${vehicle.id}`);
+    expect(await screen.findByText(`No expenses in ${currentYear}`)).toBeInTheDocument();
+    expect(screen.getByText('Per km').nextSibling).toHaveTextContent('—');
+  });
+
   it('shows an error with retry when the expenses cannot be loaded', async () => {
     let fail = true;
     server.use(
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
       http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
       http.get(api(`/vehicles/${vehicle.id}/expenses`), () =>
         fail
@@ -184,6 +210,7 @@ describe('VehicleExpensesPage', () => {
   it('shows an error state for a vehicle that does not exist', async () => {
     const id = '00000000-0000-4000-8000-00000000dead';
     server.use(
+      http.get(api(`/vehicles/${id}/insights`), () => HttpResponse.json(aVehicleInsights())),
       http.get(api(`/vehicles/${id}`), () => HttpResponse.json(problem(404), { status: 404 })),
       http.get(api(`/vehicles/${id}/expenses`), () => HttpResponse.json(problem(404), { status: 404 })),
     );

@@ -6,6 +6,7 @@ import type {
   ProblemDetail,
   UserProfile,
   Vehicle,
+  VehicleInsights,
 } from '@/shared/api/generated/model';
 
 let seq = 0;
@@ -49,6 +50,20 @@ export const anExpenseYear = (overrides: Partial<ExpenseYear> = {}): ExpenseYear
   yearTotal: eur('0.00'),
   monthTotals: Array.from({ length: 12 }, () => eur('0.00')),
   expenses: [],
+  ...overrides,
+});
+
+/** Insights of a year without expenses unless overridden; lifetime figures of a car that has not been driven. */
+export const aVehicleInsights = (overrides: Partial<VehicleInsights> = {}): VehicleInsights => ({
+  year: new Date().getFullYear(),
+  firstYear: new Date().getFullYear(),
+  total: eur('0.00'),
+  averagePerMonth: eur('0.00'),
+  monthTotals: Array.from({ length: 12 }, () => eur('0.00')),
+  categories: [],
+  carValue: eur('8500.00'),
+  distanceKm: 0,
+  costPerKm: null,
   ...overrides,
 });
 

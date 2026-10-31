@@ -2,7 +2,15 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { Expense, ExpenseRequest } from '@/shared/api/generated/model';
-import { anExpense, anExpenseYear, aUserProfile, aVehicle, eur, problem } from '@/test/fixtures';
+import {
+  anExpense,
+  anExpenseYear,
+  aUserProfile,
+  aVehicle,
+  aVehicleInsights,
+  eur,
+  problem,
+} from '@/test/fixtures';
 import { renderApp } from '@/test/renderApp';
 import { api, server } from '@/test/server';
 
@@ -17,6 +25,7 @@ const today = () => {
 const listHandlers = () => [
   http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
   http.get(api(`/vehicles/${vehicle.id}/expenses`), () => HttpResponse.json(anExpenseYear())),
+  http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
 ];
 
 // specs/expenses.md — acceptance criteria 1, 2, 7 and 8 (UI side).

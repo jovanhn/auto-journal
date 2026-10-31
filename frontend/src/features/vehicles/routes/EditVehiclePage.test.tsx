@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { UpdateVehicleRequest, Vehicle } from '@/shared/api/generated/model';
-import { anExpenseSummary, anExpenseYear, aVehicle, problem } from '@/test/fixtures';
+import { anExpenseSummary, anExpenseYear, aVehicle, aVehicleInsights, problem } from '@/test/fixtures';
 import { renderApp } from '@/test/renderApp';
 import { api, server } from '@/test/server';
 
@@ -15,6 +15,7 @@ describe('EditVehiclePage', () => {
     server.use(
       http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
       http.get(api(`/vehicles/${vehicle.id}/expenses`), () => HttpResponse.json(anExpenseYear())),
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
       http.put(api(`/vehicles/${vehicle.id}`), async ({ request }) => {
         sent = (await request.json()) as UpdateVehicleRequest;
         vehicle = { ...vehicle, ...sent, plate: sent.plate ?? null };

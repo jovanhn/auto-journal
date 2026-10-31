@@ -28,6 +28,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Form tests type with userEvent; under a parallel full run they can exceed the 5 s default.
+    testTimeout: 15_000,
     // Node's fetch needs absolute URLs; MSW handlers match */api/....
     env: { VITE_API_BASE_URL: 'http://localhost/api' },
   },
