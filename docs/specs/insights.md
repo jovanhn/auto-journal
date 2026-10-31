@@ -2,7 +2,9 @@
 
 ## Status
 
-Planned — release **v2**, after specs/expenses.md
+Implemented — release **v2**
+
+E2E: none (covered by `InsightsApiIntegrationTest` and `InsightsPage.test.tsx`).
 
 ## Goal
 

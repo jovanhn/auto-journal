@@ -45,8 +45,8 @@ Root package `com.example.autojournal` (`@Modulithic`). Generated contract code 
 | Module     | Responsibility                       | Public API (`api` named interface) | Owns tables | Depends on      |
 | ---------- | ------------------------------------ | ---------------------------------- | ----------- | --------------- |
 | `users`    | User profile (display currency); `GET/PATCH /api/me` | `UserProfileApi` (`displayCurrency(userId)`) | `user_profile` | `shared` |
-| `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD; current odometer from expense readings | `VehicleApi` (`isOwnedBy(vehicleId, ownerId)`) | `vehicle`   | `users::api`, `shared` (reads `expense` read-only) |
-| `expenses` | A vehicle's expenses; year list with totals; Garage summary; `/api/vehicles/{vehicleId}/expenses`, `/api/expenses` | — (none needed yet) | `expense` | `vehicles::api`, `users::api`, `shared` (reads `vehicle` read-only) |
+| `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD; current odometer from expense readings | `VehicleApi` (`isOwnedBy`, `findOwned` → `VehicleFacts`: price snapshot, odometers) | `vehicle`   | `users::api`, `shared` (reads `expense` read-only) |
+| `expenses` | A vehicle's expenses; year list with totals; Garage summary; insights (year figures, category breakdown, cost per km); `/api/vehicles/{vehicleId}/expenses`, `/api/vehicles/{vehicleId}/insights`, `/api/expenses` | — (none needed yet) | `expense` | `vehicles::api`, `users::api`, `shared` (reads `vehicle` read-only) |
 | `shared`   | Error handling, security (JWT resource server, `CurrentUser`), money (`Currency`, `ExchangeRates`), UTC `Clock`, entity base | open module (all packages visible) | — | — |
 
 All tables live in the `autojournal` schema. Database-level foreign keys across modules are allowed
