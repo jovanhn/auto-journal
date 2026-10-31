@@ -179,6 +179,53 @@ jobs:
             e2e/test-results/
           retention-days: 7
 
+  # --- Delivery (ADR 0016): main only, after the gate is green. Not part of ci-ok. ---
+
+  backend-image:
+    name: Publish backend image (GHCR)
+    needs: [changes, ci-ok]
+    # !cancelled(): ci-ok runs with always(), so skipped jobs upstream must not skip this one.
+    if: >-
+      !cancelled() && needs.ci-ok.result == 'success'
+      && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - id: image
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}-backend:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build and push
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          LATEST="${IMAGE%:*}:latest"
+          docker build -f backend/Dockerfile -t "$IMAGE" -t "$LATEST" .
+          docker push "$IMAGE"
+          docker push "$LATEST"
+
+  backend-deploy:
+    name: Deploy backend (Render)
+    needs: backend-image
+    if: ${{ !cancelled() && needs.backend-image.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      # Render pulls exactly the image built from this commit (not :latest).
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          IMAGE: ${{ needs.backend-image.outputs.image }}
+        run: curl -fsS -X POST -G --data-urlencode "imgURL=$IMAGE" "$RENDER_DEPLOY_HOOK_URL" > /dev/null
+
   # The only job to mark as a required status check. Skipped jobs count as success.
   ci-ok:
     name: ci-ok
