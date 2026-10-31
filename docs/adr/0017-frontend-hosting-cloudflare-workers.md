@@ -1,6 +1,6 @@
 # 0017. Frontend hosting: Cloudflare Workers static assets, API cross-origin with CORS
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-31
 
 ## Context

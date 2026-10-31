@@ -1,6 +1,6 @@
 # 0016. Backend delivery: Docker image on GHCR, deployed to Render
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-31
 
 ## Context
