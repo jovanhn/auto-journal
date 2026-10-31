@@ -36,6 +36,7 @@
   --color-border-dashed: var(--border-dashed);
   --color-category-tires: var(--category-tires);
   --color-inverse: var(--inverse);
+  --color-chart-muted: var(--chart-muted);
   --color-inverse-foreground: var(--inverse-foreground);
   --color-inverse-muted: var(--inverse-muted);
   --color-category-neutral: var(--category-neutral);
@@ -93,6 +94,8 @@
   /* Category dots (design.md): Fuel = primary, Service = foreground. */
   --category-tires: #b4490f;
   --category-neutral: #8a8f99;
+  /* Non-highlighted bars in the monthly chart. */
+  --chart-muted: #c9d4f4;
   /* Hero summary cards. */
   --inverse: #16181d;
   --inverse-foreground: #ffffff;
@@ -136,6 +139,7 @@
   --border-dashed: oklch(1 0 0 / 25%);
   --category-tires: #e07a3f;
   --category-neutral: #8a8f99;
+  --chart-muted: oklch(0.4 0.05 264);
   --inverse: oklch(0.269 0 0);
   --inverse-foreground: oklch(0.985 0 0);
   --inverse-muted: oklch(0.8 0 0);

@@ -1,6 +1,11 @@
 import { createRouter, type RouterHistory } from '@tanstack/react-router';
 import { signInRoute } from '@/features/auth/routes';
-import { addExpenseRoute, editExpenseRoute, vehicleExpensesRoute } from '@/features/expenses/routes';
+import {
+  addExpenseRoute,
+  editExpenseRoute,
+  vehicleExpensesRoute,
+  vehicleInsightsRoute,
+} from '@/features/expenses/routes';
 import { settingsRoute } from '@/features/settings/routes';
 import { addVehicleRoute, editVehicleRoute, garageRoute } from '@/features/vehicles/routes';
 import { authenticatedRoute } from './authenticatedRoute';
@@ -16,6 +21,7 @@ export const routeTree = rootRoute.addChildren([
     garageRoute,
     addVehicleRoute,
     vehicleExpensesRoute,
+    vehicleInsightsRoute,
     editVehicleRoute,
     addExpenseRoute,
     editExpenseRoute,

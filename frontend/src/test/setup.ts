@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { fakeAuth } from './fakeSession';
 import { server } from './server';
 
@@ -21,6 +21,9 @@ Object.defineProperty(window, 'matchMedia', {
       dispatchEvent: () => false,
     }) as MediaQueryList,
 });
+
+// The first render of a test file (cold module load) can take over the 1 s default under a parallel full run.
+configure({ asyncUtilTimeout: 3000 });
 
 // Every request must be handled explicitly by the test.
 beforeAll(() => {

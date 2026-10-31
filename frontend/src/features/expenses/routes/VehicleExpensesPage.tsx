@@ -1,25 +1,26 @@
 import { getRouteApi, Link } from '@tanstack/react-router';
-import { ChevronLeft, Pencil, Plus } from 'lucide-react';
-import type { ExpenseYear } from '@/shared/api/generated/model';
-import { formatKm, formatMoney } from '@/shared/lib/money';
+import { Plus } from 'lucide-react';
+import type { ExpenseYear, Money } from '@/shared/api/generated/model';
+import { formatKm, formatMoney, formatMoneyCents } from '@/shared/lib/money';
 import { Button } from '@/shared/ui/button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { ErrorState } from '@/shared/ui/ErrorState';
 import { LoadingState } from '@/shared/ui/LoadingState';
-import { Skeleton } from '@/shared/ui/skeleton';
 import { ExpenseMonthGroup } from '../components/ExpenseMonthGroup';
 import { PeriodSwitcher } from '../components/PeriodSwitcher';
 import { StatTile } from '../components/StatTile';
+import { VehicleAppBar } from '../components/VehicleAppBar';
 import { VehicleTabBar } from '../components/VehicleTabBar';
 import { monthIndexOf } from '../dates';
 import { useExpenseYear } from '../hooks/useExpenseYear';
 import { useVehicle } from '../hooks/useVehicle';
+import { useVehicleInsights } from '../hooks/useVehicleInsights';
 
 const route = getRouteApi('/_app/vehicles/$vehicleId');
 
 /**
- * Vehicle · Expenses (design screen 02): app bar with Edit vehicle, This year / This month tiles, the year
- * switcher, the year's expenses grouped by month (newest first), and the Add expense FAB.
+ * Vehicle · Expenses (design screen 02): app bar with Edit vehicle, This year / This month / Per km tiles, the
+ * year switcher, the year's expenses grouped by month (newest first), and the Add expense FAB.
  */
 export function VehicleExpensesPage() {
   const { vehicleId } = route.useParams();
@@ -29,39 +30,23 @@ export function VehicleExpensesPage() {
   const year = Math.min(search.year ?? currentYear, currentYear);
   const vehicle = useVehicle(vehicleId);
   const expenses = useExpenseYear(vehicleId, year);
+  // Per km is lifetime (BR-I4), so any year's insights carry it; reuse the selected year's query.
+  const insights = useVehicleInsights(vehicleId, year);
 
   const changeYear = (next: number) =>
     void navigate({ search: next === currentYear ? {} : { year: next }, replace: true });
 
   return (
     <div className="flex flex-col gap-4 pb-36">
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="-ml-3 size-11" asChild>
-          <Link to="/" aria-label="Back to garage">
-            <ChevronLeft className="size-[22px]" aria-hidden="true" />
-          </Link>
-        </Button>
-        <div className="flex min-w-0 flex-1 flex-col">
-          {vehicle.isPending ? (
-            <Skeleton className="h-6 w-40" />
-          ) : vehicle.isError ? (
-            <h1 className="text-xl font-semibold">Vehicle</h1>
-          ) : (
-            <>
-              <h1 className="truncate text-xl font-semibold">{vehicle.data.nickname}</h1>
-              <p className="truncate text-sm text-muted-foreground tabular-nums">
-                {vehicle.data.make} {vehicle.data.model} · {vehicle.data.year} ·{' '}
-                {formatKm(vehicle.data.currentOdometer)}
-              </p>
-            </>
-          )}
-        </div>
-        <Button variant="ghost" size="icon" className="size-11" asChild>
-          <Link to="/vehicles/$vehicleId/edit" params={{ vehicleId }} aria-label="Edit vehicle">
-            <Pencil aria-hidden="true" />
-          </Link>
-        </Button>
-      </div>
+      <VehicleAppBar
+        vehicleId={vehicleId}
+        title={vehicle.isPending ? undefined : vehicle.isError ? 'Vehicle' : vehicle.data.nickname}
+        subtitle={
+          vehicle.isSuccess
+            ? `${vehicle.data.make} ${vehicle.data.model} · ${vehicle.data.year} · ${formatKm(vehicle.data.currentOdometer)}`
+            : undefined
+        }
+      />
 
       {vehicle.isError ? (
         <ErrorState
@@ -84,6 +69,7 @@ export function VehicleExpensesPage() {
           currentYear={currentYear}
           onYearChange={changeYear}
           vehicleId={vehicleId}
+          costPerKm={insights.isSuccess ? insights.data.costPerKm : null}
         />
       )}
 
@@ -108,6 +94,8 @@ type ExpenseYearViewProps = {
   currentYear: number;
   onYearChange: (year: number) => void;
   vehicleId: string;
+  /** Null when not known yet or no distance has been driven (shown as "—"). */
+  costPerKm: Money | null;
 };
 
 function ExpenseYearView({
@@ -116,6 +104,7 @@ function ExpenseYearView({
   currentYear,
   onYearChange,
   vehicleId,
+  costPerKm,
 }: ExpenseYearViewProps) {
   const currentMonth = new Date().getMonth();
   // Expenses arrive newest first, so months come out newest first too.
@@ -125,12 +114,13 @@ function ExpenseYearView({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2">
+      <div className={isCurrentYear ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-2 gap-2'}>
         <StatTile
           label={isCurrentYear ? 'This year' : `Total ${data.year}`}
           value={formatMoney(data.yearTotal)}
         />
         {isCurrentYear && <StatTile label="This month" value={formatMoney(monthTotal(currentMonth))} />}
+        <StatTile label="Per km" value={costPerKm ? formatMoneyCents(costPerKm) : '—'} />
       </div>
       <PeriodSwitcher
         year={data.year}

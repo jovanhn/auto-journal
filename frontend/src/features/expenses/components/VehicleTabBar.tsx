@@ -1,13 +1,17 @@
 import { Link } from '@tanstack/react-router';
-import { List } from 'lucide-react';
+import { ChartColumn, List } from 'lucide-react';
 
 type VehicleTabBarProps = {
   vehicleId: string;
 };
 
+const tabClass = 'flex min-w-20 flex-col items-center justify-center gap-1 text-xs text-muted-foreground';
+const activeProps = { className: 'font-semibold text-primary' } as const;
+const activeOptions = { exact: true, includeSearch: false } as const;
+
 /**
  * Bottom tab bar of the vehicle section (design.md, "Vehicle section" shell). Only the tabs that exist are
- * shown; Insights and Planned come with their specs (specs/expenses.md, UI notes).
+ * shown; Planned comes with specs/planned-expenses.md.
  */
 export function VehicleTabBar({ vehicleId }: VehicleTabBarProps) {
   return (
@@ -18,12 +22,22 @@ export function VehicleTabBar({ vehicleId }: VehicleTabBarProps) {
       <Link
         to="/vehicles/$vehicleId"
         params={{ vehicleId }}
-        className="flex min-w-20 flex-col items-center justify-center gap-1 text-xs text-muted-foreground"
-        activeProps={{ className: 'font-semibold text-primary' }}
-        activeOptions={{ exact: true, includeSearch: false }}
+        className={tabClass}
+        activeProps={activeProps}
+        activeOptions={activeOptions}
       >
         <List className="size-[22px]" aria-hidden="true" />
         Expenses
+      </Link>
+      <Link
+        to="/vehicles/$vehicleId/insights"
+        params={{ vehicleId }}
+        className={tabClass}
+        activeProps={activeProps}
+        activeOptions={activeOptions}
+      >
+        <ChartColumn className="size-[22px]" aria-hidden="true" />
+        Insights
       </Link>
     </nav>
   );
