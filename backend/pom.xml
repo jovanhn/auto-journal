@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.1</version>
+        <version>4.1.2</version>
         <relativePath/>
     </parent>
 
@@ -23,7 +23,7 @@
         <kotlin.version>2.4.21</kotlin.version>
         <postgresql.version>42.7.14</postgresql.version>
         <!-- Not managed by Spring Boot. -->
-        <spring-modulith.version>2.1.1</spring-modulith.version>
+        <spring-modulith.version>2.1.2</spring-modulith.version>
         <mockk.version>1.14.11</mockk.version>
         <openapi-generator.version>7.26.0</openapi-generator.version>
         <ktlint-maven-plugin.version>3.7.1</ktlint-maven-plugin.version>
