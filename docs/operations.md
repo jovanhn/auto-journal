@@ -79,3 +79,33 @@ gate. Configure **only `ci-ok`** as the required status check. Dependabot update
 The `e2e` job signs in a real Supabase user and needs these repository secrets: `SUPABASE_URL`,
 `SUPABASE_PUBLISHABLE_KEY`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` (the test user is created by hand in the
 Supabase dashboard; sign-up is closed).
+
+## Backend deployment (Render)
+
+ADR 0016. On every push to `main` that touches `backend/**` or `contracts/**` and passes `ci-ok`, CI builds
+`backend/Dockerfile`, pushes `ghcr.io/jovanhn/auto-journal-backend:<sha>` (+ `:latest`) and calls the Render
+deploy hook with that exact image.
+
+Build and run the image locally:
+
+```sh
+docker build -f backend/Dockerfile -t autojournal-backend .     # from the repo root
+docker run --rm -p 8080:8080 -e DB_URL=jdbc:postgresql://host.docker.internal:5432/autojournal \
+  -e DB_USERNAME=autojournal -e DB_PASSWORD=autojournal -e SUPABASE_URL=<project url> autojournal-backend
+```
+
+One-time setup:
+
+1. **GHCR package** — after the first publish, open the `auto-journal-backend` package on GitHub →
+   Package settings → change visibility to **Public** (or add a registry credential in Render with a PAT
+   that has `read:packages`).
+2. **Render** — New → Web Service → *Existing image* `ghcr.io/jovanhn/auto-journal-backend:latest`.
+   Health check path `/actuator/health`. Environment variables:
+   `PORT=8080` (Render routes to `PORT`; the app listens on 8080), `DB_URL` (Supabase session pooler or
+   direct, `?sslmode=require`), `DB_USERNAME`, `DB_PASSWORD`, `SUPABASE_URL`, and the exchange rates if
+   they differ from the defaults. `SPRING_PROFILES_ACTIVE=prod` is set in the image.
+3. **Deploy hook** — Render service → Settings → Deploy Hook; store the URL as the secret
+   `RENDER_DEPLOY_HOOK_URL` in the GitHub environment **production** (it is a credential: anyone with it
+   can trigger deploys). Turn off Render's own auto-deploy so only CI deploys.
+
+Rollback: in Render, redeploy a previous deploy (or set the image to an older `:<sha>` tag).
