@@ -35,7 +35,7 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `DB_PASSWORD`            | backend          | `autojournal`                                   | required, secret              |
 | `SERVER_PORT`            | backend          | `8080`                                          | optional                      |
 | `SPRING_PROFILES_ACTIVE` | backend          | `local` (default profile)                       | `prod`                        |
-| `CORS_ALLOWED_ORIGINS`   | backend          | empty (Vite proxies `/api`)                     | frontend origin(s), comma-separated (ADR 0017) |
+| `CORS_ALLOWED_ORIGINS`   | backend          | `http://localhost:5173,http://localhost:4173` (the Vite proxy forwards the browser's `Origin`) | frontend origin(s), comma-separated (ADR 0017) |
 | `VITE_API_BASE_URL`      | frontend (build) | `/api`                                          | URL of the backend `/api`     |
 | `SUPABASE_URL`           | backend          | project URL (from `.env`)                       | project URL (JWT issuer `<url>/auth/v1`) |
 | `VITE_SUPABASE_URL`      | frontend (build) | project URL                                     | project URL                   |

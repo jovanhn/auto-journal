@@ -7,3 +7,9 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/autojournal}
     username: ${DB_USERNAME:autojournal}
     password: ${DB_PASSWORD:autojournal}
+
+# The Vite proxy forwards the browser's Origin (dev :5173, preview :4173 used by e2e), which differs from
+# the backend's own origin, so writes are CORS requests even locally.
+autojournal:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173}
