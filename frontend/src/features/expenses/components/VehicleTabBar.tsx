@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ChartColumn, List } from 'lucide-react';
+import { CalendarDays, ChartColumn, List } from 'lucide-react';
 
 type VehicleTabBarProps = {
   vehicleId: string;
@@ -9,10 +9,7 @@ const tabClass = 'flex min-w-20 flex-col items-center justify-center gap-1 text-
 const activeProps = { className: 'font-semibold text-primary' } as const;
 const activeOptions = { exact: true, includeSearch: false } as const;
 
-/**
- * Bottom tab bar of the vehicle section (design.md, "Vehicle section" shell). Only the tabs that exist are
- * shown; Planned comes with specs/planned-expenses.md.
- */
+/** Bottom tab bar of the vehicle section (design.md, "Vehicle section" shell): Expenses, Insights, Planned. */
 export function VehicleTabBar({ vehicleId }: VehicleTabBarProps) {
   return (
     <nav
@@ -38,6 +35,16 @@ export function VehicleTabBar({ vehicleId }: VehicleTabBarProps) {
       >
         <ChartColumn className="size-[22px]" aria-hidden="true" />
         Insights
+      </Link>
+      <Link
+        to="/vehicles/$vehicleId/planned"
+        params={{ vehicleId }}
+        className={tabClass}
+        activeProps={activeProps}
+        activeOptions={activeOptions}
+      >
+        <CalendarDays className="size-[22px]" aria-hidden="true" />
+        Planned
       </Link>
     </nav>
   );

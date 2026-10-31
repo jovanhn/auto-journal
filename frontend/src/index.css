@@ -39,6 +39,10 @@
   --color-chart-muted: var(--chart-muted);
   --color-inverse-foreground: var(--inverse-foreground);
   --color-inverse-muted: var(--inverse-muted);
+  --color-inverse-faint: var(--inverse-faint);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-divider: var(--divider);
   --color-category-neutral: var(--category-neutral);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
@@ -100,6 +104,12 @@
   --inverse: #16181d;
   --inverse-foreground: #ffffff;
   --inverse-muted: #c9ccd3;
+  --inverse-faint: #a9adb6;
+  /* "Due soon" text and pill (planned expenses). */
+  --warning: #a3400d;
+  --warning-subtle: #fbede4;
+  /* Row dividers; neutral pill background. */
+  --divider: #edeeeb;
 }
 
 .dark {
@@ -143,6 +153,10 @@
   --inverse: oklch(0.269 0 0);
   --inverse-foreground: oklch(0.985 0 0);
   --inverse-muted: oklch(0.8 0 0);
+  --inverse-faint: oklch(0.7 0 0);
+  --warning: #f0a070;
+  --warning-subtle: oklch(0.3 0.06 45);
+  --divider: oklch(1 0 0 / 8%);
 }
 
 @layer base {

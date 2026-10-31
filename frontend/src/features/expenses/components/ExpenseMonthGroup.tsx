@@ -1,6 +1,6 @@
 import type { Expense, Money } from '@/shared/api/generated/model';
 import { formatMoneyCents } from '@/shared/lib/money';
-import { monthName } from '../dates';
+import { monthName } from '@/shared/lib/dates';
 import { ExpenseRow } from './ExpenseRow';
 
 type ExpenseMonthGroupProps = {

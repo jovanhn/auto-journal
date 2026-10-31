@@ -1,7 +1,7 @@
 import type { Money } from '@/shared/api/generated/model';
 import { formatMoney } from '@/shared/lib/money';
 import { cn } from '@/shared/lib/utils';
-import { monthName } from '../dates';
+import { monthName } from '@/shared/lib/dates';
 
 type MonthlyBarChartProps = {
   year: number;

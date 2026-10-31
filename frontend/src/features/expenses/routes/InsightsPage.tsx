@@ -10,7 +10,7 @@ import { PeriodSwitcher } from '../components/PeriodSwitcher';
 import { StatTile } from '../components/StatTile';
 import { VehicleAppBar } from '../components/VehicleAppBar';
 import { VehicleTabBar } from '../components/VehicleTabBar';
-import { monthName } from '../dates';
+import { monthName } from '@/shared/lib/dates';
 import { useVehicle } from '../hooks/useVehicle';
 import { useVehicleInsights } from '../hooks/useVehicleInsights';
 import { peakMonth } from '../insights';

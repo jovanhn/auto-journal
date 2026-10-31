@@ -1,12 +1,52 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { anExpenseSummary, aVehicle, eur, problem } from '@/test/fixtures';
+import { anExpenseSummary, aPlannedExpense, aVehicle, eur, problem } from '@/test/fixtures';
 import { renderApp } from '@/test/renderApp';
 import { api, server } from '@/test/server';
 
-// specs/vehicles.md — acceptance criteria 1, 5, 6 and 7; specs/expenses.md — AC 10 (UI side).
+// specs/vehicles.md — acceptance criteria 1, 5, 6 and 7; specs/expenses.md — AC 10;
+// specs/planned-expenses.md — AC 10 (UI side).
 describe('GaragePage', () => {
+  // No plans unless a test says otherwise.
+  beforeEach(() => {
+    server.use(http.get(api('/planned-expenses/next-due'), () => HttpResponse.json([])));
+  });
+
+  it('shows the next planned expense on cards that have one, in the warning style when due soon', async () => {
+    const golf = aVehicle({ nickname: 'Golf' });
+    const octavia = aVehicle({ nickname: 'Octavia' });
+    const clio = aVehicle({ nickname: 'Clio' });
+    server.use(
+      http.get(api('/vehicles'), () => HttpResponse.json([golf, octavia, clio])),
+      http.get(api('/expenses/summary'), () => HttpResponse.json(anExpenseSummary())),
+      http.get(api('/planned-expenses/next-due'), () =>
+        HttpResponse.json([
+          { vehicleId: golf.id, plannedExpense: aPlannedExpense({ vehicleId: golf.id }) },
+          {
+            vehicleId: clio.id,
+            plannedExpense: aPlannedExpense({
+              vehicleId: clio.id,
+              category: 'REGISTRATION_TAX',
+              dueDate: '2026-11-14',
+              dueSoon: true,
+            }),
+          },
+        ]),
+      ),
+    );
+
+    renderApp('/');
+
+    const items = within(await screen.findByRole('list', { name: 'Vehicles' })).getAllByRole('listitem');
+    const golfLine = await within(items[0]!).findByText('Insurance · Mar 2, 2027');
+    expect(golfLine.parentElement).toHaveClass('text-muted-foreground');
+    expect(items[1]).not.toHaveTextContent('Next planned');
+    expect(within(items[2]!).getByText('Registration & tax · Nov 14, 2026').parentElement).toHaveClass(
+      'text-warning',
+    );
+  });
+
   it('lists the vehicles in the order returned, with make, model, year, odometer and value', async () => {
     server.use(
       http.get(api('/expenses/summary'), () => HttpResponse.json(anExpenseSummary())),

@@ -9,6 +9,7 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { HeroSummary } from '../components/HeroSummary';
 import { VehicleCard } from '../components/VehicleCard';
 import { useExpenseSummary } from '../hooks/useExpenseSummary';
+import { useNextDuePlannedExpenses } from '../hooks/useNextDuePlannedExpenses';
 import { useVehicles } from '../hooks/useVehicles';
 
 /** A vehicle without expenses this year is missing from the summary: it spent 0 (specs/expenses.md, AC 10). */
@@ -22,6 +23,8 @@ const yearTotalOf = (summary: ExpenseSummary, vehicleId: string): Money =>
 export function GaragePage() {
   const vehicles = useVehicles();
   const summary = useExpenseSummary();
+  // Optional decoration: without it the cards just have no next-due line.
+  const nextDue = useNextDuePlannedExpenses();
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,6 +74,7 @@ export function GaragePage() {
                   <VehicleCard
                     vehicle={vehicle}
                     yearTotal={summary.isSuccess ? yearTotalOf(summary.data, vehicle.id) : undefined}
+                    nextDue={nextDue.data?.find((entry) => entry.vehicleId === vehicle.id)?.plannedExpense}
                   />
                 </li>
               ))}

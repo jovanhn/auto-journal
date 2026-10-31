@@ -3,6 +3,8 @@ import type {
   ExpenseSummary,
   ExpenseYear,
   Money,
+  PlannedExpense,
+  PlannedExpenseList,
   ProblemDetail,
   UserProfile,
   Vehicle,
@@ -72,6 +74,27 @@ export const anExpenseSummary = (overrides: Partial<ExpenseSummary> = {}): Expen
   total: eur('0.00'),
   averagePerMonth: eur('0.00'),
   vehicles: [],
+  ...overrides,
+});
+
+export const aPlannedExpense = (overrides: Partial<PlannedExpense> = {}): PlannedExpense => ({
+  id: nextId(),
+  vehicleId: '00000000-0000-4000-8000-0000000000aa',
+  category: 'INSURANCE',
+  estimatedAmount: eur('320.00'),
+  displayAmount: eur('320.00'),
+  dueDate: '2027-03-02',
+  recurrenceMonths: 12,
+  note: 'renewal',
+  dueSoon: false,
+  createdAt: '2026-10-01T10:00:00Z',
+  ...overrides,
+});
+
+/** No plans and a zero projection unless overridden. */
+export const aPlannedExpenseList = (overrides: Partial<PlannedExpenseList> = {}): PlannedExpenseList => ({
+  projectionTotal: eur('0.00'),
+  items: [],
   ...overrides,
 });
 
