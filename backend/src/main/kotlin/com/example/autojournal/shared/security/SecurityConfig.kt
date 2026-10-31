@@ -18,7 +18,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
  * (`spring.security.oauth2.resourceserver.jwt`).
  *
  * CORS (ADR 0017): the deployed frontend is on another origin, so every `/api` path allows the origins in
- * `autojournal.cors.allowed-origins`. Empty (local dev, via the Vite proxy) allows none.
+ * `autojournal.cors.allowed-origins`; empty allows none. Locally the Vite proxy forwards the browser's
+ * Origin, so profile `local` allows the Vite dev and preview origins.
  */
 @Configuration
 class SecurityConfig {

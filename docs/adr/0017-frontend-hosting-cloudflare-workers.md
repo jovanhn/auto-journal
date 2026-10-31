@@ -18,8 +18,9 @@ the repo with Workers Builds, which builds and deploys on every push.
   Build variables: `VITE_API_BASE_URL` (Render URL + `/api`), `VITE_SUPABASE_URL`,
   `VITE_SUPABASE_PUBLISHABLE_KEY`.
 - The browser calls the backend directly. The backend allows the frontend origin(s) via **CORS** on
-  `/api/**` from `CORS_ALLOWED_ORIGINS` (comma-separated; empty = none, as locally where Vite proxies
-  `/api`). Bearer tokens only, so no credentialed CORS.
+  `/api/**` from `CORS_ALLOWED_ORIGINS` (comma-separated; empty = none). Profile `local` defaults to the
+  Vite dev and preview origins, because the Vite proxy forwards the browser's `Origin` and writes would
+  otherwise be rejected. Bearer tokens only, so no credentialed CORS.
 
 ## Consequences
 
