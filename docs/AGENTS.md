@@ -3,7 +3,7 @@
 ```
 docs/
   architecture.md   overview, module map, request flow
-  operations.md     local setup, env vars, production (Supabase) notes
+  operations.md     local setup, env vars, Supabase, CI, deployment (URLs, Render, Cloudflare, agent access)
   domain/           glossary.md, entities.md, business-rules.md — the top source of truth
   specs/            _template.md + one spec per feature
   adr/              _template.md + numbered ADRs
@@ -43,4 +43,5 @@ Never hand-edit the export or `screens/src/`. Design gaps that imply behavior go
 ## Keeping docs current
 
 Update `domain/entities.md` for schema changes (and table ownership), `architecture.md` for module changes,
-`operations.md` for new env vars (also `.env.example`).
+`operations.md` for new env vars (also `.env.example`) and for any change to hosting, domains, deploy
+settings or production env var values (its Deployment section is what agents rely on for production).

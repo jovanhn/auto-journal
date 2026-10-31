@@ -111,3 +111,9 @@ See [frontend/AGENTS.md](../frontend/AGENTS.md) and ADRs 0006, 0007, 0011.
 - The contract is the source of truth for the API; generated code is never edited (ADR 0002).
 - Authentication: Supabase Auth JWTs validated by the backend (ADR 0013); `frontend/src/shared/api/http.ts`
   is the single place the token is attached.
+
+## Deployment
+
+One backend container (Render, image from GHCR) and one static frontend (Cloudflare Worker) call each other
+cross-origin over HTTPS; both deploy automatically from `main`. Supabase provides Postgres and Auth.
+See [operations.md#deployment](operations.md#deployment) and ADRs 0016, 0017.

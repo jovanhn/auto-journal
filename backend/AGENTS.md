@@ -134,3 +134,19 @@ Use field errors whose `field` matches the request property so the frontend can 
 | `./mvnw spring-boot:run`                | Run locally (profile `local`; `make db-up` first) |
 | `./mvnw ktlint:format`                  | Auto-format Kotlin                                |
 | `./mvnw test -Dtest=ModularityTests`    | Module boundary check only                        |
+
+## Deployment
+
+Production runs `backend/Dockerfile` on Render, deployed by `ci.yml` after every green `main` that touches
+`backend/**` or `contracts/**` (ADR 0016; details in
+[docs/operations.md#deployment](../docs/operations.md#deployment)).
+
+- Profile `prod` (set in the image) reads env vars only. A new property without a default must be set on
+  Render **before** the merge, or the app fails to start; add it to `application*.yml`, `.env.example` and
+  the env var tables in `docs/operations.md`.
+- New Flyway migrations run against the production Supabase database at the next startup; write them to be
+  safe with existing data (no destructive changes without a plan).
+- A new endpoint path outside `/api` gets no CORS (`SecurityConfig`); keep the API under `/api`.
+- Check a deploy with the Render MCP (`list_deploys`, `list_events`, `list_logs` for service
+  `srv-dbiu9vg473hc73alkesg`) and `curl https://be-autojournal.skverly.com/actuator/health`.
+- `docker build -f backend/Dockerfile .` from the repo root reproduces the production image.

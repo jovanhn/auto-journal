@@ -48,6 +48,23 @@ PostgreSQL (Supabase in production).
 
 Start with [docs/architecture.md](docs/architecture.md) and [docs/operations.md](docs/operations.md).
 
+## Deployment
+
+Production deploys automatically from `main`; a merge is a release. Details, IDs, env var values and agent
+access: [docs/operations.md#deployment](docs/operations.md#deployment).
+
+| Part     | URL                                | How it deploys                                                        |
+| -------- | ---------------------------------- | --------------------------------------------------------------------- |
+| Frontend | https://autojournal.skverly.com    | Cloudflare Workers Builds on every push to `main` (`frontend/wrangler.jsonc`) |
+| Backend  | https://be-autojournal.skverly.com | `ci.yml`: after `ci-ok`, image → GHCR → Render deploy hook (ADR 0016)  |
+| Database | Supabase                           | Flyway migrations run when the backend starts                         |
+
+- A new or renamed env var must also be set where it runs (Render for the backend, Cloudflare **build**
+  variables for `VITE_*`) **before** the merge, or production breaks (the `prod` profile has no defaults).
+- Migrations reach production with the next backend deploy; they must be safe against existing data.
+- Ask before changing production (Render env vars, deploys, rollbacks, GitHub environments/secrets).
+  Reading status and logs (Render MCP, `gh`) is fine. There is no agent access to Cloudflare.
+
 ## Source of truth
 
 `docs/domain` → `docs/specs` → `contracts/openapi.yaml` → code.
@@ -74,6 +91,9 @@ not a requirement; ask.
 7. Update the spec status and docs; add an ADR for any architectural change.
 
 ## Hard rules
+
+- **Never read secret values into the conversation** (DB password, deploy hook, secret keys from `.env`);
+  the owner enters secrets into Render and GitHub.
 
 - **Database access standard:**
   > Use Spring Data JPA for module-owned persistence and `JdbcClient` for complex or

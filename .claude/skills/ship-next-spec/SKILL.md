@@ -103,14 +103,27 @@ Set the spec Status to `Implemented` (with release) once everything is green.
    asked.
 2. `git push -u origin feat/<spec-name>`, then `gh pr create --base main` with a body that summarizes
    contract, backend, frontend, E2E and docs changes and the local check results.
-3. Wait for CI: `gh pr checks <n> --watch` in the background. If a check fails, read its log
-   (`gh run view --log-failed`), fix, push, and wait again. Never merge a red or pending PR.
-4. When `ci-ok` is green and `gh pr view <n> --json mergeable` is `MERGEABLE`, merge with
+3. Wait for CI: watch the `CI` run (`gh run watch <id>`) in the background and judge by `ci-ok`. The
+   "Workers Builds: auto-journal" check is Cloudflare's, not part of `ci-ok`, and `gh pr checks --fail-fast`
+   stops on it; if it fails, ask the user for its build log (no agent access to Cloudflare). If a CI check
+   fails, read its log (`gh run view --log-failed`), fix, push, and wait again. Never merge a red or
+   pending PR.
+4. **Merging is a production release** (docs/operations.md#deployment). Before merging, make sure every new
+   or renamed env var is already set in production: backend vars on Render, `VITE_*` in the Cloudflare
+   build variables. Ask the user to set secrets and Cloudflare values; non-secret Render vars you may set
+   with the Render MCP after asking.
+5. When `ci-ok` is green and `gh pr view <n> --json mergeable` is `MERGEABLE`, merge with
    `gh pr merge <n> --rebase --delete-branch` (the repo keeps a linear history of conventional commits).
-5. `git checkout main && git pull --ff-only` (or the `git cherry` check from step 0 if it diverged).
+6. `git checkout main && git pull --ff-only` (or the `git cherry` check from step 0 if it diverged).
+7. Verify the release: watch the `CI` run on `main` until `backend-deploy` finishes (backend changes only),
+   then confirm with the Render MCP that the newest deploy of `srv-dbiu9vg473hc73alkesg` is live with image
+   `:<merge sha>` (`list_events` shows why one failed), `https://be-autojournal.skverly.com/actuator/health`
+   is `UP`, and the Workers Builds check on the merge commit passed. A failed production deploy is the
+   first thing to report.
 
 ## 7. Report
 
-Tell the user, briefly: what shipped (PR link), what was checked, anything you decided along the way that
+Tell the user, briefly: what shipped (PR link), whether it is live in production
+(https://autojournal.skverly.com), what was checked, anything you decided along the way that
 they should know, and which spec is next. If the app is running locally for them, restart it on the new
 code (backend `./mvnw spring-boot:run`, frontend `pnpm dev` → http://localhost:5173).
