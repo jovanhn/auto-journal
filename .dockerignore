@@ -1,0 +1,7 @@
+# Only backend/ and contracts/openapi.yaml are copied into the backend image; keep the context small.
+**
+!backend/.mvn/
+!backend/mvnw
+!backend/pom.xml
+!backend/src/
+!contracts/openapi.yaml
