@@ -4,14 +4,17 @@ import com.example.autojournal.expenses.internal.dto.ExpenseData
 import com.example.autojournal.expenses.internal.dto.ExpenseSummaryView
 import com.example.autojournal.expenses.internal.dto.ExpenseView
 import com.example.autojournal.expenses.internal.dto.ExpenseYearView
+import com.example.autojournal.expenses.internal.dto.VehicleInsightsView
 import com.example.autojournal.expenses.internal.entity.Category
 import com.example.autojournal.shared.money.Currency
+import com.example.contract.model.CategoryTotal
 import com.example.contract.model.Expense
 import com.example.contract.model.ExpenseRequest
 import com.example.contract.model.ExpenseSummary
 import com.example.contract.model.ExpenseYear
 import com.example.contract.model.Money
 import com.example.contract.model.VehicleExpenseTotal
+import com.example.contract.model.VehicleInsights
 import java.math.BigDecimal
 import java.time.ZoneOffset
 import com.example.contract.model.Category as ContractCategory
@@ -56,6 +59,22 @@ fun ExpenseSummaryView.toContract(): ExpenseSummary =
         total = money(total, currency),
         averagePerMonth = money(averagePerMonth, currency),
         vehicles = vehicleTotals.map { (vehicleId, total) -> VehicleExpenseTotal(vehicleId, money(total, currency)) },
+    )
+
+fun VehicleInsightsView.toContract(): VehicleInsights =
+    VehicleInsights(
+        year = year,
+        firstYear = firstYear,
+        total = money(total, currency),
+        averagePerMonth = money(averagePerMonth, currency),
+        monthTotals = monthTotals.map { money(it, currency) },
+        categories =
+            categories.map {
+                CategoryTotal(ContractCategory.valueOf(it.category.name), money(it.total, currency), it.sharePercent)
+            },
+        carValue = money(carValue, currency),
+        distanceKm = distanceKm,
+        costPerKm = costPerKm?.let { money(it, currency) },
     )
 
 private fun money(

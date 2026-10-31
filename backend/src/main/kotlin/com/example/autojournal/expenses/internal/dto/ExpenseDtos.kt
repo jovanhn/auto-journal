@@ -43,3 +43,26 @@ data class ExpenseSummaryView(
     val averagePerMonth: BigDecimal,
     val vehicleTotals: Map<UUID, BigDecimal>,
 )
+
+/** One category's total in a year (BR-I2). */
+data class CategoryTotalView(
+    val category: Category,
+    val total: BigDecimal,
+    val sharePercent: Int,
+)
+
+/** One vehicle's insights; every amount in [currency] (BR-C6). */
+data class VehicleInsightsView(
+    val year: Int,
+    val firstYear: Int,
+    val currency: Currency,
+    val total: BigDecimal,
+    val averagePerMonth: BigDecimal,
+    /** January … December. */
+    val monthTotals: List<BigDecimal>,
+    val categories: List<CategoryTotalView>,
+    val carValue: BigDecimal,
+    val distanceKm: Int,
+    /** BR-I4; null when the distance driven is 0. */
+    val costPerKm: BigDecimal?,
+)
