@@ -35,6 +35,7 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `DB_PASSWORD`            | backend          | `autojournal`                                   | required, secret              |
 | `SERVER_PORT`            | backend          | `8080`                                          | optional                      |
 | `SPRING_PROFILES_ACTIVE` | backend          | `local` (default profile)                       | `prod`                        |
+| `CORS_ALLOWED_ORIGINS`   | backend          | empty (Vite proxies `/api`)                     | frontend origin(s), comma-separated (ADR 0017) |
 | `VITE_API_BASE_URL`      | frontend (build) | `/api`                                          | URL of the backend `/api`     |
 | `SUPABASE_URL`           | backend          | project URL (from `.env`)                       | project URL (JWT issuer `<url>/auth/v1`) |
 | `VITE_SUPABASE_URL`      | frontend (build) | project URL                                     | project URL                   |
@@ -109,3 +110,17 @@ One-time setup:
    can trigger deploys). Turn off Render's own auto-deploy so only CI deploys.
 
 Rollback: in Render, redeploy a previous deploy (or set the image to an older `:<sha>` tag).
+
+## Frontend deployment (Cloudflare)
+
+ADR 0017. The Worker `auto-journal` serves the Vite build as static assets (`frontend/wrangler.jsonc`, SPA
+fallback). Cloudflare Workers Builds builds and deploys every push to `main` itself (not GitHub Actions).
+
+Workers Builds settings (Cloudflare dashboard → Worker → Settings → Build):
+
+- Root directory `frontend`; build command `pnpm build`; deploy command `npx wrangler deploy`.
+- Build variables: `VITE_API_BASE_URL=https://<render service>.onrender.com/api`, `VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_PUBLISHABLE_KEY` (inlined into the bundle at build time; publishable values only).
+
+On Render, `CORS_ALLOWED_ORIGINS` must contain the Worker's origin (e.g.
+`https://auto-journal.<account>.workers.dev`, plus any custom domain).
