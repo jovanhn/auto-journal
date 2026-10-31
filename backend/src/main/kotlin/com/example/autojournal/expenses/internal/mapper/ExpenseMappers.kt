@@ -1,11 +1,11 @@
 package com.example.autojournal.expenses.internal.mapper
 
+import com.example.autojournal.expenses.api.Category
 import com.example.autojournal.expenses.internal.dto.ExpenseData
 import com.example.autojournal.expenses.internal.dto.ExpenseSummaryView
 import com.example.autojournal.expenses.internal.dto.ExpenseView
 import com.example.autojournal.expenses.internal.dto.ExpenseYearView
 import com.example.autojournal.expenses.internal.dto.VehicleInsightsView
-import com.example.autojournal.expenses.internal.entity.Category
 import com.example.autojournal.shared.money.Currency
 import com.example.contract.model.CategoryTotal
 import com.example.contract.model.Expense
