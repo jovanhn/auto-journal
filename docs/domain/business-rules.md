@@ -8,7 +8,7 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
 | BR-U1 | Every API request requires a signed-in user (Supabase Auth, email + password).                | `shared/security/SecurityConfig` (JWT resource server, every `/api` request authenticated) → 401 |
-| BR-U2 | A user sees and changes only their own vehicles and everything under them. Another user's data responds as not found (404). | `VehicleService` (every query scoped to `owner_id`); `ExpenseService` (ownership via `VehicleApi.isOwnedBy`) → 404 |
+| BR-U2 | A user sees and changes only their own vehicles and everything under them. Another user's data responds as not found (404). | `VehicleService` (every query scoped to `owner_id`); `ExpenseService`, `PlannedExpenseService` (ownership via `VehicleApi.isOwnedBy`) → 404 |
 | BR-U3 | A user profile is created on the user's first authenticated request, with display currency `EUR`. | `UserProfileService.getOrCreate` (insert if absent) |
 | BR-U4 | A user can change their display currency to any supported currency.                           | `PATCH /api/me` → `UserProfileService`; contract enum → 400 |
 
@@ -17,10 +17,10 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
 | BR-C1 | Supported currencies are `EUR`, `RSD`, `USD`. Amounts have 2 decimals and are ≥ 0.            | Contract (`Currency` enum, `Money.amount` decimal-string pattern), bean validation → 400; `shared.money.Currency`; DB checks |
-| BR-C2 | Every amount carries its own currency; new amounts default to the user's display currency.    | Contract `Money { amount, currency }`; UI form default from `GET /api/me` (vehicle purchase price, expense amount) |
+| BR-C2 | Every amount carries its own currency; new amounts default to the user's display currency.    | Contract `Money { amount, currency }`; UI form default from `GET /api/me` (vehicle purchase price, expense amount, planned estimate) |
 | BR-C3 | Exchange rates are fixed values in application configuration (ADR 0014); users cannot edit them. | `shared.money.ExchangeRates` (`autojournal.exchange-rates.*`, env `EXCHANGE_RATE_*`) |
 | BR-C4 | An expense and a vehicle's purchase price store a rate snapshot when saved; conversions of them always use that snapshot. Editing the amount or currency takes a new snapshot. | `VehicleService` (`purchase_price_rate_to_eur`); `ExpenseService` (`rate_to_eur`) |
-| BR-C5 | Planned expenses (estimates) are converted with the current configured rates.                 | **Planned** |
+| BR-C5 | Planned expenses (estimates) are converted with the current configured rates.                 | `PlannedExpenseService` (`ExchangeRates.rateToEur` at read time; no snapshot column) |
 | BR-C6 | Totals, sums and derived figures are shown in the user's display currency.                    | `VehicleService` (car value via `UserProfileApi.displayCurrency` + `ExchangeRates.convert`); `ExpenseService` (display amounts and totals) |
 
 ## Vehicles
@@ -32,7 +32,7 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | BR-V3 | Purchase date is not in the future; odometer at start (the reading when the vehicle is added) is ≥ 0. | `VehicleService` (UTC `Clock`) → 400 field `purchaseDate`; contract `minimum` → 400 |
 | BR-V4 | Nickname is unique among one user's vehicles, case-insensitive. Plate is not unique.          | `VehicleService` → 409 with field error `nickname`; unique index `(owner_id, lower(nickname))` |
 | BR-V5 | Current odometer = the highest of the odometer at start and all of the vehicle's expense odometer readings. It is never entered directly. | `VehicleService` + `ExpenseOdometerReadDao` (read-only `currentOdometer`) |
-| BR-V6 | A vehicle can be edited and deleted. Deleting (after confirmation in the UI) also deletes its expenses and planned expenses. | `PUT`/`DELETE /api/vehicles/{vehicleId}`; UI confirm dialog; cascade to expenses via FK `expense.vehicle_id … ON DELETE CASCADE` (V4); planned expenses come with that module |
+| BR-V6 | A vehicle can be edited and deleted. Deleting (after confirmation in the UI) also deletes its expenses and planned expenses. | `PUT`/`DELETE /api/vehicles/{vehicleId}`; UI confirm dialog; cascade to expenses via FK `expense.vehicle_id … ON DELETE CASCADE` (V4); cascade to planned expenses via FK `planned_expense.vehicle_id … ON DELETE CASCADE` (V5) |
 | BR-V7 | Car value equals the purchase price (for now).                                                | `VehicleService`, `InsightsService` (purchase price converted at its snapshot to the display currency) |
 | BR-V8 | A user's vehicles are listed in the order they were added (oldest first).                     | `VehicleRepository` (`created_at` ascending)  |
 
@@ -50,12 +50,12 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 
 | ID     | Rule                                                                                        | Enforced    |
 | ------ | ------------------------------------------------------------------------------------------- | ----------- |
-| BR-PL1 | Category, estimated amount, currency and due date are required; recurrence is one-time or every N months (N ≥ 1); note (≤ 500 chars) is optional. There is no title. | **Planned** |
-| BR-PL2 | Mark as paid creates an expense pre-filled with the planned amount, currency, category, due date and note; the user can change amount, currency, date, odometer and note before saving. The expense follows BR-E1…E4. | **Planned** |
-| BR-PL3 | After mark as paid, a one-time planned expense is removed; a recurring one moves its due date forward by N months. | **Planned** |
-| BR-PL4 | A planned expense can be edited and deleted without being paid.                             | **Planned** |
-| BR-PL5 | A planned expense whose due date has passed stays listed (overdue) until paid or deleted.    | **Planned** |
-| BR-PL6 | A planned expense is *due soon* when its due date is within the next 30 days or has passed (overdue). | **Planned** |
+| BR-PL1 | Category, estimated amount, currency and due date are required; recurrence is one-time or every N months (N ≥ 1); note (≤ 500 chars) is optional. There is no title. | Contract (`PlannedExpenseRequest` required, `minimum`, `maxLength`, `Money` pattern), bean validation → 400; DB checks |
+| BR-PL2 | Mark as paid creates an expense pre-filled with the planned amount, currency, category, due date and note; the user can change amount, currency, date, odometer and note before saving. The expense follows BR-E1…E4. | `POST /api/planned-expenses/{id}/pay` (`ExpenseRequest`) → `PlannedExpenseService.pay` → `ExpenseApi.create` (plan's category); UI Mark as paid form with the category fixed |
+| BR-PL3 | After mark as paid, a one-time planned expense is removed; a recurring one moves its due date forward by N months. | `PlannedExpenseService.pay` (same transaction; `LocalDate.plusMonths` from the due date, clamped to month end) |
+| BR-PL4 | A planned expense can be edited and deleted without being paid.                             | `PUT`/`DELETE /api/planned-expenses/{id}`; UI confirm dialog |
+| BR-PL5 | A planned expense whose due date has passed stays listed (overdue) until paid or deleted.    | `PlannedExpenseDao.findByVehicle` (no date filter) |
+| BR-PL6 | A planned expense is *due soon* when its due date is within the next 30 days or has passed (overdue). | `PlannedExpenseService.isDueSoon` (UTC `Clock`) → `PlannedExpense.dueSoon` |
 
 ## Insights
 
@@ -68,7 +68,7 @@ vehicle and, unless stated otherwise, for one selected calendar year.
 | BR-I2 | Category breakdown = sum per category for the selected period, with its share of the total.   | `InsightsService` (categories with expenses, highest first, share rounded half-up to whole percent) |
 | BR-I3 | Average monthly cost = the selected year's total ÷ months elapsed in that year: 12 for a past year, January through the current month for the current year (months without expenses count). | `InsightsService` (UTC `Clock`) |
 | BR-I4 | Cost per km (lifetime, all years) = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at start). Not shown when distance driven is 0. | `InsightsService` (lifetime EUR sum + purchase price at its snapshot via `VehicleApi.findOwned`; `costPerKm` null at 0 km → UI "—") |
-| BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only (no estimated running costs): one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | **Planned** |
+| BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only (no estimated running costs): one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | `PlannedExpenseService.occurrencesInProjection` (UTC `Clock`): occurrences before today count once, then every occurrence from today to the end of the 11th month after the current one |
 | BR-I6 | All-cars summary (Garage): this year's total = sum of all the user's expenses dated in the current calendar year, across vehicles; average per month = that total ÷ the number of months elapsed this year, including the current month. | `ExpenseService.summary` + `ExpenseSummaryReadDao` (`GET /api/expenses/summary`) |
 
 ## Interpretation notes (assumptions, confirm before changing)

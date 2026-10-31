@@ -46,7 +46,8 @@ Root package `com.example.autojournal` (`@Modulithic`). Generated contract code 
 | ---------- | ------------------------------------ | ---------------------------------- | ----------- | --------------- |
 | `users`    | User profile (display currency); `GET/PATCH /api/me` | `UserProfileApi` (`displayCurrency(userId)`) | `user_profile` | `shared` |
 | `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD; current odometer from expense readings | `VehicleApi` (`isOwnedBy`, `findOwned` → `VehicleFacts`: price snapshot, odometers) | `vehicle`   | `users::api`, `shared` (reads `expense` read-only) |
-| `expenses` | A vehicle's expenses; year list with totals; Garage summary; insights (year figures, category breakdown, cost per km); `/api/vehicles/{vehicleId}/expenses`, `/api/vehicles/{vehicleId}/insights`, `/api/expenses` | — (none needed yet) | `expense` | `vehicles::api`, `users::api`, `shared` (reads `vehicle` read-only) |
+| `expenses` | A vehicle's expenses; year list with totals; Garage summary; insights (year figures, category breakdown, cost per km); `/api/vehicles/{vehicleId}/expenses`, `/api/vehicles/{vehicleId}/insights`, `/api/expenses` | `ExpenseApi` (`create` → `CreatedExpense`), `Category` | `expense` | `vehicles::api`, `users::api`, `shared` (reads `vehicle` read-only) |
+| `planning` | A vehicle's planned expenses; 12-month projection; due soon; mark as paid; Garage next-due; `/api/vehicles/{vehicleId}/planned-expenses`, `/api/planned-expenses` | — (none needed yet) | `planned_expense` | `vehicles::api`, `expenses::api`, `users::api`, `shared` (reads `vehicle` read-only) |
 | `shared`   | Error handling, security (JWT resource server, `CurrentUser`), money (`Currency`, `ExchangeRates`), UTC `Clock`, entity base | open module (all packages visible) | — | — |
 
 All tables live in the `autojournal` schema. Database-level foreign keys across modules are allowed
@@ -65,6 +66,10 @@ Reference examples in the code (`vehicles` is the reference module):
   Both are covered by `ExpensesApiIntegrationTest` (AC 9, 10, 12).
 - **Ownership through another module's api:** `ExpenseService` checks that a vehicle belongs to the user via
   `vehicles.api.VehicleApi` (implemented by `vehicles/internal/service/VehicleApiService`).
+- **Cross-module write in one transaction:** `planning/internal/service/PlannedExpenseService.pay` creates the
+  expense through `expenses.api.ExpenseApi` (joins the caller's transaction) and then removes or advances the
+  plan, so both commit or roll back together. `planning/internal/dao/NextDuePlannedExpenseReadDao` JOINs
+  `vehicle` read-only (covered by `PlanningApiIntegrationTest`).
 
 ## Request flow
 
