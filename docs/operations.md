@@ -58,6 +58,8 @@ Spring profiles: `local` (default; env vars with docker-compose defaults), `test
 - **TLS:** `DB_URL` must include `sslmode=require`, e.g.
   `jdbc:postgresql://db.<project-ref>.supabase.co:5432/postgres?sslmode=require`.
 - **Connection mode:** use the **direct connection** or the Supavisor **session-mode pooler** (port 5432).
+  Production uses the session pooler (the direct host is IPv6-only; Render has no IPv6 egress), see
+  [Deployment](#deployment).
   Do **not** use transaction-mode pooling (port 6543): it breaks the server-side prepared statements used
   by the PostgreSQL JDBC driver / HikariCP.
 - **Migrations:** Flyway runs automatically at backend startup against Supabase and creates/uses the
@@ -74,65 +76,122 @@ Spring profiles: `local` (default; env vars with docker-compose defaults), `test
 ## CI
 
 `.github/workflows/ci.yml` — path-filtered jobs (`contracts`, `backend`, `frontend`, `e2e`) plus the `ci-ok`
-gate. Configure **only `ci-ok`** as the required status check. Dependabot updates Maven, npm
+gate. On `main` only, `backend-image` and `backend-deploy` run after `ci-ok` (see [Deployment](#deployment));
+they are not part of the gate. Configure **only `ci-ok`** as the required status check. Dependabot updates Maven, npm
 (`frontend`, `contracts`, `e2e`) and GitHub Actions weekly, grouped. See ADR 0009.
 
 The `e2e` job signs in a real Supabase user and needs these repository secrets: `SUPABASE_URL`,
 `SUPABASE_PUBLISHABLE_KEY`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` (the test user is created by hand in the
 Supabase dashboard; sign-up is closed).
 
-## Backend deployment (Render)
+## Deployment
 
-ADR 0016. On every push to `main` that touches `backend/**` or `contracts/**` and passes `ci-ok`, CI builds
-`backend/Dockerfile`, pushes `ghcr.io/jovanhn/auto-journal-backend:<sha>` (+ `:latest`) and calls the Render
-deploy hook with that exact image.
+ADRs 0016 (backend) and 0017 (frontend). Everything deploys from `main`; there are no staging or preview
+environments.
+
+| Part     | URL                                  | Host                                           | Deployed by                                   |
+| -------- | ------------------------------------ | ---------------------------------------------- | --------------------------------------------- |
+| Frontend | https://autojournal.skverly.com      | Cloudflare Worker `auto-journal` (static assets) | Cloudflare Workers Builds, every push to `main` |
+| Backend  | https://be-autojournal.skverly.com   | Render web service (Docker image from GHCR)    | GitHub Actions `ci.yml` → Render deploy hook  |
+| Database | —                                    | Supabase project `dnkgfohtcbidlzjivkkl` (Postgres + Auth) | Flyway at backend startup             |
+
+The backend is also reachable at `https://auto-journal-backend-latest.onrender.com`; use the custom domain.
+DNS for `skverly.com` is on Cloudflare.
+
+### Backend (Render)
+
+**Flow:** push to `main` touching `backend/**` or `contracts/**` → CI passes (`ci-ok`) →
+`backend-image` builds `backend/Dockerfile` and pushes `ghcr.io/jovanhn/auto-journal-backend:<sha>` and
+`:latest` → `backend-deploy` (GitHub environment `production`, no approval) calls the Render deploy hook
+with `imgURL=<sha image>`. Render pulls it, starts it, and waits for `/actuator/health`. Flyway migrations
+run at startup, so a merged migration reaches production with the next backend deploy. The free instance
+sleeps when idle; the first request after that takes ~30–60 s.
+
+**Render service** (workspace "Code's workspace" `tea-d8peuf1o3t8c73elqip0`):
+
+| Setting            | Value                                                          |
+| ------------------ | -------------------------------------------------------------- |
+| Service ID         | `srv-dbiu9vg473hc73alkesg` (name `auto-journal-backend:latest`) |
+| Image              | `ghcr.io/jovanhn/auto-journal-backend` (public GHCR package, no registry credential) |
+| Region / plan      | Frankfurt / Free (512 MB; the image sets `-XX:MaxRAMPercentage=75`) |
+| Health check path  | `/actuator/health`                                             |
+| Auto-deploy        | Off — only CI deploys                                          |
+| Custom domain      | `be-autojournal.skverly.com`                                   |
+
+**Render environment variables** (secrets are set in the Render dashboard, never committed):
+
+| Variable               | Value                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `PORT`                 | `8080` (Render routes to `PORT`; the app listens on `SERVER_PORT`, default 8080)   |
+| `DB_URL`               | `jdbc:postgresql://aws-1-eu-central-1.pooler.supabase.com:5432/postgres?sslmode=require` (session pooler) |
+| `DB_USERNAME`          | `postgres.dnkgfohtcbidlzjivkkl`                                                    |
+| `DB_PASSWORD`          | secret — Supabase database password (`SUPABASE_DB_PASSWORD` in the local `.env`)   |
+| `SUPABASE_URL`         | `https://dnkgfohtcbidlzjivkkl.supabase.co`                                         |
+| `CORS_ALLOWED_ORIGINS` | `https://autojournal.skverly.com`                                                  |
+| `SPRING_PROFILES_ACTIVE` | not set — `prod` is the image default                                            |
+
+Exchange rates use the defaults from `application.yml`; set `EXCHANGE_RATE_*` on Render to change them.
+Changing an environment variable on Render restarts the service with the current image.
+
+**Rollback:** in Render, redeploy an earlier deploy, or deploy an older `:<sha>` tag. Avoid "Manual
+Deploy" of `:latest` for releases: the running version then no longer names its commit.
 
 Build and run the image locally:
 
 ```sh
-docker build -f backend/Dockerfile -t autojournal-backend .     # from the repo root
+docker build -f backend/Dockerfile -t autojournal-backend .     # from the repo root (needs contracts/)
 docker run --rm -p 8080:8080 -e DB_URL=jdbc:postgresql://host.docker.internal:5432/autojournal \
   -e DB_USERNAME=autojournal -e DB_PASSWORD=autojournal -e SUPABASE_URL=<project url> autojournal-backend
 ```
 
-One-time setup:
+### Frontend (Cloudflare)
 
-1. **GHCR package** — after the first publish, open the `auto-journal-backend` package on GitHub →
-   Package settings → change visibility to **Public** (or add a registry credential in Render with a PAT
-   that has `read:packages`).
-2. **Render** — New → Web Service → *Existing image* `ghcr.io/jovanhn/auto-journal-backend:latest`.
-   Health check path `/actuator/health`. Environment variables:
-   `PORT=8080` (Render routes to `PORT`; the app listens on 8080), `DB_URL` (Supabase session pooler or
-   direct, `?sslmode=require`), `DB_USERNAME`, `DB_PASSWORD`, `SUPABASE_URL`, and the exchange rates if
-   they differ from the defaults. `SPRING_PROFILES_ACTIVE=prod` is set in the image.
-3. **Deploy hook** — Render service → Settings → Deploy Hook; store the URL as the secret
-   `RENDER_DEPLOY_HOOK_URL` in the GitHub environment **production** (it is a credential: anyone with it
-   can trigger deploys). Turn off Render's own auto-deploy so only CI deploys.
-
-Deploy backend changes by approving the `Deploy backend (Render)` job, not with a manual redeploy in Render
-(that pulls `:latest`, so the running version no longer names its commit).
-
-Rollback: in Render, redeploy a previous deploy (or set the image to an older `:<sha>` tag).
-
-## Production URLs
-
-| What     | URL                                                  |
-| -------- | ---------------------------------------------------- |
-| Frontend | https://autojournal.skverly.com (Cloudflare Worker)  |
-| Backend  | https://be-autojournal.skverly.com (Render custom domain; also `auto-journal-backend-latest.onrender.com`) |
-
-## Frontend deployment (Cloudflare)
-
-ADR 0017. The Worker `auto-journal` serves the Vite build as static assets (`frontend/wrangler.jsonc`, SPA
-fallback). Cloudflare Workers Builds builds and deploys every push to `main` itself (not GitHub Actions).
+The Worker `auto-journal` serves the Vite build as static assets (`frontend/wrangler.jsonc`; unknown paths
+fall back to `index.html`). Cloudflare Workers Builds builds and deploys every push to `main` on its own,
+independent of CI; its "Workers Builds: auto-journal" check shows on PRs but is not part of `ci-ok`.
 
 Workers Builds settings (Cloudflare dashboard → Worker → Settings → Build):
 
 - Root directory `frontend`; build command `pnpm build`; deploy command `npx wrangler deploy`.
-- Build variables (under *Build*, not the Worker's runtime variables — Vite inlines them at build time;
-  publishable values only): `VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`,
-  `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- **Build** variables (not the Worker's runtime variables — Vite inlines `VITE_*` at build time;
+  publishable values only):
+  `VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`,
+  `VITE_SUPABASE_URL=https://dnkgfohtcbidlzjivkkl.supabase.co`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- Custom domain `autojournal.skverly.com`.
 
-On Render, `CORS_ALLOWED_ORIGINS=https://autojournal.skverly.com`. Add any other frontend origin (e.g. the
-Worker's `*.workers.dev` URL) comma-separated if it must call the API. In Supabase → Authentication → URL
-Configuration, the Site URL is the frontend URL.
+A frontend origin that must call the API (another domain, the `*.workers.dev` URL) has to be added to
+`CORS_ALLOWED_ORIGINS` on Render, comma-separated. Supabase → Authentication → URL Configuration: the Site
+URL is `https://autojournal.skverly.com`.
+
+### GitHub
+
+- Environment `production` (no protection rules): secret `RENDER_DEPLOY_HOOK_URL` (a credential: anyone
+  with it can deploy). The mock workflow `deploy-protected.yml` also uses this environment.
+- Repository secrets for the `e2e` job: see [CI](#ci).
+- The GHCR package `auto-journal-backend` is public and linked to the repo (`org.opencontainers.image.source`).
+
+### Changing deployment-relevant things
+
+| Change                               | Also do                                                                     |
+| ------------------------------------ | --------------------------------------------------------------------------- |
+| New/renamed backend env var          | `application*.yml`, `.env.example`, the env var table above, **and set it on Render before merging** (a missing `prod` value stops the app from starting) |
+| New/renamed `VITE_*` variable        | `.env.example`, this doc, **and the Cloudflare build variables** (owner)     |
+| New frontend domain                  | `CORS_ALLOWED_ORIGINS` on Render; Supabase URL configuration                 |
+| New Flyway migration                 | Nothing extra — runs on the next backend deploy; it must be safe against production data |
+| `Dockerfile` / `ci.yml` delivery jobs | ADR 0016; verify on `main` (the image jobs never run on PRs)                |
+
+### Access for agents
+
+- **GitHub:** `gh` CLI — runs, logs, PRs, environments, secrets (names only).
+- **Render:** the Render MCP plugin (workspace `tea-d8peuf1o3t8c73elqip0`, service
+  `srv-dbiu9vg473hc73alkesg`): deploys, events, logs, metrics, and environment variable updates. It cannot
+  create image-backed services or change service settings (domains, health check, plan) — those are
+  dashboard-only. Use `list_events` to see why a deploy failed (it reports exit codes and health check
+  failures that logs may not show).
+- **Cloudflare:** no agent access. The GitHub check for Workers Builds only links to the dashboard; ask the
+  owner for the build log or to change build settings.
+- **Ask before** changing Render environment variables, triggering deploys or rollbacks, or touching
+  GitHub environments and secrets — these change production. Reading status and logs is fine.
+- **Secrets:** never read secret values from `.env` into the conversation or logs, and never commit them.
+  The local `.env` also holds ops-only values (`SUPABASE_DB_PASSWORD`, `SUPABASE_SECRET_KEY`,
+  `RENDER_DEPLOY_HOOK_URL`); the owner enters secrets into Render and GitHub.

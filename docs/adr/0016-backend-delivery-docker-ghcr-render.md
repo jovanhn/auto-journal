@@ -28,7 +28,8 @@ exactly which commit is running. The frontend is hosted separately (Cloudflare) 
   in Render.
 - Configuration lives in Render env vars (see operations.md); the image contains no secrets.
 - The image build downloads Maven dependencies every time (no layer cache between runners), roughly a minute.
-- If the `production` environment has required reviewers, each backend deploy waits for approval.
+- The `production` environment has no required reviewers: a green `main` deploys the backend without
+  approval. A merge is a release.
 
 ## Alternatives considered
 

@@ -89,3 +89,17 @@ Never put server data in Redux. Use `useAppDispatch` / `useAppSelector` from `@/
 | `pnpm typecheck` | `tsc` (no emit)                               |
 | `pnpm test`      | Vitest (`pnpm test:watch` for watch mode)     |
 | `pnpm build`     | Production build                              |
+
+## Deployment
+
+Cloudflare Workers Builds builds and deploys every push to `main` as the static-assets Worker
+`auto-journal` (`wrangler.jsonc`, ADR 0017) at https://autojournal.skverly.com. Details:
+[docs/operations.md#deployment](../docs/operations.md#deployment).
+
+- `VITE_*` variables are inlined at **build** time. A new one must be added to `.env.example`,
+  `docs/operations.md`, and the Cloudflare **build** variables (by the owner — agents have no Cloudflare
+  access) before the merge. Only publishable values: everything in the bundle is public.
+- Production calls the API cross-origin (`VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`);
+  the backend must list the frontend origin in `CORS_ALLOWED_ORIGINS`.
+- Client-side routes work on reload via the SPA fallback; don't add a `_redirects` file or Worker code.
+- Don't add `wrangler` to `package.json`; the deploy command fetches it with `npx`.
