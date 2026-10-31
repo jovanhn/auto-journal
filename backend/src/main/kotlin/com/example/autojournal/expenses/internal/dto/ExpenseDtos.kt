@@ -1,6 +1,6 @@
 package com.example.autojournal.expenses.internal.dto
 
-import com.example.autojournal.expenses.internal.entity.Category
+import com.example.autojournal.expenses.api.Category
 import com.example.autojournal.expenses.internal.entity.ExpenseEntity
 import com.example.autojournal.shared.money.Currency
 import java.math.BigDecimal

@@ -1,9 +1,9 @@
 package com.example.autojournal.expenses.internal.service
 
+import com.example.autojournal.expenses.api.Category
 import com.example.autojournal.expenses.internal.dao.ExpenseDao
 import com.example.autojournal.expenses.internal.dto.CategoryTotalView
 import com.example.autojournal.expenses.internal.dto.VehicleInsightsView
-import com.example.autojournal.expenses.internal.entity.Category
 import com.example.autojournal.shared.error.FieldViolation
 import com.example.autojournal.shared.error.InvalidRequestException
 import com.example.autojournal.shared.error.NotFoundException

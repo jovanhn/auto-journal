@@ -1,5 +1,6 @@
 package com.example.autojournal.expenses.internal.entity
 
+import com.example.autojournal.expenses.api.Category
 import com.example.autojournal.shared.money.Currency
 import com.example.autojournal.shared.persistence.AssignedIdEntity
 import jakarta.persistence.Column
@@ -11,18 +12,6 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
-
-/** Fixed expense categories (BR-E3). */
-enum class Category {
-    FUEL,
-    SERVICE,
-    REPAIRS,
-    INSURANCE,
-    REGISTRATION_TAX,
-    TIRES,
-    PARKING_TOLLS,
-    OTHER,
-}
 
 /** Table `autojournal.expense`, owned by the `expenses` module. The vehicle is referenced by ID only. */
 @Entity
