@@ -10,7 +10,7 @@ import { FormErrorAlert } from '@/shared/ui/FormErrorAlert';
 import { Input } from '@/shared/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/shared/ui/native-select';
 import { Textarea } from '@/shared/ui/textarea';
-import { CATEGORIES, CATEGORY_LABELS } from '../categories';
+import { CATEGORIES, CATEGORY_LABELS } from '@/shared/lib/categories';
 import {
   EXPENSE_FORM_FIELDS,
   expenseFormSchema,
@@ -28,6 +28,8 @@ type ExpenseFormProps = {
   onSubmit: (values: ExpenseFormValues) => Promise<unknown>;
   /** Shown below the submit button (Edit expense: Delete). */
   footer?: ReactNode;
+  /** Mark as paid: the category comes from the plan and is shown, not picked (specs/planned-expenses.md). */
+  categoryLocked?: boolean;
 };
 
 /** Add expense / Edit expense form (design screen 05, without the vehicle picker). */
@@ -38,6 +40,7 @@ export function ExpenseForm({
   submittingLabel,
   onSubmit,
   footer,
+  categoryLocked = false,
 }: ExpenseFormProps) {
   const form = useForm<ExpenseFormInput, unknown, ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
@@ -107,32 +110,39 @@ export function ExpenseForm({
         <Controller
           name="category"
           control={control}
-          render={({ field, fieldState }) => (
-            <FieldSet data-invalid={fieldState.invalid}>
-              <FieldLegend variant="label">Category</FieldLegend>
-              <div className="grid grid-cols-2 gap-2">
-                {CATEGORIES.map((category) => {
-                  const selected = field.value === category;
-                  return (
-                    <Button
-                      key={category}
-                      type="button"
-                      variant={selected ? 'default' : 'outline'}
-                      aria-pressed={selected}
-                      className={cn('h-11 justify-start', !selected && 'bg-card')}
-                      onClick={() => {
-                        field.onChange(category);
-                      }}
-                      onBlur={field.onBlur}
-                    >
-                      {CATEGORY_LABELS[category]}
-                    </Button>
-                  );
-                })}
-              </div>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </FieldSet>
-          )}
+          render={({ field, fieldState }) =>
+            categoryLocked && field.value !== '' ? (
+              <Field>
+                <FieldLabel htmlFor="expense-category">Category</FieldLabel>
+                <Input id="expense-category" value={CATEGORY_LABELS[field.value]} readOnly />
+              </Field>
+            ) : (
+              <FieldSet data-invalid={fieldState.invalid}>
+                <FieldLegend variant="label">Category</FieldLegend>
+                <div className="grid grid-cols-2 gap-2">
+                  {CATEGORIES.map((category) => {
+                    const selected = field.value === category;
+                    return (
+                      <Button
+                        key={category}
+                        type="button"
+                        variant={selected ? 'default' : 'outline'}
+                        aria-pressed={selected}
+                        className={cn('h-11 justify-start', !selected && 'bg-card')}
+                        onClick={() => {
+                          field.onChange(category);
+                        }}
+                        onBlur={field.onBlur}
+                      >
+                        {CATEGORY_LABELS[category]}
+                      </Button>
+                    );
+                  })}
+                </div>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </FieldSet>
+            )
+          }
         />
 
         <div className="grid grid-cols-2 gap-3">

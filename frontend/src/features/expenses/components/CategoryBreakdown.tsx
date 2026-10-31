@@ -1,6 +1,6 @@
 import type { CategoryTotal } from '@/shared/api/generated/model';
 import { formatMoney } from '@/shared/lib/money';
-import { CATEGORY_LABELS } from '../categories';
+import { CATEGORY_LABELS } from '@/shared/lib/categories';
 
 type CategoryBreakdownProps = {
   categories: readonly CategoryTotal[];

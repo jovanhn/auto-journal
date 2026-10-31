@@ -2,8 +2,8 @@ import { Link } from '@tanstack/react-router';
 import type { Expense } from '@/shared/api/generated/model';
 import { formatKm, formatMoneyCents, formatMoneyExact } from '@/shared/lib/money';
 import { cn } from '@/shared/lib/utils';
-import { CATEGORY_DOT_CLASSES, CATEGORY_LABELS } from '../categories';
-import { shortDate } from '../dates';
+import { CATEGORY_DOT_CLASSES, CATEGORY_LABELS } from '@/shared/lib/categories';
+import { shortDate } from '@/shared/lib/dates';
 
 type ExpenseRowProps = {
   expense: Expense;

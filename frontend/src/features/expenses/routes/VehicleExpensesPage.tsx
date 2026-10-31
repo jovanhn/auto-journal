@@ -11,7 +11,7 @@ import { PeriodSwitcher } from '../components/PeriodSwitcher';
 import { StatTile } from '../components/StatTile';
 import { VehicleAppBar } from '../components/VehicleAppBar';
 import { VehicleTabBar } from '../components/VehicleTabBar';
-import { monthIndexOf } from '../dates';
+import { monthIndexOf } from '@/shared/lib/dates';
 import { useExpenseYear } from '../hooks/useExpenseYear';
 import { useVehicle } from '../hooks/useVehicle';
 import { useVehicleInsights } from '../hooks/useVehicleInsights';
