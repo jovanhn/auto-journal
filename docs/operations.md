@@ -109,7 +109,17 @@ One-time setup:
    `RENDER_DEPLOY_HOOK_URL` in the GitHub environment **production** (it is a credential: anyone with it
    can trigger deploys). Turn off Render's own auto-deploy so only CI deploys.
 
+Deploy backend changes by approving the `Deploy backend (Render)` job, not with a manual redeploy in Render
+(that pulls `:latest`, so the running version no longer names its commit).
+
 Rollback: in Render, redeploy a previous deploy (or set the image to an older `:<sha>` tag).
+
+## Production URLs
+
+| What     | URL                                                  |
+| -------- | ---------------------------------------------------- |
+| Frontend | https://autojournal.skverly.com (Cloudflare Worker)  |
+| Backend  | https://be-autojournal.skverly.com (Render custom domain; also `auto-journal-backend-latest.onrender.com`) |
 
 ## Frontend deployment (Cloudflare)
 
@@ -119,8 +129,10 @@ fallback). Cloudflare Workers Builds builds and deploys every push to `main` its
 Workers Builds settings (Cloudflare dashboard → Worker → Settings → Build):
 
 - Root directory `frontend`; build command `pnpm build`; deploy command `npx wrangler deploy`.
-- Build variables: `VITE_API_BASE_URL=https://<render service>.onrender.com/api`, `VITE_SUPABASE_URL`,
-  `VITE_SUPABASE_PUBLISHABLE_KEY` (inlined into the bundle at build time; publishable values only).
+- Build variables (under *Build*, not the Worker's runtime variables — Vite inlines them at build time;
+  publishable values only): `VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`,
+  `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
-On Render, `CORS_ALLOWED_ORIGINS` must contain the Worker's origin (e.g.
-`https://auto-journal.<account>.workers.dev`, plus any custom domain).
+On Render, `CORS_ALLOWED_ORIGINS=https://autojournal.skverly.com`. Add any other frontend origin (e.g. the
+Worker's `*.workers.dev` URL) comma-separated if it must call the API. In Supabase → Authentication → URL
+Configuration, the Site URL is the frontend URL.
