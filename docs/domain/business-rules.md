@@ -33,7 +33,7 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | BR-V4 | Nickname is unique among one user's vehicles, case-insensitive. Plate is not unique.          | `VehicleService` → 409 with field error `nickname`; unique index `(owner_id, lower(nickname))` |
 | BR-V5 | Current odometer = the highest of the odometer at start and all of the vehicle's expense odometer readings. It is never entered directly. | `VehicleService` + `ExpenseOdometerReadDao` (read-only `currentOdometer`) |
 | BR-V6 | A vehicle can be edited and deleted. Deleting (after confirmation in the UI) also deletes its expenses and planned expenses. | `PUT`/`DELETE /api/vehicles/{vehicleId}`; UI confirm dialog; cascade to expenses via FK `expense.vehicle_id … ON DELETE CASCADE` (V4); planned expenses come with that module |
-| BR-V7 | Car value equals the purchase price (for now).                                                | `VehicleService` (purchase price converted at its snapshot to the display currency) |
+| BR-V7 | Car value equals the purchase price (for now).                                                | `VehicleService`, `InsightsService` (purchase price converted at its snapshot to the display currency) |
 | BR-V8 | A user's vehicles are listed in the order they were added (oldest first).                     | `VehicleRepository` (`created_at` ascending)  |
 
 ## Expenses
@@ -64,10 +64,10 @@ vehicle and, unless stated otherwise, for one selected calendar year.
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
-| BR-I1 | Yearly total and monthly totals = sum of the expenses in that year / month.                  | `ExpenseService.listYear` (`ExpenseYear.yearTotal`, `monthTotals`) |
-| BR-I2 | Category breakdown = sum per category for the selected period, with its share of the total.   | **Planned** |
-| BR-I3 | Average monthly cost = the selected year's total ÷ months elapsed in that year: 12 for a past year, January through the current month for the current year (months without expenses count). | **Planned** |
-| BR-I4 | Cost per km (lifetime, all years) = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at start). Not shown when distance driven is 0. | **Planned** |
+| BR-I1 | Yearly total and monthly totals = sum of the expenses in that year / month.                  | `ExpenseService.listYear` (`ExpenseYear`), `InsightsService` (`VehicleInsights.total`, `monthTotals`) |
+| BR-I2 | Category breakdown = sum per category for the selected period, with its share of the total.   | `InsightsService` (categories with expenses, highest first, share rounded half-up to whole percent) |
+| BR-I3 | Average monthly cost = the selected year's total ÷ months elapsed in that year: 12 for a past year, January through the current month for the current year (months without expenses count). | `InsightsService` (UTC `Clock`) |
+| BR-I4 | Cost per km (lifetime, all years) = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at start). Not shown when distance driven is 0. | `InsightsService` (lifetime EUR sum + purchase price at its snapshot via `VehicleApi.findOwned`; `costPerKm` null at 0 km → UI "—") |
 | BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only (no estimated running costs): one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | **Planned** |
 | BR-I6 | All-cars summary (Garage): this year's total = sum of all the user's expenses dated in the current calendar year, across vehicles; average per month = that total ÷ the number of months elapsed this year, including the current month. | `ExpenseService.summary` + `ExpenseSummaryReadDao` (`GET /api/expenses/summary`) |
 
