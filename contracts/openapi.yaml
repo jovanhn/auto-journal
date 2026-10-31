@@ -22,6 +22,8 @@ tags:
     description: Vehicles module (the user's cars)
   - name: expenses
     description: Expenses module (what each car costs)
+  - name: planning
+    description: Planning module (a car's upcoming costs and the 12-month projection)
 
 paths:
   /api/me:
@@ -322,6 +324,142 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/vehicles/{vehicleId}/planned-expenses:
+    get:
+      tags: [planning]
+      operationId: listPlannedExpenses
+      summary: List a vehicle's planned expenses, earliest due first, with the 12-month projection
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: The vehicle's planned expenses and the projection in the display currency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannedExpenseList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [planning]
+      operationId: createPlannedExpense
+      summary: Plan an upcoming expense for a vehicle
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannedExpenseRequest'
+      responses:
+        '201':
+          description: The created planned expense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannedExpense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/planned-expenses/next-due:
+    get:
+      tags: [planning]
+      operationId: listNextDuePlannedExpenses
+      summary: The earliest planned expense of each of the user's vehicles (Garage)
+      responses:
+        '200':
+          description: One entry per vehicle that has planned expenses; vehicles without plans are missing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NextDuePlannedExpense'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/planned-expenses/{plannedExpenseId}:
+    put:
+      tags: [planning]
+      operationId: updatePlannedExpense
+      summary: Replace a planned expense's data
+      parameters:
+        - $ref: '#/components/parameters/PlannedExpenseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannedExpenseRequest'
+      responses:
+        '200':
+          description: The updated planned expense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannedExpense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [planning]
+      operationId: deletePlannedExpense
+      summary: Delete a planned expense without paying it
+      parameters:
+        - $ref: '#/components/parameters/PlannedExpenseId'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/planned-expenses/{plannedExpenseId}/pay:
+    post:
+      tags: [planning]
+      operationId: payPlannedExpense
+      summary: Mark a planned expense as paid, creating the expense
+      description: |
+        Creates the expense from the request (BR-PL2) with the plan's category (the request's `category` is
+        ignored), then removes a one-time plan or moves a recurring plan's due date forward by its recurrence
+        (BR-PL3), in one transaction. The expense is not linked to the plan afterwards.
+      parameters:
+        - $ref: '#/components/parameters/PlannedExpenseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+      responses:
+        '201':
+          description: The created expense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -340,6 +478,13 @@ components:
         format: uuid
     ExpenseId:
       name: expenseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PlannedExpenseId:
+      name: plannedExpenseId
       in: path
       required: true
       schema:
@@ -714,3 +859,96 @@ components:
           format: uuid
         total:
           $ref: '#/components/schemas/Money'
+
+    PlannedExpenseRequest:
+      type: object
+      required: [category, estimatedAmount, dueDate]
+      properties:
+        category:
+          $ref: '#/components/schemas/Category'
+        estimatedAmount:
+          $ref: '#/components/schemas/Money'
+        dueDate:
+          type: string
+          format: date
+          description: May be in the past (the plan is then overdue, BR-PL5).
+        recurrenceMonths:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: Null (or absent) = one-time; otherwise it repeats every N months (12 = yearly).
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional; trimmed, blank is stored as null.
+    PlannedExpense:
+      type: object
+      required:
+        - id
+        - vehicleId
+        - category
+        - estimatedAmount
+        - displayAmount
+        - dueDate
+        - recurrenceMonths
+        - note
+        - dueSoon
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/Category'
+        estimatedAmount:
+          description: The estimate as entered, in its original currency.
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        displayAmount:
+          description: The estimate converted with the current configured rates to the display currency (BR-C5).
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        dueDate:
+          type: string
+          format: date
+        recurrenceMonths:
+          type: integer
+          format: int32
+          nullable: true
+          description: Null = one-time; otherwise every N months.
+        note:
+          type: string
+          nullable: true
+        dueSoon:
+          type: boolean
+          description: Due within the next 30 days or overdue (BR-PL6), by the server's date (UTC).
+        createdAt:
+          type: string
+          format: date-time
+    PlannedExpenseList:
+      type: object
+      required: [projectionTotal, items]
+      properties:
+        projectionTotal:
+          description: Expected cost of the next 12 calendar months, from the current one, in the display currency (BR-I5).
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        items:
+          type: array
+          description: Earliest due date first; for the same date, oldest created first.
+          items:
+            $ref: '#/components/schemas/PlannedExpense'
+    NextDuePlannedExpense:
+      type: object
+      required: [vehicleId, plannedExpense]
+      properties:
+        vehicleId:
+          type: string
+          format: uuid
+        plannedExpense:
+          $ref: '#/components/schemas/PlannedExpense'
