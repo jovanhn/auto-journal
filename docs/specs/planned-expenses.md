@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned — release **v3**, after specs/expenses.md
+Implemented — release **v3**
 
 ## Goal
 
