@@ -5,10 +5,11 @@ on:
   push:
     branches: [main]
 
-# New runs for the same ref cancel in-progress ones.
+# On PR branches a new push cancels the in-progress run. On main every push runs to the end (queued),
+# because each push may carry a deploy: a newer push without backend changes would otherwise cancel it.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
