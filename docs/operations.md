@@ -162,7 +162,10 @@ assistants the same (specs/assistant-mcp.md, AC 2–3). Cold starts currently ta
 Owner steps in the Supabase dashboard (project `dnkgfohtcbidlzjivkkl`); agents have no access:
 
 1. Authentication → OAuth Server → enable it; Authorization Path `/oauth/consent` (with the Site URL this
-   is `https://autojournal.skverly.com/oauth/consent`, served by the frontend).
+   is `https://autojournal.skverly.com/oauth/consent`, served by the frontend). Authentication → URL
+   Configuration → **Site URL** must be exactly `https://autojournal.skverly.com`. Supabase sends the
+   browser to `<Site URL>/oauth/consent`, so `http://localhost:3000` or a `/**` wildcard there breaks the
+   consent step (the authorization stays `pending`). Wildcards belong in **Redirect URLs**.
 2. Register the OAuth app **Claude** with redirect URIs `https://claude.ai/api/mcp/auth_callback` and
    `https://claude.com/api/mcp/auth_callback`. Keep dynamic client registration **off**. The user enters
    the client id (and secret) in the connector's "Advanced settings" in Claude.
