@@ -39,6 +39,8 @@ com.example.autojournal                 @SpringBootApplication + @Modulithic(sha
     api/          public: interfaces + DTOs; ModuleMetadata.kt = @PackageInfo @NamedInterface("api")
     internal/
       controller/ implements generated com.example.contract.api.*Api; HTTP ↔ service via mappers; no logic, no @Transactional
+      mcp/        MCP tools (ADR 0018): an McpToolProvider adapter like a controller; same services + mappers,
+                  schemas from the contract (shared.mcp.ContractSchemas)
       service/    business logic; owns @Transactional; calls own DAOs + other modules' api only;
                   also implements the module's public api interfaces
       dao/        write DAOs wrap own JPA repositories; read DAOs use JdbcClient (only place for cross-module JOINs)
@@ -46,7 +48,7 @@ com.example.autojournal                 @SpringBootApplication + @Modulithic(sha
       entity/     JPA entities for own tables only; other modules referenced by ID (vehicleId: UUID)
       dto/        internal DTOs          mapper/  plain Kotlin extension functions, no mapping libraries
   shared/         OPEN shared module: error handling, security (CurrentUser), money (Currency, ExchangeRates),
-                  time (UTC Clock), AssignedIdEntity. No business logic.
+                  time (UTC Clock), AssignedIdEntity, MCP server (mcp/), GET /api/status. No business logic.
 com.example.contract                    generated (target/), outside the root → not a module. Never edit.
 ```
 

@@ -13,6 +13,8 @@ RUN ./mvnw -B -q -DskipTests package \
     && java -Djarmode=tools -jar target/autojournal-*.jar extract --layers --launcher --destination /workspace/extracted
 
 FROM eclipse-temurin:17-jre
+# Commit SHA of the build, shown by GET /api/status (CI passes --build-arg APP_VERSION=$GITHUB_SHA).
+ARG APP_VERSION=local
 LABEL org.opencontainers.image.source="https://github.com/jovanhn/auto-journal"
 RUN useradd --system --uid 10001 app
 WORKDIR /app
@@ -23,6 +25,7 @@ COPY --from=build /workspace/extracted/snapshot-dependencies/ ./
 COPY --from=build /workspace/extracted/application/ ./
 USER app
 ENV SPRING_PROFILES_ACTIVE=prod \
+    APP_VERSION=${APP_VERSION} \
     JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
 EXPOSE 8080
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
