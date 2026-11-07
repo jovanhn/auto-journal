@@ -29,6 +29,12 @@ spring:
     create-schemas: true
 
 autojournal:
+  # Commit SHA of the build (set by the Docker image, ADR 0016); `local` otherwise. Shown by GET /api/status.
+  version: ${APP_VERSION:local}
+  # The MCP endpoint's public URL (ADR 0018), published in /.well-known/oauth-protected-resource.
+  # Profile prod requires MCP_RESOURCE_URL (https://be-autojournal.skverly.com/mcp).
+  mcp:
+    resource-url: ${MCP_RESOURCE_URL:http://localhost:8080/mcp}
   # Comma-separated frontend origins allowed to call /api (ADR 0017). Profile local defaults to the Vite ports.
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}

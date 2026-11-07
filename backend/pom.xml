@@ -28,6 +28,9 @@
         <openapi-generator.version>7.27.0</openapi-generator.version>
         <ktlint-maven-plugin.version>3.7.1</ktlint-maven-plugin.version>
         <build-helper-maven-plugin.version>3.6.2</build-helper-maven-plugin.version>
+        <!-- MCP server for assistants (ADR 0018): the SDK plus Spring AI's WebMVC transport only. -->
+        <mcp-sdk.version>2.1.0</mcp-sdk.version>
+        <spring-ai.version>2.0.2</spring-ai.version>
 
         <openapi.spec>${project.basedir}/../contracts/openapi.yaml</openapi.spec>
         <openapi.output>${project.build.directory}/generated-sources/openapi</openapi.output>
@@ -84,6 +87,19 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- MCP server (ADR 0018): stateless Streamable HTTP at /mcp. Not the Spring AI starter, which
+             pulls in spring-ai-model (Jackson 2, ANTLR, StringTemplate) that the 512 MB instance does not need. -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>mcp-spring-webmvc</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-json-jackson3</artifactId>
+            <version>${mcp-sdk.version}</version>
         </dependency>
 
         <!-- Kotlin -->
@@ -159,6 +175,19 @@
     <build>
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+            </resource>
+            <!-- The contract on the classpath: MCP tool schemas are built from it (ADR 0018). -->
+            <resource>
+                <directory>${project.basedir}/../contracts</directory>
+                <targetPath>contract</targetPath>
+                <includes>
+                    <include>openapi.yaml</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <!-- Contract-first: generate Spring interfaces + models from contracts/openapi.yaml.
                  Output lives in target/ and is never committed or edited. -->

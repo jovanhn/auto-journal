@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -13,7 +14,10 @@ import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 /**
- * Every request needs a valid Supabase Auth access token (ADR 0013, BR-U1), except the health check.
+ * Every request needs a valid Supabase Auth access token (ADR 0013, BR-U1), except the health check and
+ * `GET /api/status`. That includes the MCP endpoint `/mcp` (ADR 0018): assistants get Supabase OAuth tokens, which
+ * the same JWT configuration validates. `/.well-known/oauth-protected-resource` (RFC 9728) is served by Spring
+ * Security's resource server before authorization; it names Supabase Auth as the authorization server.
  * Stateless bearer tokens: no session, no CSRF. JWT validation is configured in application.yml
  * (`spring.security.oauth2.resourceserver.jwt`).
  *
@@ -41,6 +45,8 @@ class SecurityConfig {
     fun securityFilterChain(
         http: HttpSecurity,
         entryPoint: ProblemDetailAuthenticationEntryPoint,
+        @Value("\${autojournal.mcp.resource-url}") mcpResourceUrl: String,
+        @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}") authorizationServer: String,
     ): SecurityFilterChain =
         http
             .cors(Customizer.withDefaults())
@@ -50,9 +56,24 @@ class SecurityConfig {
                 it
                     .requestMatchers("/actuator/health", "/actuator/health/**", "/error")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/status")
+                    .permitAll()
                     .anyRequest()
                     .authenticated()
-            }.oauth2ResourceServer { it.jwt(Customizer.withDefaults()).authenticationEntryPoint(entryPoint) }
-            .exceptionHandling { it.authenticationEntryPoint(entryPoint) }
+            }.oauth2ResourceServer { resourceServer ->
+                resourceServer
+                    .jwt(Customizer.withDefaults())
+                    .authenticationEntryPoint(entryPoint)
+                    .protectedResourceMetadata { metadata ->
+                        metadata.protectedResourceMetadataCustomizer {
+                            it
+                                .resource(mcpResourceUrl)
+                                .resourceName("autojournal")
+                                .authorizationServer(authorizationServer)
+                                // Supabase tokens are plain bearer tokens, not bound to a client certificate.
+                                .claims { claims -> claims.remove("tls_client_certificate_bound_access_tokens") }
+                        }
+                    }
+            }.exceptionHandling { it.authenticationEntryPoint(entryPoint) }
             .build()
 }
