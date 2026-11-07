@@ -208,7 +208,7 @@ jobs:
           IMAGE: ${{ steps.image.outputs.image }}
         run: |
           LATEST="${IMAGE%:*}:latest"
-          docker build -f backend/Dockerfile -t "$IMAGE" -t "$LATEST" .
+          docker build -f backend/Dockerfile --build-arg APP_VERSION="$GITHUB_SHA" -t "$IMAGE" -t "$LATEST" .
           docker push "$IMAGE"
           docker push "$LATEST"
 
