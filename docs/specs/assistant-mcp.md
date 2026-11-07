@@ -2,11 +2,10 @@
 
 ## Status
 
-In progress — release **v4 (assistant)**. Code merged and deployed (PR #26); ADR
-[0018](../adr/0018-mcp-server-and-oauth-for-assistants.md) Accepted (spike result recorded there). Still open
-before `Implemented`: S2 (register the "Claude" OAuth app; the OAuth server is already enabled and the JWKS is
-ES256), then AC 5 / B6 (connect from Claude with a real OAuth token) and the manual release checks 1–4,
-recorded on PR #26.
+Implemented — release **v4 (assistant)**. Code merged and deployed (PR #26); ADR
+[0018](../adr/0018-mcp-server-and-oauth-for-assistants.md) Accepted (spike result recorded there). Supabase
+steps S1–S3 done; AC 5 / B6 (connect from Claude with a real OAuth token) and the manual release checks 1–4
+passed on 2026-11-07 (owner).
 
 ## Goal
 
@@ -271,7 +270,7 @@ the wake-up rule (AC 3).
 | # | Item | Note |
 | - | ---- | ---- |
 | F1 | Route `/oauth/consent` (public): if not signed in, show the sign-in form and come back. Then call `supabase.auth.oauth.getAuthorizationDetails(authorization_id)` and show the client name, email and access; Approve/Deny call `approveAuthorization` / `denyAuthorization` and redirect to `redirect_url`. Loading, error and empty states (AC 5, 6); component tests. | Uses the existing `@supabase/supabase-js` (2.118.0). **Verify** that this version has `auth.oauth.*`; if not, upgrade the existing dependency (no new dependency). |
-| S1 | Supabase dashboard (owner): Authentication → OAuth Server → enable; Authorization Path `/oauth/consent` (Site URL is already `https://autojournal.skverly.com`). | Beta feature, no extra cost; OAuth users count as MAU. |
+| S1 | Supabase dashboard (owner): Authentication → OAuth Server → enable; Authorization Path `/oauth/consent` (Site URL must be exactly `https://autojournal.skverly.com`: the consent redirect is `<Site URL>/oauth/consent`, so no `/**` wildcard there; wildcards belong in Redirect URLs). | Beta feature, no extra cost; OAuth users count as MAU. |
 | S2 | Register the client: **pre-register** an OAuth app "Claude" with redirect URIs `https://claude.ai/api/mcp/auth_callback` and `https://claude.com/api/mcp/auth_callback`; the user enters its client id (and secret) in Claude's connector "Advanced settings". Dynamic client registration stays **off**. | Keeps registration closed, like sign-up. Open question Q2. |
 | S3 | Confirm the project's JWT signing key is ES256 (asymmetric). The backend already relies on it. | B6 |
 | D1 | Docs: a short "Use autojournal from Claude" guide (`docs/assistant.md`) covering connector URL, client id, the wake-up note and example prompts. Also update `operations.md` (endpoints, `MCP_RESOURCE_URL`), `architecture.md` (MCP adapter per module) and ADR 0018 → Accepted. | — |
