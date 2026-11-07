@@ -2,7 +2,7 @@
  * In-memory replacement for `@/shared/auth/session` (installed for every test in setup.ts), so
  * component tests never call Supabase. Tests start signed in; use `fakeAuth` to change that.
  */
-import { InvalidCredentialsError, type AuthSession } from '@/shared/auth/errors';
+import { InvalidCredentialsError, type AuthorizationRequest, type AuthSession } from '@/shared/auth/errors';
 
 export const TEST_EMAIL = 'driver@example.com';
 export const TEST_PASSWORD = 'correct-password';
@@ -43,4 +43,32 @@ export function onSignedOut(listener: () => void): () => void {
   return () => {
     listeners.delete(listener);
   };
+}
+
+/** Fake Supabase OAuth server: one known authorization request; decisions are recorded. */
+export const fakeOAuth = {
+  authorizationId: 'auth-123',
+  request: { kind: 'consent', clientName: 'Claude', email: TEST_EMAIL } as AuthorizationRequest,
+  decisions: [] as { authorizationId: string; approve: boolean }[],
+  failDecision: false,
+  reset() {
+    this.request = { kind: 'consent', clientName: 'Claude', email: TEST_EMAIL };
+    this.decisions = [];
+    this.failDecision = false;
+  },
+};
+
+export async function getAuthorizationRequest(authorizationId: string): Promise<AuthorizationRequest> {
+  if (authorizationId !== fakeOAuth.authorizationId) throw new Error('Authorization not found or expired');
+  return Promise.resolve(fakeOAuth.request);
+}
+
+export async function decideAuthorization(authorizationId: string, approve: boolean): Promise<string> {
+  if (fakeOAuth.failDecision) throw new Error('Authorization expired');
+  fakeOAuth.decisions.push({ authorizationId, approve });
+  return Promise.resolve(
+    approve
+      ? 'https://claude.ai/api/mcp/auth_callback?code=abc'
+      : 'https://claude.ai/api/mcp/auth_callback?error=access_denied',
+  );
 }
