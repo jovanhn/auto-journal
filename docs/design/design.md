@@ -3,7 +3,7 @@
 The visual design of autojournal: tokens, components, screens, and how the design is iterated. Read this
 before building or changing any UI.
 
-- **Design version:** v0.0.1 (2026-10-24) — see [Changelog](#changelog)
+- **Design version:** v0.0.2 (2026-11-07) — see [Changelog](#changelog)
 - **Reference screens:** [`screens/`](screens/) (6 mobile screens, 390 × 844)
 - **Made with:** Claude Design, exported as standalone HTML
 
@@ -72,6 +72,7 @@ The design exposes one adjustable prop, `accent` (default `#1F4FD8`; alternative
 | `--primary` (= `accent`) | `#1F4FD8` | Primary buttons, FAB, active tab, Save link, selected chip, chart focus |
 | `--primary-foreground`   | `#FFFFFF` | Text on primary                                                         |
 | `--primary-subtle`       | `#E7ECFB` | Vehicle icon tile background                                            |
+| `--brand` / `-foreground` | `#1F4FD8` / `#FFFFFF` | Brand mark only; same in light and dark ([Brand](#brand))      |
 | `--chart-muted`          | `#C9D4F4` | Non-highlighted bars in the monthly chart                               |
 | `--inverse`              | `#16181D` | Hero summary cards (dark), "Total spent" tile                           |
 | `--inverse-foreground`   | `#FFFFFF` | Main value on inverse cards                                             |
@@ -115,6 +116,20 @@ Breakdown bars on Insights all use `accent`.
 - **Touch targets:** ≥ 44 px for every tappable element; inputs 48 px; primary CTA and FAB 52 px.
 - **Elevation:** flat — 1 px borders, no shadows, except the FAB (`0 4px 14px rgba(22,24,29,.18)`).
 - **Icons:** 24 px outline, stroke 1.8–2, round caps (matches `lucide-react`); 16–18 px inline.
+
+### Brand
+
+- **Mark:** a fuel receipt (pump, two text lines, total line, torn bottom edge) drawn in
+  `--brand-foreground` on a `--brand` tile with radius 14/64. `--brand` equals the default accent
+  (`#1F4FD8`) but stays fixed in both themes and when the accent changes. It is an outline drawing like the
+  icons. It is not part of the Claude Design export; the source of truth is
+  `frontend/src/shared/ui/AppLogo.tsx`, and `frontend/public/favicon.svg` is the same drawing in fixed colors.
+- **Name:** always lowercase `autojournal`, in IBM Plex (the mono eyebrow or 600 sans). The name is never
+  drawn into the mark.
+- **Where:** next to the `AUTOJOURNAL` eyebrow on Sign in and OAuth consent, and at 28 px next to the name in
+  the app bar. Browser and home-screen icons: `favicon.svg`, `favicon-32.png` and `apple-touch-icon.png`
+  (180, square: iOS rounds the corners). When the drawing changes, re-render the PNGs from the SVG.
+- **Don't** use a picture of a real car model in the brand.
 
 ## Layout and navigation
 
@@ -196,3 +211,4 @@ the affected part:
 | Version | Date       | Change                                                                                         |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------- |
 | v0.0.1  | 2026-10-24 | Initial design: Garage, Vehicle (Expenses, Insights, Planned), Add expense, Add vehicle.       |
+| v0.0.2  | 2026-11-07 | Brand mark (fuel receipt) for favicon, app icon, Sign in, OAuth consent and the app bar. Export unchanged. |
