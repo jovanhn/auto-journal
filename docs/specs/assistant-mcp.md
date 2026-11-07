@@ -2,9 +2,9 @@
 
 ## Status
 
-In progress — release **v4 (assistant)**. ADR [0018](../adr/0018-mcp-server-and-oauth-for-assistants.md)
-Accepted (spike result recorded there). Supabase steps S1–S3 are owner steps, and the manual release checks
-need them.
+Implemented — release **v4 (assistant)**. ADR [0018](../adr/0018-mcp-server-and-oauth-for-assistants.md)
+Accepted (spike result recorded there). Supabase steps S1–S3 are owner steps; the manual release checks
+(below) can run once they are done.
 
 ## Goal
 
@@ -97,8 +97,9 @@ Existing rules that apply unchanged: BR-U1…U4, BR-C1…C6, BR-V1…V8, BR-E1�
 3. **Assistant follows the protocol**
    - Given a connected Claude conversation, and the backend has gone to sleep since the last tool call
    - When a tool call fails with a timeout, a connection error or a 5xx
-   - Then Claude tells the user the server is waking up (about a minute) and retries once after about
-     50 s, as instructed by the MCP server `instructions` and the tool descriptions. It does not report a
+   - Then Claude tells the user the server is waking up and retries after about 50 s, at most 3 times
+     (the same protocol as AC 2), as instructed by the MCP server `instructions` and the tool descriptions.
+     It does not report a
      data error.
 
 ### Connecting
@@ -261,7 +262,7 @@ the wake-up rule (AC 3).
 | B7 | **Status endpoint** `GET /api/status`: no database access. `version` comes from an env var or build info (`APP_VERSION`, set to the image's commit sha in the Dockerfile `ARG`); `startedAt` from application start. | `shared` (`system` tag) | AC 1 |
 | B8 | **Config**: `autojournal.mcp.resource-url` (default `http://localhost:8080/mcp`; prod `https://be-autojournal.skverly.com/mcp`) for the metadata. Env var `MCP_RESOURCE_URL`, which must be set on Render before the merge. | `application*.yml`, `.env.example`, operations.md | AGENTS.md deployment rule |
 | B9 | **Tests**: integration tests with an MCP client (the SDK's client, or plain JSON-RPC over MockMvc) and the existing mock JWTs: tool list, each tool's result equals the API's, errors, ownership. Unit tests for the status endpoint. Modulith verification stays green. | backend tests | AC 1, 4, 7–9, 12–15 |
-| B10 | **Memory**: the free instance has 512 MB. Measure heap and startup time after adding the starter; startup must stay under about 50 s, or the 50 s rule changes. | ops check | wake-up protocol |
+| B10 | **Memory**: the free instance has 512 MB. Measure heap and startup time after adding the starter; startup must stay under about 50 s, or the 50 s rule changes. **Measured (2026-11-07):** production cold starts were already 133–169 s before this spec (Render logs), so AC 3 was changed from "retry once" to "at most 3 retries" (owner decision). The image with MCP uses ~296 MB of 512 MB after startup under a 0.1 CPU limit. Faster startup is a separate topic. | ops check | wake-up protocol |
 
 ### Frontend and Supabase (needed, not backend)
 

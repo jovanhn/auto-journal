@@ -107,7 +107,7 @@ DNS for `skverly.com` is on Cloudflare.
 `:latest` → `backend-deploy` (GitHub environment `production`, no approval) calls the Render deploy hook
 with `imgURL=<sha image>`. Render pulls it, starts it, and waits for `/actuator/health`. Flyway migrations
 run at startup, so a merged migration reaches production with the next backend deploy. The free instance
-sleeps when idle; the first request after that takes ~30–60 s.
+sleeps when idle; the first request after that waits for a cold start (2–3 min as of 2026-11).
 
 **Render service** (workspace "Code's workspace" `tea-d8peuf1o3t8c73elqip0`):
 
@@ -154,7 +154,8 @@ docker run --rm -p 8080:8080 -e DB_URL=jdbc:postgresql://host.docker.internal:54
 **Wake-up protocol** (the free plan sleeps after 15 min idle): a client calls `GET /api/status` with a 5 s
 timeout; on a timeout, a connection error, a 502/503/504 or a body that is not the status JSON, it waits
 50 s and retries, at most 3 times, then reports the backend as unavailable. The MCP server tells
-assistants the same (specs/assistant-mcp.md, AC 2–3). Startup must stay under about 50 s for this to work.
+assistants the same (specs/assistant-mcp.md, AC 2–3). Cold starts currently take 133–169 s (Render logs,
+2026-11), so the 3 retries are needed; a faster startup or keep-warm ping is a separate decision.
 
 ### Supabase OAuth server (assistants, ADR 0018)
 

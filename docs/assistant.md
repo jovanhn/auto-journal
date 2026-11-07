@@ -26,8 +26,8 @@ in Claude; the owner can also revoke grants in the Supabase dashboard.
 ## The server may be asleep
 
 The backend runs on Render's free plan and sleeps after 15 minutes without traffic. The first call after
-that can time out while it starts (about a minute). Claude is told to say the server is waking up, wait
-about 50 seconds and retry once. If it still fails, ask again a minute later. Other clients can check
+that can time out while it starts (currently 2–3 minutes). Claude is told to say the server is waking up,
+then wait about 50 seconds and retry, at most 3 times. If it still fails, ask again a minute later. Other clients can check
 `GET https://be-autojournal.skverly.com/api/status` (public): wait 50 s after a timeout or 5xx, at most
 3 times.
 
