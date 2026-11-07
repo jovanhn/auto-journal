@@ -36,6 +36,8 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `SERVER_PORT`            | backend          | `8080`                                          | optional                      |
 | `SPRING_PROFILES_ACTIVE` | backend          | `local` (default profile)                       | `prod`                        |
 | `CORS_ALLOWED_ORIGINS`   | backend          | `http://localhost:5173,http://localhost:4173` (the Vite proxy forwards the browser's `Origin`) | frontend origin(s), comma-separated (ADR 0017) |
+| `MCP_RESOURCE_URL`       | backend (`autojournal.mcp.resource-url`) | `http://localhost:8080/mcp` | `https://be-autojournal.skverly.com/mcp`; **required** in `prod` (ADR 0018) |
+| `APP_VERSION`            | backend (`autojournal.version`, `GET /api/status`) | `local` | set by the image (`--build-arg APP_VERSION=<sha>` in CI) |
 | `VITE_API_BASE_URL`      | frontend (build) | `/api`                                          | URL of the backend `/api`     |
 | `SUPABASE_URL`           | backend          | project URL (from `.env`)                       | project URL (JWT issuer `<url>/auth/v1`) |
 | `VITE_SUPABASE_URL`      | frontend (build) | project URL                                     | project URL                   |
@@ -128,6 +130,7 @@ sleeps when idle; the first request after that takes ~30–60 s.
 | `DB_PASSWORD`          | secret — Supabase database password (`SUPABASE_DB_PASSWORD` in the local `.env`)   |
 | `SUPABASE_URL`         | `https://dnkgfohtcbidlzjivkkl.supabase.co`                                         |
 | `CORS_ALLOWED_ORIGINS` | `https://autojournal.skverly.com`                                                  |
+| `MCP_RESOURCE_URL`     | `https://be-autojournal.skverly.com/mcp` (ADR 0018)                                |
 | `SPRING_PROFILES_ACTIVE` | not set — `prod` is the image default                                            |
 
 Exchange rates use the defaults from `application.yml`; set `EXCHANGE_RATE_*` on Render to change them.
@@ -143,6 +146,29 @@ docker build -f backend/Dockerfile -t autojournal-backend .     # from the repo 
 docker run --rm -p 8080:8080 -e DB_URL=jdbc:postgresql://host.docker.internal:5432/autojournal \
   -e DB_USERNAME=autojournal -e DB_PASSWORD=autojournal -e SUPABASE_URL=<project url> autojournal-backend
 ```
+
+**Public endpoints besides `/api`:** `GET /api/status` (no token, no database; wake-up check),
+`/actuator/health`, `GET /.well-known/oauth-protected-resource` (RFC 9728 metadata for MCP clients) and
+`POST /mcp` (MCP server for assistants, Bearer token required). See [assistant.md](assistant.md).
+
+**Wake-up protocol** (the free plan sleeps after 15 min idle): a client calls `GET /api/status` with a 5 s
+timeout; on a timeout, a connection error, a 502/503/504 or a body that is not the status JSON, it waits
+50 s and retries, at most 3 times, then reports the backend as unavailable. The MCP server tells
+assistants the same (specs/assistant-mcp.md, AC 2–3). Startup must stay under about 50 s for this to work.
+
+### Supabase OAuth server (assistants, ADR 0018)
+
+Owner steps in the Supabase dashboard (project `dnkgfohtcbidlzjivkkl`); agents have no access:
+
+1. Authentication → OAuth Server → enable it; Authorization Path `/oauth/consent` (with the Site URL this
+   is `https://autojournal.skverly.com/oauth/consent`, served by the frontend).
+2. Register the OAuth app **Claude** with redirect URIs `https://claude.ai/api/mcp/auth_callback` and
+   `https://claude.com/api/mcp/auth_callback`. Keep dynamic client registration **off**. The user enters
+   the client id (and secret) in the connector's "Advanced settings" in Claude.
+3. JWT signing key: asymmetric ES256 (the backend already requires it). OAuth tokens then validate like
+   app tokens.
+
+Grants can be revoked in the dashboard; a user revokes access by removing the connector in Claude.
 
 ### Frontend (Cloudflare)
 
@@ -177,6 +203,7 @@ URL is `https://autojournal.skverly.com`.
 | New/renamed backend env var          | `application*.yml`, `.env.example`, the env var table above, **and set it on Render before merging** (a missing `prod` value stops the app from starting) |
 | New/renamed `VITE_*` variable        | `.env.example`, this doc, **and the Cloudflare build variables** (owner)     |
 | New frontend domain                  | `CORS_ALLOWED_ORIGINS` on Render; Supabase URL configuration                 |
+| Supabase OAuth server / OAuth apps   | Owner, in the dashboard (see above); the consent page is `/oauth/consent`   |
 | New Flyway migration                 | Nothing extra — runs on the next backend deploy; it must be safe against production data |
 | `Dockerfile` / `ci.yml` delivery jobs | ADR 0016; verify on `main` (the image jobs never run on PRs)                |
 
