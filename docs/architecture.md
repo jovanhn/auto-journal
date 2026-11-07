@@ -48,7 +48,7 @@ Root package `com.example.autojournal` (`@Modulithic`). Generated contract code 
 | `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD; current odometer from expense readings | `VehicleApi` (`isOwnedBy`, `findOwned` → `VehicleFacts`: price snapshot, odometers) | `vehicle`   | `users::api`, `shared` (reads `expense` read-only) |
 | `expenses` | A vehicle's expenses; year list with totals; Garage summary; insights (year figures, category breakdown, cost per km); `/api/vehicles/{vehicleId}/expenses`, `/api/vehicles/{vehicleId}/insights`, `/api/expenses` | `ExpenseApi` (`create` → `CreatedExpense`), `Category` | `expense` | `vehicles::api`, `users::api`, `shared` (reads `vehicle` read-only) |
 | `planning` | A vehicle's planned expenses; 12-month projection; due soon; mark as paid; Garage next-due; `/api/vehicles/{vehicleId}/planned-expenses`, `/api/planned-expenses` | — (none needed yet) | `planned_expense` | `vehicles::api`, `expenses::api`, `users::api`, `shared` (reads `vehicle` read-only) |
-| `shared`   | Error handling, security (JWT resource server, `CurrentUser`), money (`Currency`, `ExchangeRates`), UTC `Clock`, entity base | open module (all packages visible) | — | — |
+| `shared`   | Error handling, security (JWT resource server, `CurrentUser`, OAuth protected resource metadata), money (`Currency`, `ExchangeRates`), UTC `Clock`, entity base; MCP server (`shared/mcp`); `GET /api/status` (tag `system`) | open module (all packages visible) | — | — |
 
 All tables live in the `autojournal` schema. Database-level foreign keys across modules are allowed
 (e.g. `expense.vehicle_id → vehicle.id ON DELETE CASCADE`); JPA relationships across modules are not.
@@ -70,6 +70,20 @@ Reference examples in the code (`vehicles` is the reference module):
   expense through `expenses.api.ExpenseApi` (joins the caller's transaction) and then removes or advances the
   plan, so both commit or roll back together. `planning/internal/dao/NextDuePlannedExpenseReadDao` JOINs
   `vehicle` read-only (covered by `PlanningApiIntegrationTest`).
+
+### Assistant access (MCP, ADR 0018)
+
+The backend is also an MCP server for assistants such as Claude at `/mcp` (Streamable HTTP, stateless).
+Tools are **adapters inside each module**, next to the controllers: `<module>/internal/mcp/*McpTools`
+implement `shared.mcp.McpToolProvider` and call the module's own services and mappers, exactly like the
+controller does. `shared/mcp` registers them, builds their JSON Schemas from `contracts/openapi.yaml` (on
+the classpath as `contract/openapi.yaml`), runs input through Jackson + bean validation, and maps the
+API's exceptions to tool errors. Assistants authorize with Supabase's OAuth 2.1 server; the consent page is
+the frontend route `/oauth/consent`. See [assistant.md](assistant.md) and specs/assistant-mcp.md.
+
+```
+Claude ──MCP + Bearer──▶ /mcp (RouterFunction) ──▶ shared/mcp: McpServer ──▶ <module>/internal/mcp tools ──▶ services
+```
 
 ## Request flow
 
@@ -115,7 +129,8 @@ See [frontend/AGENTS.md](../frontend/AGENTS.md) and ADRs 0006, 0007, 0011.
 - Only the backend connects to the database (ADR 0005). The frontend never uses supabase-js data access.
 - The contract is the source of truth for the API; generated code is never edited (ADR 0002).
 - Authentication: Supabase Auth JWTs validated by the backend (ADR 0013); `frontend/src/shared/api/http.ts`
-  is the single place the token is attached.
+  is the single place the token is attached. Assistants use Supabase OAuth tokens, validated the same way.
+- MCP tools never add behavior: each one calls the same service method as the matching API operation.
 
 ## Deployment
 

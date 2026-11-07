@@ -71,6 +71,17 @@ vehicle and, unless stated otherwise, for one selected calendar year.
 | BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only (no estimated running costs): one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | `PlannedExpenseService.occurrencesInProjection` (UTC `Clock`): occurrences before today count once, then every occurrence from today to the end of the 11th month after the current one |
 | BR-I6 | All-cars summary (Garage): this year's total = sum of all the user's expenses dated in the current calendar year, across vehicles; average per month = that total ÷ the number of months elapsed this year, including the current month. | `ExpenseService.summary` + `ExpenseSummaryReadDao` (`GET /api/expenses/summary`) |
 
+## Assistant (MCP)
+
+An *assistant* is an MCP client (e.g. Claude) the user has authorized to act for them (specs/assistant-mcp.md).
+
+| ID    | Rule                                                                                         | Enforced    |
+| ----- | -------------------------------------------------------------------------------------------- | ----------- |
+| BR-A1 | An assistant acts only as the user who authorized it; every tool applies the same ownership (BR-U2), validation and calculation rules as the matching API operation, with the same results. | Supabase OAuth token validated like app tokens; `<module>/internal/mcp` tools call the controllers' service methods with `CurrentUser`; input via `McpToolArguments` (Jackson + bean validation); `McpToolsIntegrationTest` compares every tool with the API |
+| BR-A2 | An assistant can do only what the user can do in the app; no tool adds behavior without an API operation. | One tool per API operation (specs/assistant-mcp.md, API impact); no tool-only service code |
+| BR-A3 | autojournal never receives or stores images; the assistant extracts values from photos and sends only expense fields. | Tools accept only contract fields (no image input); no MCP resources or uploads |
+| BR-A4 | Tools that delete data are marked destructive, so the client asks the user to confirm.       | `McpTool.Access.DESTRUCTIVE` → `destructiveHint` (`McpServerIntegrationTest`) |
+
 ## Interpretation notes (assumptions, confirm before changing)
 
 - Text fields are trimmed before validation and storage; uniqueness compares trimmed values.
