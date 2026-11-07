@@ -1,10 +1,10 @@
 /**
  * The only module that talks to Supabase, and only for auth (ADR 0015): sign in, session, token
- * refresh and sign out. Never use the Supabase client for data — only the backend reads the database.
+ * refresh, sign out, and the consent step of Supabase's OAuth server for assistants (ADR 0018). Never use the Supabase client for data — only the backend reads the database.
  * Tests replace this module with `src/test/fakeSession.ts`.
  */
 import { createClient, isAuthApiError, type SupabaseClient } from '@supabase/supabase-js';
-import { InvalidCredentialsError, type AuthSession } from './errors';
+import { InvalidCredentialsError, type AuthorizationRequest, type AuthSession } from './errors';
 
 let client: SupabaseClient | undefined;
 
@@ -52,4 +52,23 @@ export function onSignedOut(listener: () => void): () => void {
   return () => {
     data.subscription.unsubscribe();
   };
+}
+
+/** The OAuth authorization request `authorizationId` (from the consent URL), for the signed-in user. */
+export async function getAuthorizationRequest(authorizationId: string): Promise<AuthorizationRequest> {
+  const { data, error } = await supabase().auth.oauth.getAuthorizationDetails(authorizationId);
+  if (error) throw error;
+  if ('client' in data) return { kind: 'consent', clientName: data.client.name, email: data.user.email };
+  return { kind: 'redirect', redirectUrl: data.redirect_url };
+}
+
+/** Approves (or denies) the request and returns the URL that sends the user back to the client. */
+export async function decideAuthorization(authorizationId: string, approve: boolean): Promise<string> {
+  const oauth = supabase().auth.oauth;
+  const options = { skipBrowserRedirect: true };
+  const { data, error } = approve
+    ? await oauth.approveAuthorization(authorizationId, options)
+    : await oauth.denyAuthorization(authorizationId, options);
+  if (error) throw error;
+  return data.redirect_url;
 }

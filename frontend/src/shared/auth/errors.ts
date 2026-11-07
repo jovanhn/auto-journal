@@ -11,3 +11,10 @@ export type AuthSession = {
   email: string;
   accessToken: string;
 };
+
+/**
+ * An OAuth authorization request from an assistant such as Claude (specs/assistant-mcp.md, ADR 0018):
+ * either it needs the user's consent, or the user already approved this client and is sent straight back.
+ */
+export type AuthorizationRequest =
+  { kind: 'consent'; clientName: string; email: string } | { kind: 'redirect'; redirectUrl: string };
