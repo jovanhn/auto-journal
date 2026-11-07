@@ -65,10 +65,10 @@ Constraints:
 - Depends on a Supabase **beta** feature. If it changes, the consent page and possibly the metadata change.
 - New env var `MCP_RESOURCE_URL`, which must be set on Render before the merge. Supabase dashboard
   settings (OAuth Server, authorization path, OAuth app) are owner steps, documented in operations.md.
-- Startup time and memory must be measured on the 512 MB instance. The 50 s wake-up rule assumes startup
-  stays under it.
-- Cold starts still hurt: the first call after 15 min idle waits about a minute. Keep-warm pings or a paid
-  plan are a separate decision.
+- Measured at implementation: cold starts already took 133–169 s before this change, so assistants retry
+  up to 3 times (about 2.5 min) instead of once; memory after startup is ~296 MB of 512 MB.
+- Cold starts still hurt: the first call after 15 min idle waits 2–3 minutes. Faster startup, keep-warm
+  pings or a paid plan are a separate decision.
 
 ## Alternatives considered
 
