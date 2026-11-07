@@ -5,6 +5,7 @@ import { ErrorState } from '@/shared/ui/ErrorState';
 import { LoadingState } from '@/shared/ui/LoadingState';
 import { ConsentCard } from '../components/ConsentCard';
 import { useAuthorizationDecision } from '../hooks/useAuthorizationDecision';
+import { AppLogo } from '@/shared/ui/AppLogo';
 import { useAuthorizationRequest } from '../hooks/useAuthorizationRequest';
 
 const route = getRouteApi('/oauth/consent');
@@ -60,7 +61,10 @@ export function OAuthConsentPage() {
 
   return (
     <main className="mx-auto flex min-h-svh max-w-sm flex-col justify-center gap-8 px-5 py-10">
-      <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">autojournal</p>
+      <div className="flex items-center gap-2">
+        <AppLogo className="size-7" />
+        <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">autojournal</p>
+      </div>
       {content()}
     </main>
   );
