@@ -11,7 +11,9 @@ compatibility). Lint: `make contracts-lint` (Redocly, config in `redocly.yaml`).
   `createVehicle`, `updateVehicle`, `deleteVehicle`. They become backend method names and frontend hook names
   (`useListVehicles`) — renaming one is a breaking change for code.
 - **Tags:** exactly one per operation, equal to the owning backend module (`users`, `vehicles`). The tag
-  decides the generated interface (`VehiclesApi`) and frontend file.
+  decides the generated interface (`VehiclesApi`) and frontend file. One exception: `system`
+  (`GET /api/status`) is implemented in `shared` (ADR 0018). That public operation has no 4xx response,
+  which `.redocly.lint-ignore.yaml` records.
 - **Schemas:** PascalCase names; properties camelCase; list `required` explicitly; use `nullable: true` for
   optional values that may be null; put limits (`minLength`, `maxLength`, `pattern`, `minimum`, `maximum`)
   in the contract — they drive bean validation and frontend Zod schemas.

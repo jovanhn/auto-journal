@@ -24,8 +24,27 @@ tags:
     description: Expenses module (what each car costs)
   - name: planning
     description: Planning module (a car's upcoming costs and the 12-month projection)
+  - name: system
+    description: Service status for clients that wait for a sleeping backend (implemented in `shared`, ADR 0018)
 
 paths:
+  /api/status:
+    get:
+      tags: [system]
+      operationId: getStatus
+      summary: Check that the backend is up (public, no database access)
+      description: |
+        Clients use it for the wake-up protocol (specs/assistant-mcp.md): call it with a 5 s timeout; on a
+        timeout, a connection error, a 502/503/504 or a body that is not this JSON, wait 50 s and retry,
+        at most 3 times.
+      security: []
+      responses:
+        '200':
+          description: The backend is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceStatus'
   /api/me:
     get:
       tags: [users]
@@ -518,6 +537,20 @@ components:
             $ref: '#/components/schemas/ProblemDetail'
 
   schemas:
+    ServiceStatus:
+      type: object
+      required: [status, version, startedAt]
+      properties:
+        status:
+          type: string
+          enum: [UP]
+        version:
+          type: string
+          description: Commit SHA of the running build, or `local`.
+        startedAt:
+          type: string
+          format: date-time
+          description: When this backend instance started.
     ProblemDetail:
       type: object
       description: RFC 9457 problem details, extended with field-level validation errors.
