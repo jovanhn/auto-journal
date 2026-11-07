@@ -1,6 +1,7 @@
 import { Link, Outlet } from '@tanstack/react-router';
 import { Settings } from 'lucide-react';
 import { ThemeToggle } from '@/features/theme/components/ThemeToggle';
+import { AppLogo } from '@/shared/ui/AppLogo';
 import { Button } from '@/shared/ui/button';
 
 /** Shell of every signed-in page: app bar with Settings (specs/auth.md) and the page content. */
@@ -9,7 +10,8 @@ export function AppLayout() {
     <>
       <header className="border-b">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
-          <Link to="/" className="font-semibold">
+          <Link to="/" className="flex items-center gap-2 font-semibold">
+            <AppLogo className="size-7" />
             autojournal
           </Link>
           <div className="flex items-center gap-1">
