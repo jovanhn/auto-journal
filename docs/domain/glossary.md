@@ -25,3 +25,4 @@
 | **Cost per km**        | (Total expenses + purchase price) ÷ distance driven, over the vehicle's whole history, in the display currency. |
 | **Average monthly cost** | A year's total expenses ÷ months elapsed in that year (12 for a past year, through the current month for this year), including months without expenses. |
 | **Due soon**           | A planned expense due within the next 30 days, or already overdue.                                   |
+| **Assistant**          | An AI client (e.g. Claude) connected over MCP that the user authorized to read and change their data on their behalf. |
