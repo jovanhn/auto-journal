@@ -23,6 +23,11 @@ updates:
     directory: /backend
     schedule:
       interval: weekly
+    # A JDK major upgrade must also change java.version and CI's setup-java, so it is a deliberate
+    # change (with an ADR), not a Dependabot bump. Patch/minor image updates still come through.
+    ignore:
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
