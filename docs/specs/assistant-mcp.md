@@ -2,9 +2,11 @@
 
 ## Status
 
-Implemented — release **v4 (assistant)**. ADR [0018](../adr/0018-mcp-server-and-oauth-for-assistants.md)
-Accepted (spike result recorded there). Supabase steps S1–S3 are owner steps; the manual release checks
-(below) can run once they are done.
+In progress — release **v4 (assistant)**. Code merged and deployed (PR #26); ADR
+[0018](../adr/0018-mcp-server-and-oauth-for-assistants.md) Accepted (spike result recorded there). Still open
+before `Implemented`: S2 (register the "Claude" OAuth app; the OAuth server is already enabled and the JWKS is
+ES256), then AC 5 / B6 (connect from Claude with a real OAuth token) and the manual release checks 1–4,
+recorded on PR #26.
 
 ## Goal
 
