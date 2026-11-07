@@ -109,7 +109,7 @@ class McpServerIntegrationTest
             assertEquals("autojournal", result.get("serverInfo").get("name").asString())
             val instructions = result.get("instructions").asString()
             assertTrue("list_vehicles" in instructions)
-            assertTrue("wait about 50 seconds and retry once" in instructions)
+            assertTrue("wait about 50 seconds and retry, at most 3 times" in instructions)
         }
 
         @Test

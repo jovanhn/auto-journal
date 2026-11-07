@@ -164,8 +164,9 @@ class McpServerConfiguration {
         /** AC 3: a sleeping backend must not look like a data error. Appended to every tool description. */
         const val WAKE_UP_RULE =
             "If this call fails with a timeout, a connection error or an HTTP 5xx, the autojournal server is " +
-                "probably waking up (it sleeps when idle and needs about a minute to start). Tell the user it is " +
-                "waking up, wait about 50 seconds and retry once. Do not report it as a data error."
+                "probably waking up (it sleeps when idle and needs up to about 2.5 minutes to start). Tell the user " +
+                "it is waking up, then wait about 50 seconds and retry, at most 3 times. Do not report it as a data " +
+                "error; only after 3 failed retries say that autojournal is unavailable."
 
         val INSTRUCTIONS =
             """
