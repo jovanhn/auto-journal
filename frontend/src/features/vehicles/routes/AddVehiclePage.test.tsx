@@ -113,6 +113,42 @@ describe('AddVehiclePage', () => {
     expect(screen.getByLabelText('Nickname')).toHaveAttribute('aria-invalid', 'true');
   });
 
+  // specs/data-limits.md — AC 1 and 10 (UI side).
+  it('shows the vehicle limit message and stays on the form', async () => {
+    server.use(
+      http.post(api('/vehicles'), () =>
+        HttpResponse.json(problem(409, { detail: 'You can have at most 10 vehicles.' }), { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    const { router } = renderApp('/vehicles/new');
+
+    await fillGolf(user);
+    await user.click(screen.getByRole('button', { name: 'Add to garage' }));
+
+    expect(await screen.findByText('You can have at most 10 vehicles.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/vehicles/new');
+  });
+
+  it('shows an odometer bound error on the odometer field', async () => {
+    server.use(
+      http.post(api('/vehicles'), () =>
+        HttpResponse.json(
+          problem(400, { errors: [{ field: 'odometerAtStart', message: 'must be at most 2000000' }] }),
+          { status: 400 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderApp('/vehicles/new');
+
+    await fillGolf(user);
+    await user.click(screen.getByRole('button', { name: 'Add to garage' }));
+
+    expect(await screen.findByText('must be at most 2000000')).toBeInTheDocument();
+    expect(screen.getByLabelText('Current odometer (km)')).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('shows a nested server field error on the price field', async () => {
     server.use(
       http.post(api('/vehicles'), () =>
