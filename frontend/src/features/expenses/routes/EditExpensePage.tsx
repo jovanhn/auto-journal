@@ -19,6 +19,7 @@ const toFormInput = (expense: Expense): ExpenseFormInput => ({
   date: expense.date,
   odometer: expense.odometer === null ? '' : String(expense.odometer),
   note: expense.note ?? '',
+  approximate: expense.approximate,
 });
 
 /** Edit expense: the Add expense form, pre-filled, with Delete at the bottom (specs/expenses.md, UI notes). */

@@ -47,6 +47,7 @@ export function AddExpensePage() {
             date: todayIso(),
             odometer: '',
             note: '',
+            approximate: false,
           }}
           submitLabel="Save expense"
           submittingLabel="Saving…"

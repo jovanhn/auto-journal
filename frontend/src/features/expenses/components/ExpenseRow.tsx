@@ -11,7 +11,8 @@ type ExpenseRowProps = {
 
 /**
  * Expense row (design: `ExpenseRow`): category dot, "Category · note", "Oct 18 · 184,320 km", the display
- * amount, and the original amount when its currency differs. Tapping it opens Edit expense.
+ * amount (with `≈` when approximate, BR-E6), and the original amount when its currency differs. Tapping it opens
+ * Edit expense.
  */
 export function ExpenseRow({ expense }: ExpenseRowProps) {
   const title = [CATEGORY_LABELS[expense.category], expense.note].filter(Boolean).join(' · ');
@@ -40,6 +41,12 @@ export function ExpenseRow({ expense }: ExpenseRowProps) {
       </span>
       <span className="flex shrink-0 flex-col items-end gap-0.5">
         <span className="text-[15px] font-semibold tabular-nums">
+          {expense.approximate && (
+            <>
+              <span aria-hidden="true">≈ </span>
+              <span className="sr-only">approximately </span>
+            </>
+          )}
           {formatMoneyCents(expense.displayAmount)}
         </span>
         {converted && (

@@ -61,6 +61,8 @@ export const expenseFormSchema = z.object({
     .trim()
     .max(createExpenseBodyNoteMax, `Note must be at most ${createExpenseBodyNoteMax} characters`)
     .transform((value) => value || null),
+  /** BR-E6: the amount and/or date is a best guess. */
+  approximate: z.boolean(),
 });
 
 export type ExpenseFormInput = z.input<typeof expenseFormSchema>;
@@ -74,6 +76,7 @@ export const EXPENSE_FORM_FIELDS = [
   'date',
   'odometer',
   'note',
+  'approximate',
 ] as const;
 
 export const toExpenseRequest = (values: ExpenseFormValues): ExpenseRequest => values;

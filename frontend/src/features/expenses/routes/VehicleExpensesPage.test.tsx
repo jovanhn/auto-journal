@@ -165,6 +165,45 @@ describe('VehicleExpensesPage', () => {
     expect(screen.getAllByText('€10.00')).toHaveLength(2);
   });
 
+  // specs/approximate-expenses.md AC1, AC4: ≈ on the row only; totals unchanged.
+  it('marks an approximate expense with ≈ and counts it in the totals', async () => {
+    const date = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+    server.use(
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
+      http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
+      http.get(api(`/vehicles/${vehicle.id}/expenses`), () =>
+        HttpResponse.json(
+          anExpenseYear({
+            yearTotal: eur('400.00'),
+            monthTotals: monthTotals({ [currentMonth]: '400.00' }),
+            expenses: [
+              anExpense({
+                vehicleId: vehicle.id,
+                date,
+                category: 'TIRES',
+                amount: eur('300.00'),
+                displayAmount: eur('300.00'),
+                approximate: true,
+              }),
+              anExpense({ vehicleId: vehicle.id, date, amount: eur('100.00'), displayAmount: eur('100.00') }),
+            ],
+          }),
+        ),
+      ),
+    );
+
+    renderApp(`/vehicles/${vehicle.id}`);
+
+    const approximateRow = await screen.findByRole('link', { name: /Tires/ });
+    expect(approximateRow).toHaveTextContent('≈');
+    expect(approximateRow).toHaveAccessibleName(/approximately\s*€300\.00/);
+    const exactRow = screen.getByRole('link', { name: /Fuel/ });
+    expect(exactRow).toHaveTextContent('€100.00');
+    expect(exactRow).not.toHaveTextContent('≈');
+    expect(screen.getByText('This year').nextSibling).toHaveTextContent('€400');
+    expect(screen.getByText('This year').nextSibling).not.toHaveTextContent('≈');
+  });
+
   it('shows the lifetime cost per km, or a dash before any distance is driven (insights AC 6–7)', async () => {
     let costPerKm: Money | null = eur('0.85');
     server.use(

@@ -69,7 +69,34 @@ describe('AddExpensePage', () => {
       date: '2026-01-18',
       odometer: 184320,
       note: null,
+      approximate: false,
     });
+  });
+
+  // specs/approximate-expenses.md AC1–2.
+  it('sends an approximate expense when the Approximate box is ticked', async () => {
+    let sent: ExpenseRequest | undefined;
+    server.use(
+      http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
+      http.post(api(`/vehicles/${vehicle.id}/expenses`), async ({ request }) => {
+        sent = (await request.json()) as ExpenseRequest;
+        return HttpResponse.json(anExpense({ vehicleId: vehicle.id, approximate: true }), { status: 201 });
+      }),
+      ...listHandlers(),
+    );
+    const user = userEvent.setup();
+    renderApp(`/vehicles/${vehicle.id}/expenses/new`);
+
+    const approximate = await screen.findByRole('checkbox', { name: 'Approximate' });
+    expect(approximate).not.toBeChecked();
+    expect(approximate).toHaveAccessibleDescription('Amount or date is a best guess');
+    await user.type(screen.getByLabelText('Amount'), '300');
+    await user.click(screen.getByRole('button', { name: 'Tires' }));
+    await user.click(approximate);
+    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    expect(await screen.findByText('Expense added')).toBeInTheDocument();
+    expect(sent).toMatchObject({ amount: eur('300'), category: 'TIRES', approximate: true });
   });
 
   it('validates required fields and limits before sending', async () => {
@@ -205,7 +232,32 @@ describe('EditExpensePage', () => {
       date: expense.date,
       odometer: 184320,
       note: 'OMV',
+      approximate: false,
     });
+  });
+
+  // specs/approximate-expenses.md AC3.
+  it('pre-fills the Approximate box and saves it unticked', async () => {
+    const expense = anExpense({ vehicleId: vehicle.id, approximate: true });
+    let sent: ExpenseRequest | undefined;
+    server.use(
+      http.get(api(`/expenses/${expense.id}`), () => HttpResponse.json(expense)),
+      http.put(api(`/expenses/${expense.id}`), async ({ request }) => {
+        sent = (await request.json()) as ExpenseRequest;
+        return HttpResponse.json({ ...expense, ...sent });
+      }),
+      ...listHandlers(),
+    );
+    const user = userEvent.setup();
+    renderApp(editUrl(expense));
+
+    const approximate = await screen.findByRole('checkbox', { name: 'Approximate' });
+    expect(approximate).toBeChecked();
+    await user.click(approximate);
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    expect(await screen.findByText('Changes saved')).toBeInTheDocument();
+    expect(sent).toMatchObject({ amount: expense.amount, approximate: false });
   });
 
   it('deletes the expense after confirmation and returns to the list', async () => {
