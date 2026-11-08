@@ -241,6 +241,7 @@ Existing rules that apply unchanged: BR-U1…U4, BR-C1…C6, BR-V1…V8, BR-E1�
 | `create_expense` (vehicleId + `ExpenseRequest`) | `createExpense` | — |
 | `update_expense` / `delete_expense` | `updateExpense` / `deleteExpense` | — / destructive |
 | `get_vehicle_insights` (vehicleId, year?) | `getVehicleInsights` | read-only |
+| `get_vehicle_all_time_insights` (vehicleId) | `getVehicleAllTimeInsights` | read-only |
 | `list_planned_expenses` (vehicleId) | `listPlannedExpenses` (incl. projection) | read-only |
 | `list_next_due` | `listNextDuePlannedExpenses` | read-only |
 | `create_planned_expense` / `update_planned_expense` | `createPlannedExpense` / `updatePlannedExpense` | — |
