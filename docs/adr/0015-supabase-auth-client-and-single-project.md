@@ -1,6 +1,6 @@
 # 0015. Supabase Auth client and a single Supabase project
 
-- **Status:** Accepted
+- **Status:** Accepted (closed sign-up superseded by [0019](0019-google-sign-in-open-sign-up.md))
 - **Date:** 2026-10-25
 
 ## Context

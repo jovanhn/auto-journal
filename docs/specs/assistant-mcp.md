@@ -201,7 +201,8 @@ Existing rules that apply unchanged: BR-U1…U4, BR-C1…C6, BR-V1…V8, BR-E1�
 - **Token lifetime:** access tokens live 1 h (Supabase default); Claude refreshes them with the refresh
   token. Revoking: the user removes the connector in Claude. Grants can also be revoked in the Supabase
   dashboard (owner).
-- **Sign-up stays closed:** the consent page only signs in existing accounts.
+- **Sign-up:** a signed-out user on the consent page signs in first (Google or password); a new Google
+  account becomes a new user (ADR 0019).
 - **Token scope:** Supabase OAuth tokens are full-access user tokens with `aud: authenticated` (no
   RFC 8707 audience binding). A token issued to Claude also works on `/api/**`, and an app token works on
   `/mcp`. Accepted for a private app (ADR 0018).

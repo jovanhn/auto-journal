@@ -7,10 +7,11 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
-| BR-U1 | Every API request requires a signed-in user (Supabase Auth, email + password).                | `shared/security/SecurityConfig` (JWT resource server, every `/api` request authenticated) → 401 |
+| BR-U1 | Every API request requires a signed-in user (Supabase Auth: Google or email + password).      | `shared/security/SecurityConfig` (JWT resource server, every `/api` request authenticated) → 401 |
 | BR-U2 | A user sees and changes only their own vehicles and everything under them. Another user's data responds as not found (404). | `VehicleService` (every query scoped to `owner_id`); `ExpenseService`, `PlannedExpenseService` (ownership via `VehicleApi.isOwnedBy`) → 404 |
 | BR-U3 | A user profile is created on the user's first authenticated request, with display currency `EUR`. | `UserProfileService.getOrCreate` (insert if absent) |
 | BR-U4 | A user can change their display currency to any supported currency.                           | `PATCH /api/me` → `UserProfileService`; contract enum → 400 |
+| BR-U5 | Any Google account can sign in; a new one becomes a new user, a matching email signs in as that user. | Supabase Auth Google provider, sign-ups on (ADR 0019); frontend `/auth/callback`; profile per BR-U3 |
 
 ## Money and currency
 
