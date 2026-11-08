@@ -83,6 +83,22 @@ An *assistant* is an MCP client (e.g. Claude) the user has authorized to act for
 | BR-A3 | autojournal never receives or stores images; the assistant extracts values from photos and sends only expense fields. | Tools accept only contract fields (no image input); no MCP resources or uploads |
 | BR-A4 | Tools that delete data are marked destructive, so the client asks the user to confirm.       | `McpTool.Access.DESTRUCTIVE` → `destructiveHint` (`McpServerIntegrationTest`) |
 
+## Limits
+
+Limits protect the database from abuse (one account filling it with data) while staying well above
+realistic use (specs/data-limits.md). All limits are application configuration, like exchange rates
+(BR-C3); users cannot change them. Values in *italics* are configurable; the default is in parentheses.
+
+| ID    | Rule                                                                                         | Enforced    |
+| ----- | -------------------------------------------------------------------------------------------- | ----------- |
+| BR-L1 | A user has at most *vehicles per user* vehicles (default 10). Adding one more is rejected.    | **Planned** — `VehicleService` → 409; `autojournal.limits.vehicles-per-user` (env `LIMIT_VEHICLES_PER_USER`) |
+| BR-L2 | A vehicle has at most *expenses per vehicle* expenses (default 3,000). Adding one more is rejected, also through mark as paid (BR-PL2), which then leaves the planned expense unchanged. | **Planned** — `ExpenseService` → 409; `autojournal.limits.expenses-per-vehicle` (env `LIMIT_EXPENSES_PER_VEHICLE`) |
+| BR-L3 | A vehicle has at most *planned expenses per vehicle* planned expenses (default 50). Adding one more is rejected. | **Planned** — `PlannedExpenseService` → 409; `autojournal.limits.planned-expenses-per-vehicle` (env `LIMIT_PLANNED_EXPENSES_PER_VEHICLE`) |
+| BR-L4 | Limits only block creating. Data above a limit (e.g. after a limit is lowered) is never deleted or hidden and can still be viewed, edited and deleted; creating works again once the count is below the limit. Editing never counts as creating. | **Planned** — count checked only on create |
+| BR-L5 | Odometer readings (vehicle odometer at start, expense odometer) are between 0 and *max odometer* km (default 2,000,000). | **Planned** — `VehicleService`, `ExpenseService` → 400 with the field; `autojournal.limits.max-odometer-km` (env `LIMIT_MAX_ODOMETER_KM`) |
+| BR-L6 | A planned expense recurs every N months, N between 1 and *max recurrence months* (default 120). | **Planned** — `PlannedExpenseService` → 400 field `recurrenceMonths`; `autojournal.limits.max-recurrence-months` (env `LIMIT_MAX_RECURRENCE_MONTHS`) |
+| BR-L7 | Purchase date and expense date are on or after *earliest date* (default 1900-01-01). A planned expense's due date is at most *planned years ahead* years after today (default 10). | **Planned** — services (UTC `Clock`) → 400 with the field; `autojournal.limits.earliest-date` (env `LIMIT_EARLIEST_DATE`), `autojournal.limits.planned-years-ahead` (env `LIMIT_PLANNED_YEARS_AHEAD`) |
+
 ## Interpretation notes (assumptions, confirm before changing)
 
 - Text fields are trimmed before validation and storage; uniqueness compares trimmed values.
