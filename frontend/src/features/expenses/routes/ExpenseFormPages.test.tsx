@@ -127,6 +127,48 @@ describe('AddExpensePage', () => {
   });
 });
 
+describe('AddExpensePage limits (specs/data-limits.md AC 3, 10)', () => {
+  it('shows the expense limit message and stays on the form', async () => {
+    server.use(
+      http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
+      http.post(api(`/vehicles/${vehicle.id}/expenses`), () =>
+        HttpResponse.json(problem(409, { detail: 'A vehicle can have at most 3000 expenses.' }), {
+          status: 409,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const { router } = renderApp(`/vehicles/${vehicle.id}/expenses/new`);
+
+    await user.type(await screen.findByLabelText('Amount'), '10');
+    await user.click(screen.getByRole('button', { name: 'Service' }));
+    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    expect(await screen.findByText('A vehicle can have at most 3000 expenses.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(`/vehicles/${vehicle.id}/expenses/new`);
+  });
+
+  it('shows an odometer bound error on the odometer field', async () => {
+    server.use(
+      http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
+      http.post(api(`/vehicles/${vehicle.id}/expenses`), () =>
+        HttpResponse.json(
+          problem(400, { errors: [{ field: 'odometer', message: 'must be at most 2000000' }] }),
+          { status: 400 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderApp(`/vehicles/${vehicle.id}/expenses/new`);
+
+    await user.type(await screen.findByLabelText('Amount'), '10');
+    await user.click(screen.getByRole('button', { name: 'Service' }));
+    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    expect(await screen.findByText('must be at most 2000000')).toBeInTheDocument();
+  });
+});
+
 describe('EditExpensePage', () => {
   const editUrl = (expense: Expense) => `/vehicles/${vehicle.id}/expenses/${expense.id}/edit`;
 
