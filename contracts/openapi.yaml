@@ -101,6 +101,9 @@ paths:
       tags: [vehicles]
       operationId: createVehicle
       summary: Add a vehicle
+      description: |
+        A user has at most *vehicles per user* vehicles (BR-L1, configurable, default 10), checked by the server.
+        Adding one more responds `409` with the limit in `detail`.
       requestBody:
         required: true
         content:
@@ -216,6 +219,9 @@ paths:
       tags: [expenses]
       operationId: createExpense
       summary: Add an expense to a vehicle
+      description: |
+        A vehicle has at most *expenses per vehicle* expenses (BR-L2, configurable, default 3,000), checked by
+        the server. Adding one more responds `409` with the limit in `detail`.
       parameters:
         - $ref: '#/components/parameters/VehicleId'
       requestBody:
@@ -237,6 +243,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/vehicles/{vehicleId}/insights:
     get:
@@ -367,6 +375,9 @@ paths:
       tags: [planning]
       operationId: createPlannedExpense
       summary: Plan an upcoming expense for a vehicle
+      description: |
+        A vehicle has at most *planned expenses per vehicle* planned expenses (BR-L3, configurable, default 50),
+        checked by the server. Adding one more responds `409` with the limit in `detail`.
       parameters:
         - $ref: '#/components/parameters/VehicleId'
       requestBody:
@@ -388,6 +399,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/planned-expenses/next-due:
     get:
@@ -456,7 +469,8 @@ paths:
       description: |
         Creates the expense from the request (BR-PL2) with the plan's category (the request's `category` is
         ignored), then removes a one-time plan or moves a recurring plan's due date forward by its recurrence
-        (BR-PL3), in one transaction. The expense is not linked to the plan afterwards.
+        (BR-PL3), in one transaction. The expense is not linked to the plan afterwards. When the vehicle already
+        has *expenses per vehicle* expenses (BR-L2), it responds `409` and the plan is unchanged.
       parameters:
         - $ref: '#/components/parameters/PlannedExpenseId'
       requestBody:
@@ -478,6 +492,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
 components:
   securitySchemes:
@@ -702,12 +718,15 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: At most *max odometer* km (BR-L5, configurable, default 2,000,000; checked by the server).
         purchasePrice:
           $ref: '#/components/schemas/Money'
         purchaseDate:
           type: string
           format: date
-          description: Not in the future (checked by the server).
+          description: |
+            Not in the future and not before *earliest date* (BR-L7, configurable, default 1900-01-01); checked by
+            the server.
     UpdateVehicleRequest:
       description: Same fields as CreateVehicleRequest.
       allOf:
@@ -724,7 +743,9 @@ components:
         date:
           type: string
           format: date
-          description: Not in the future (checked by the server); may be before the purchase date.
+          description: |
+            Not in the future and not before *earliest date* (BR-L7, configurable, default 1900-01-01); checked by
+            the server. May be before the purchase date.
         amount:
           $ref: '#/components/schemas/Money'
         category:
@@ -734,7 +755,9 @@ components:
           format: int32
           minimum: 0
           nullable: true
-          description: Optional reading in km; may be lower than the current odometer (BR-E4).
+          description: |
+            Optional reading in km, at most *max odometer* (BR-L5, configurable, default 2,000,000; checked by the
+            server); may be lower than the current odometer (BR-E4).
         note:
           type: string
           maxLength: 500
@@ -904,13 +927,17 @@ components:
         dueDate:
           type: string
           format: date
-          description: May be in the past (the plan is then overdue, BR-PL5).
+          description: |
+            May be in the past (the plan is then overdue, BR-PL5); at most *planned years ahead* years after today
+            (BR-L7, configurable, default 10; checked by the server, UTC).
         recurrenceMonths:
           type: integer
           format: int32
           minimum: 1
           nullable: true
-          description: Null (or absent) = one-time; otherwise it repeats every N months (12 = yearly).
+          description: |
+            Null (or absent) = one-time; otherwise it repeats every N months (12 = yearly), N at most *max
+            recurrence months* (BR-L6, configurable, default 120; checked by the server).
         note:
           type: string
           maxLength: 500
