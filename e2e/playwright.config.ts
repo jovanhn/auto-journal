@@ -47,6 +47,9 @@ export default defineConfig({
       name: 'backend',
       command: 'java -jar target/autojournal-0.0.1-SNAPSHOT.jar',
       cwd: '../backend',
+      // The shared E2E user keeps its vehicles between local runs; data limits (specs/data-limits.md) are
+      // covered by backend and component tests, so lift the vehicle limit here.
+      env: { LIMIT_VEHICLES_PER_USER: '100000' },
       url: 'http://localhost:8080/actuator/health',
       reuseExistingServer: !isCI,
       timeout: 180_000,
