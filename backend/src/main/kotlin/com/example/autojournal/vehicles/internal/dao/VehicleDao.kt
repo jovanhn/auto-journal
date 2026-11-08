@@ -23,6 +23,8 @@ class VehicleDao(
 
     fun findAllOwned(ownerId: UUID): List<VehicleEntity> = repository.findAllByOwnerIdOrderByCreatedAtAsc(ownerId)
 
+    fun countOwned(ownerId: UUID): Long = repository.countByOwnerId(ownerId)
+
     /** Whether another of the owner's vehicles (not [exceptId]) has this nickname, case-insensitive. */
     fun existsNickname(
         ownerId: UUID,

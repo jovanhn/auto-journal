@@ -48,6 +48,7 @@ com.example.autojournal                 @SpringBootApplication + @Modulithic(sha
       entity/     JPA entities for own tables only; other modules referenced by ID (vehicleId: UUID)
       dto/        internal DTOs          mapper/  plain Kotlin extension functions, no mapping libraries
   shared/         OPEN shared module: error handling, security (CurrentUser), money (Currency, ExchangeRates),
+                  limits (LimitProperties),
                   time (UTC Clock), AssignedIdEntity, MCP server (mcp/), GET /api/status. No business logic.
 com.example.contract                    generated (target/), outside the root → not a module. Never edit.
 ```

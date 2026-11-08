@@ -7,9 +7,11 @@ import com.example.autojournal.expenses.internal.dto.ExpenseSummaryView
 import com.example.autojournal.expenses.internal.dto.ExpenseView
 import com.example.autojournal.expenses.internal.dto.ExpenseYearView
 import com.example.autojournal.expenses.internal.entity.ExpenseEntity
+import com.example.autojournal.shared.error.DomainRuleViolationException
 import com.example.autojournal.shared.error.FieldViolation
 import com.example.autojournal.shared.error.InvalidRequestException
 import com.example.autojournal.shared.error.NotFoundException
+import com.example.autojournal.shared.limits.LimitProperties
 import com.example.autojournal.shared.money.Currency
 import com.example.autojournal.shared.money.ExchangeRates
 import com.example.autojournal.users.api.UserProfileApi
@@ -34,6 +36,7 @@ class ExpenseService(
     private val vehicleApi: VehicleApi,
     private val userProfileApi: UserProfileApi,
     private val exchangeRates: ExchangeRates,
+    private val limits: LimitProperties,
     private val clock: Clock,
 ) {
     /** AC3, AC4, BR-I1. [year] defaults to the current year; 1900 … current year. */
@@ -79,6 +82,7 @@ class ExpenseService(
     ): ExpenseView {
         ensureVehicleOwned(ownerId, vehicleId)
         validate(data)
+        ensureBelowExpenseLimit(vehicleId)
         val expense =
             ExpenseEntity(
                 vehicleId = vehicleId,
@@ -153,10 +157,23 @@ class ExpenseService(
         expenseDao.find(expenseId)?.takeIf { vehicleApi.isOwnedBy(it.vehicleId, ownerId) }
             ?: throw NotFoundException("Expense", expenseId)
 
-    /** BR-E2: the bound that depends on today's date (UTC). */
+    /** BR-E2: the bound that depends on today's date (UTC); BR-L5, BR-L7: the configured bounds. */
     private fun validate(data: ExpenseData) {
-        if (data.date.isAfter(LocalDate.now(clock))) {
-            throw InvalidRequestException(listOf(FieldViolation("date", "must not be in the future")))
+        val odometer = data.odometer
+        val errors =
+            listOfNotNull(
+                FieldViolation("date", "must not be in the future").takeIf { data.date.isAfter(LocalDate.now(clock)) },
+                FieldViolation("date", "must be on or after ${limits.earliestDate}").takeIf { data.date.isBefore(limits.earliestDate) },
+                FieldViolation("odometer", "must be at most ${limits.maxOdometerKm}")
+                    .takeIf { odometer != null && odometer > limits.maxOdometerKm },
+            )
+        if (errors.isNotEmpty()) throw InvalidRequestException(errors)
+    }
+
+    /** BR-L2, BR-L4: checked only when adding (also through mark as paid). */
+    private fun ensureBelowExpenseLimit(vehicleId: UUID) {
+        if (expenseDao.countByVehicle(vehicleId) >= limits.expensesPerVehicle) {
+            throw DomainRuleViolationException("A vehicle can have at most ${limits.expensesPerVehicle} expenses.")
         }
     }
 

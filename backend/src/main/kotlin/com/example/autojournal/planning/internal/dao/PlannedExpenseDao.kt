@@ -16,6 +16,8 @@ class PlannedExpenseDao(
 
     fun findAll(ids: Collection<UUID>): List<PlannedExpenseEntity> = repository.findAllById(ids)
 
+    fun countByVehicle(vehicleId: UUID): Long = repository.countByVehicleId(vehicleId)
+
     /** Earliest due date first; for the same date, oldest created first. */
     fun findByVehicle(vehicleId: UUID): List<PlannedExpenseEntity> = repository.findAllByVehicleIdOrderByDueDateAscCreatedAtAsc(vehicleId)
 

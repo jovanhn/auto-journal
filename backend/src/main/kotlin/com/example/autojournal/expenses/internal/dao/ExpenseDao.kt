@@ -16,6 +16,8 @@ class ExpenseDao(
 
     fun find(id: UUID): ExpenseEntity? = repository.findById(id).orElse(null)
 
+    fun countByVehicle(vehicleId: UUID): Long = repository.countByVehicleId(vehicleId)
+
     /** Newest date first; for the same date, newest created first. */
     fun findInPeriod(
         vehicleId: UUID,

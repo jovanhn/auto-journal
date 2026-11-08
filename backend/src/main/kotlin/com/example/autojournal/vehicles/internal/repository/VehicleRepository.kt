@@ -9,6 +9,8 @@ import java.util.UUID
 interface VehicleRepository : JpaRepository<VehicleEntity, UUID> {
     fun findAllByOwnerIdOrderByCreatedAtAsc(ownerId: UUID): List<VehicleEntity>
 
+    fun countByOwnerId(ownerId: UUID): Long
+
     fun findByIdAndOwnerId(
         id: UUID,
         ownerId: UUID,

@@ -9,6 +9,8 @@ import java.time.LocalDate
 import java.util.UUID
 
 interface ExpenseRepository : JpaRepository<ExpenseEntity, UUID> {
+    fun countByVehicleId(vehicleId: UUID): Long
+
     fun findAllByVehicleIdAndDateBetweenOrderByDateDescCreatedAtDesc(
         vehicleId: UUID,
         from: LocalDate,

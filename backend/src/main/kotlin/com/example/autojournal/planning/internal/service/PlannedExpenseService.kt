@@ -9,7 +9,11 @@ import com.example.autojournal.planning.internal.dto.PlannedExpenseData
 import com.example.autojournal.planning.internal.dto.PlannedExpenseListView
 import com.example.autojournal.planning.internal.dto.PlannedExpenseView
 import com.example.autojournal.planning.internal.entity.PlannedExpenseEntity
+import com.example.autojournal.shared.error.DomainRuleViolationException
+import com.example.autojournal.shared.error.FieldViolation
+import com.example.autojournal.shared.error.InvalidRequestException
 import com.example.autojournal.shared.error.NotFoundException
+import com.example.autojournal.shared.limits.LimitProperties
 import com.example.autojournal.shared.money.Currency
 import com.example.autojournal.shared.money.ExchangeRates
 import com.example.autojournal.users.api.UserProfileApi
@@ -34,6 +38,7 @@ class PlannedExpenseService(
     private val expenseApi: ExpenseApi,
     private val userProfileApi: UserProfileApi,
     private val exchangeRates: ExchangeRates,
+    private val limits: LimitProperties,
     private val clock: Clock,
 ) {
     /** AC3, AC4, AC11. */
@@ -78,6 +83,8 @@ class PlannedExpenseService(
         data: PlannedExpenseData,
     ): PlannedExpenseView {
         ensureVehicleOwned(ownerId, vehicleId)
+        validate(data)
+        ensureBelowPlanLimit(vehicleId)
         val plan =
             PlannedExpenseEntity(
                 vehicleId = vehicleId,
@@ -100,6 +107,7 @@ class PlannedExpenseService(
         data: PlannedExpenseData,
     ): PlannedExpenseView {
         val plan = findOwned(ownerId, plannedExpenseId)
+        validate(data)
         plan.category = data.category
         plan.estimatedAmount = data.estimatedAmount
         plan.currency = data.currency
@@ -152,6 +160,26 @@ class PlannedExpenseService(
     ): PlannedExpenseEntity =
         plannedExpenseDao.find(plannedExpenseId)?.takeIf { vehicleApi.isOwnedBy(it.vehicleId, ownerId) }
             ?: throw NotFoundException("Planned expense", plannedExpenseId)
+
+    /** BR-L6, BR-L7: the configured bounds; only the due date the user enters (not one moved by BR-PL3). */
+    private fun validate(data: PlannedExpenseData) {
+        val latestDueDate = LocalDate.now(clock).plusYears(limits.plannedYearsAhead.toLong())
+        val months = data.recurrenceMonths
+        val errors =
+            listOfNotNull(
+                FieldViolation("dueDate", "must be on or before $latestDueDate").takeIf { data.dueDate.isAfter(latestDueDate) },
+                FieldViolation("recurrenceMonths", "must be at most ${limits.maxRecurrenceMonths}")
+                    .takeIf { months != null && months > limits.maxRecurrenceMonths },
+            )
+        if (errors.isNotEmpty()) throw InvalidRequestException(errors)
+    }
+
+    /** BR-L3, BR-L4: checked only when adding. */
+    private fun ensureBelowPlanLimit(vehicleId: UUID) {
+        if (plannedExpenseDao.countByVehicle(vehicleId) >= limits.plannedExpensesPerVehicle) {
+            throw DomainRuleViolationException("A vehicle can have at most ${limits.plannedExpensesPerVehicle} planned expenses.")
+        }
+    }
 
     private fun PlannedExpenseEntity.amountInEur(): BigDecimal = estimatedAmount.multiply(exchangeRates.rateToEur(currency))
 

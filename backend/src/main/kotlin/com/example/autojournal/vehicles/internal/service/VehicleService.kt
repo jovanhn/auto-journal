@@ -4,6 +4,7 @@ import com.example.autojournal.shared.error.DomainRuleViolationException
 import com.example.autojournal.shared.error.FieldViolation
 import com.example.autojournal.shared.error.InvalidRequestException
 import com.example.autojournal.shared.error.NotFoundException
+import com.example.autojournal.shared.limits.LimitProperties
 import com.example.autojournal.shared.money.Currency
 import com.example.autojournal.shared.money.ExchangeRates
 import com.example.autojournal.users.api.UserProfileApi
@@ -26,6 +27,7 @@ class VehicleService(
     private val expenseOdometerReadDao: ExpenseOdometerReadDao,
     private val userProfileApi: UserProfileApi,
     private val exchangeRates: ExchangeRates,
+    private val limits: LimitProperties,
     private val clock: Clock,
 ) {
     /** BR-V8: in the order they were added. */
@@ -52,6 +54,7 @@ class VehicleService(
         data: VehicleData,
     ): VehicleView {
         validate(data)
+        ensureBelowVehicleLimit(ownerId)
         ensureNicknameFree(ownerId, data.nickname, exceptId = null)
         val vehicle =
             VehicleEntity(
@@ -110,15 +113,26 @@ class VehicleService(
         vehicleId: UUID,
     ): VehicleEntity = vehicleDao.findOwned(vehicleId, ownerId) ?: throw NotFoundException("Vehicle", vehicleId)
 
-    /** BR-V2, BR-V3: the bounds that depend on today's date (UTC). */
+    /** BR-V2, BR-V3: the bounds that depend on today's date (UTC); BR-L5, BR-L7: the configured bounds. */
     private fun validate(data: VehicleData) {
         val today = LocalDate.now(clock)
         val errors =
             listOfNotNull(
                 FieldViolation("year", "must be at most ${today.year + 1}").takeIf { data.year > today.year + 1 },
+                FieldViolation("odometerAtStart", "must be at most ${limits.maxOdometerKm}")
+                    .takeIf { data.odometerAtStart > limits.maxOdometerKm },
                 FieldViolation("purchaseDate", "must not be in the future").takeIf { data.purchaseDate.isAfter(today) },
+                FieldViolation("purchaseDate", "must be on or after ${limits.earliestDate}")
+                    .takeIf { data.purchaseDate.isBefore(limits.earliestDate) },
             )
         if (errors.isNotEmpty()) throw InvalidRequestException(errors)
+    }
+
+    /** BR-L1, BR-L4: checked only when adding. */
+    private fun ensureBelowVehicleLimit(ownerId: UUID) {
+        if (vehicleDao.countOwned(ownerId) >= limits.vehiclesPerUser) {
+            throw DomainRuleViolationException("You can have at most ${limits.vehiclesPerUser} vehicles.")
+        }
     }
 
     /** BR-V4. */
