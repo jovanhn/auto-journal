@@ -6,4 +6,6 @@ import java.util.UUID
 
 interface PlannedExpenseRepository : JpaRepository<PlannedExpenseEntity, UUID> {
     fun findAllByVehicleIdOrderByDueDateAscCreatedAtAsc(vehicleId: UUID): List<PlannedExpenseEntity>
+
+    fun countByVehicleId(vehicleId: UUID): Long
 }
