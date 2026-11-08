@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getGetExpenseSummaryQueryKey,
+  getGetVehicleAllTimeInsightsQueryKey,
   getGetVehicleInsightsQueryKey,
   getListExpensesQueryKey,
 } from '@/shared/api/generated/endpoints/expenses/expenses';
@@ -19,6 +20,7 @@ export function useInvalidateExpenses() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: getListExpensesQueryKey(vehicleId) }),
       queryClient.invalidateQueries({ queryKey: getGetVehicleInsightsQueryKey(vehicleId) }),
+      queryClient.invalidateQueries({ queryKey: getGetVehicleAllTimeInsightsQueryKey(vehicleId) }),
       queryClient.invalidateQueries({ queryKey: getGetExpenseSummaryQueryKey() }),
       queryClient.invalidateQueries({ queryKey: getGetVehicleQueryKey(vehicleId) }),
       queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() }),
