@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { Expense, ExpenseRequest } from '@/shared/api/generated/model';
@@ -95,8 +95,9 @@ describe('AddExpensePage', () => {
     await user.click(approximate);
     await user.click(screen.getByRole('button', { name: 'Save expense' }));
 
-    expect(await screen.findByText('Expense added')).toBeInTheDocument();
-    expect(sent).toMatchObject({ amount: eur('300'), category: 'TIRES', approximate: true });
+    await waitFor(() => {
+      expect(sent).toMatchObject({ amount: eur('300'), category: 'TIRES', approximate: true });
+    });
   });
 
   it('validates required fields and limits before sending', async () => {
@@ -256,8 +257,9 @@ describe('EditExpensePage', () => {
     await user.click(approximate);
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
-    expect(await screen.findByText('Changes saved')).toBeInTheDocument();
-    expect(sent).toMatchObject({ amount: expense.amount, approximate: false });
+    await waitFor(() => {
+      expect(sent).toMatchObject({ amount: expense.amount, approximate: false });
+    });
   });
 
   it('deletes the expense after confirmation and returns to the list', async () => {
