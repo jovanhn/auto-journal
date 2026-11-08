@@ -130,6 +130,7 @@ class McpServerIntegrationTest
                     "update_expense",
                     "delete_expense",
                     "get_vehicle_insights",
+                    "get_vehicle_all_time_insights",
                     "list_planned_expenses",
                     "list_next_due",
                     "create_planned_expense",
@@ -146,6 +147,7 @@ class McpServerIntegrationTest
                     "get_garage_summary",
                     "list_expenses",
                     "get_vehicle_insights",
+                    "get_vehicle_all_time_insights",
                     "list_planned_expenses",
                     "list_next_due",
                 )

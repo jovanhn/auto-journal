@@ -21,7 +21,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 
-/** specs/insights.md, acceptance criteria 1–9 and edge cases. */
+/** specs/insights.md, acceptance criteria 1–14 and edge cases. */
 @IntegrationTest
 class InsightsApiIntegrationTest
     @Autowired
@@ -41,6 +41,7 @@ class InsightsApiIntegrationTest
             odometerAtStart: Int = 171200,
             price: String = "8500",
             user: UUID = TestJwt.USER,
+            purchaseDate: LocalDate = LocalDate.of(2023, 5, 10),
         ): String {
             val body =
                 mapOf(
@@ -50,7 +51,7 @@ class InsightsApiIntegrationTest
                     "year" to 2016,
                     "odometerAtStart" to odometerAtStart,
                     "purchasePrice" to mapOf("amount" to price, "currency" to "EUR"),
-                    "purchaseDate" to "2023-05-10",
+                    "purchaseDate" to purchaseDate.toString(),
                 )
             return post("/api/vehicles", json.writeValueAsString(body), user)
         }
@@ -233,6 +234,123 @@ class InsightsApiIntegrationTest
                 jsonPath("$.total.currency") { value("USD") }
                 jsonPath("$.carValue.currency") { value("USD") }
                 jsonPath("$.categories[0].total.currency") { value("USD") }
+            }
+        }
+
+        @Test
+        fun `AC10 distance in a year runs from the previous year's last reading to this year's last reading`() {
+            val golf = createVehicle(odometerAtStart = 171200)
+            addExpense(golf, "60.00", LocalDate.of(year - 1, 6, 1), odometer = 175000)
+            addExpense(golf, "60.00", LocalDate.of(year - 1, 12, 1), odometer = 178000)
+            addExpense(golf, "60.00", odometer = 184320)
+
+            mockMvc.get("/api/vehicles/$golf/insights?year=${year - 1}") { signedInAs() }.andExpect {
+                jsonPath("$.yearDistanceKm") { value(6800) }
+                jsonPath("$.distanceKm") { value(13120) }
+            }
+            mockMvc.get("/api/vehicles/$golf/insights") { signedInAs() }.andExpect {
+                jsonPath("$.yearDistanceKm") { value(6320) }
+            }
+        }
+
+        @Test
+        fun `AC11 a year without odometer readings has no distance and no cost per km`() {
+            val golf = createVehicle()
+            addExpense(golf, "60.00", LocalDate.of(year - 1, 6, 1))
+            addExpense(golf, "60.00", odometer = 180000)
+
+            mockMvc.get("/api/vehicles/$golf/insights?year=${year - 1}") { signedInAs() }.andExpect {
+                status { isOk() }
+                jsonPath("$.yearDistanceKm") { value(null) }
+                jsonPath("$.yearCostPerKm") { value(null) }
+            }
+        }
+
+        @Test
+        fun `AC12 cost per km in a year is the year's total over the year's distance`() {
+            val golf = createVehicle(odometerAtStart = 171200)
+            addExpense(golf, "999.00", LocalDate.of(year - 1, 12, 1), odometer = 178000)
+            addExpense(golf, "2000.00", odometer = 184320)
+            addExpense(golf, "148.00", LocalDate.of(year, 1, 1))
+
+            // 2,148 ÷ 6,320 = 0.3399 → 0.34
+            mockMvc.get("/api/vehicles/$golf/insights") { signedInAs() }.andExpect {
+                jsonPath("$.yearDistanceKm") { value(6320) }
+                jsonPath("$.yearCostPerKm.amount") { value("0.34") }
+                jsonPath("$.yearCostPerKm.currency") { value("EUR") }
+            }
+        }
+
+        @Test
+        fun `edge case readings that do not pass the previous year's odometer give 0 km and no cost per km`() {
+            val golf = createVehicle(odometerAtStart = 171200)
+            addExpense(golf, "60.00", LocalDate.of(year - 1, 6, 1), odometer = 175000)
+            addExpense(golf, "60.00", odometer = 174000)
+
+            mockMvc.get("/api/vehicles/$golf/insights") { signedInAs() }.andExpect {
+                jsonPath("$.yearDistanceKm") { value(0) }
+                jsonPath("$.yearCostPerKm") { value(null) }
+            }
+        }
+
+        @Test
+        fun `AC13 all time totals every expense, averages from the purchase month and totals each year`() {
+            val purchase = today.withDayOfMonth(1).minusMonths(19)
+            val golf = createVehicle(odometerAtStart = 171200, price = "8500", purchaseDate = purchase)
+            addExpense(golf, "1200.00", LocalDate.of(year - 1, 6, 1), "TIRES")
+            addExpense(golf, "2000.00", LocalDate.of(year, 1, 1), "FUEL")
+            addExpense(golf, "148.00", odometer = 184320, category = "FUEL")
+
+            // 3,348 ÷ 20 months = 167.40; lifetime (3,348 + 8,500) ÷ 13,120 = 0.903 → 0.90
+            mockMvc.get("/api/vehicles/$golf/insights/all-time") { signedInAs() }.andExpect {
+                status { isOk() }
+                jsonPath("$.firstYear") { value(year - 1) }
+                jsonPath("$.total.amount") { value("3348.00") }
+                jsonPath("$.averagePerMonth.amount") { value("167.40") }
+                jsonPath("$.yearTotals") { value(hasSize<Any>(2)) }
+                jsonPath("$.yearTotals[0].year") { value(year - 1) }
+                jsonPath("$.yearTotals[0].total.amount") { value("1200.00") }
+                jsonPath("$.yearTotals[1].year") { value(year) }
+                jsonPath("$.yearTotals[1].total.amount") { value("2148.00") }
+                jsonPath("$.categories[0].category") { value("FUEL") }
+                jsonPath("$.categories[0].sharePercent") { value(64) }
+                jsonPath("$.categories[1].category") { value("TIRES") }
+                jsonPath("$.carValue.amount") { value("8500.00") }
+                jsonPath("$.distanceKm") { value(13120) }
+                jsonPath("$.costPerKm.amount") { value("0.90") }
+            }
+        }
+
+        @Test
+        fun `AC14 all time averages from the first expense when it is before the purchase`() {
+            val golf = createVehicle(purchaseDate = today)
+            addExpense(golf, "240.00", today.withDayOfMonth(1).minusMonths(11))
+
+            mockMvc.get("/api/vehicles/$golf/insights/all-time") { signedInAs() }.andExpect {
+                jsonPath("$.averagePerMonth.amount") { value("20.00") }
+            }
+        }
+
+        @Test
+        fun `edge case all time with no expenses has one zero year and no categories`() {
+            val golf = createVehicle()
+
+            mockMvc.get("/api/vehicles/$golf/insights/all-time") { signedInAs() }.andExpect {
+                status { isOk() }
+                jsonPath("$.firstYear") { value(year) }
+                jsonPath("$.total.amount") { value("0.00") }
+                jsonPath("$.averagePerMonth.amount") { value("0.00") }
+                jsonPath("$.yearTotals") { value(hasSize<Any>(1)) }
+                jsonPath("$.categories") { value(hasSize<Any>(0)) }
+                jsonPath("$.costPerKm") { value(null) }
+            }
+        }
+
+        @Test
+        fun `AC9 another user's vehicle is not found in all time`() {
+            val theirs = createVehicle(user = otherUser)
+            mockMvc.get("/api/vehicles/$theirs/insights/all-time") { signedInAs() }.andExpect {
+                status { isNotFound() }
             }
         }
 

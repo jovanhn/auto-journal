@@ -10,6 +10,7 @@ import com.example.contract.model.Expense
 import com.example.contract.model.ExpenseRequest
 import com.example.contract.model.ExpenseSummary
 import com.example.contract.model.ExpenseYear
+import com.example.contract.model.VehicleAllTimeInsights
 import com.example.contract.model.VehicleInsights
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -58,4 +59,7 @@ class ExpenseController(
         year: Int?,
     ): ResponseEntity<VehicleInsights> =
         ResponseEntity.ok(insightsService.insights(currentUser.id(), vehicleId, year).toContract())
+
+    override fun getVehicleAllTimeInsights(vehicleId: UUID): ResponseEntity<VehicleAllTimeInsights> =
+        ResponseEntity.ok(insightsService.allTime(currentUser.id(), vehicleId).toContract())
 }

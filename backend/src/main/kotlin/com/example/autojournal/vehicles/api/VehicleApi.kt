@@ -1,6 +1,7 @@
 package com.example.autojournal.vehicles.api
 
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.util.UUID
 
 /** What other modules may ask about a vehicle. */
@@ -24,6 +25,8 @@ data class VehicleFacts(
     /** BR-V7: the car value is the purchase price, converted with its rate snapshot. */
     val purchasePriceAmount: BigDecimal,
     val purchasePriceRateToEur: BigDecimal,
+    /** Start of the all-time average (BR-I9). */
+    val purchaseDate: LocalDate,
     val odometerAtStart: Int,
     /** BR-V5. */
     val currentOdometer: Int,
