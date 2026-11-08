@@ -84,7 +84,7 @@ they are not part of the gate. Configure **only `ci-ok`** as the required status
 
 The `e2e` job signs in a real Supabase user and needs these repository secrets: `SUPABASE_URL`,
 `SUPABASE_PUBLISHABLE_KEY`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` (the test user is created by hand in the
-Supabase dashboard; sign-up is closed).
+Supabase dashboard; there is no email sign-up).
 
 ## Deployment
 
@@ -156,6 +156,19 @@ timeout; on a timeout, a connection error, a 502/503/504 or a body that is not t
 50 s and retries, at most 3 times, then reports the backend as unavailable. The MCP server tells
 assistants the same (specs/assistant-mcp.md, AC 2–3). Cold starts currently take 133–169 s (Render logs,
 2026-11), so the 3 retries are needed; a faster startup or keep-warm ping is a separate decision.
+
+### Google sign-in (ADR 0019)
+
+Owner steps; agents have no access to the Supabase or Google dashboards:
+
+1. Google Cloud console → OAuth client (type *Web application*); Authorized redirect URI
+   `https://dnkgfohtcbidlzjivkkl.supabase.co/auth/v1/callback`. The client secret goes only into Supabase.
+2. Supabase → Authentication → Sign In / Providers → Google: enabled, with the client id and secret.
+   **Allow new users to sign up** is on (any Google account becomes a user). Keep **Confirm email** on, so
+   an email sign-up made directly against the Supabase API needs a verified address.
+3. Authentication → URL Configuration → **Redirect URLs** must include `https://autojournal.skverly.com/**`
+   and `http://localhost:5173/**`; the app returns to `<origin>/auth/callback`. A URL not on the list falls
+   back to the Site URL and the sign-in is lost. Keep the Site URL exact (see below).
 
 ### Supabase OAuth server (assistants, ADR 0018)
 
