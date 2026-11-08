@@ -782,9 +782,15 @@ components:
           maxLength: 500
           nullable: true
           description: Optional; trimmed, blank is stored as null.
+        approximate:
+          type: boolean
+          default: false
+          description: |
+            The amount, the date or both are a best guess (BR-E6). Only marks the expense; it counts in every total
+            like any other. Omitted = false (also on update, which replaces all fields).
     Expense:
       type: object
-      required: [id, vehicleId, date, amount, displayAmount, category, odometer, note, createdAt]
+      required: [id, vehicleId, date, amount, displayAmount, category, odometer, note, approximate, createdAt]
       properties:
         id:
           type: string
@@ -812,6 +818,9 @@ components:
         note:
           type: string
           nullable: true
+        approximate:
+          type: boolean
+          description: The amount, the date or both are a best guess (BR-E6).
         createdAt:
           type: string
           format: date-time
