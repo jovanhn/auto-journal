@@ -33,6 +33,7 @@ fun ExpenseRequest.toData(): ExpenseData =
         category = Category.valueOf(category.name),
         odometer = odometer,
         note = note?.trim()?.ifEmpty { null },
+        approximate = approximate ?: false,
     )
 
 fun ExpenseView.toContract(): Expense =
@@ -45,6 +46,7 @@ fun ExpenseView.toContract(): Expense =
         category = ContractCategory.valueOf(expense.category.name),
         odometer = expense.odometer,
         note = expense.note,
+        approximate = expense.approximate,
         createdAt = expense.createdAt.atOffset(ZoneOffset.UTC),
     )
 

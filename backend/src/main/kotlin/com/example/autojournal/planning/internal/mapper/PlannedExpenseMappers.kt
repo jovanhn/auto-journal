@@ -39,6 +39,7 @@ fun ExpenseRequest.toNewExpense(): NewExpense =
         category = Category.valueOf(category.name),
         odometer = odometer,
         note = note?.trim()?.ifEmpty { null },
+        approximate = approximate ?: false,
     )
 
 fun PlannedExpenseView.toContract(): PlannedExpense =
@@ -74,6 +75,7 @@ fun CreatedExpense.toContract(): Expense =
         category = ContractCategory.valueOf(category.name),
         odometer = odometer,
         note = note,
+        approximate = approximate,
         createdAt = createdAt.atOffset(ZoneOffset.UTC),
     )
 

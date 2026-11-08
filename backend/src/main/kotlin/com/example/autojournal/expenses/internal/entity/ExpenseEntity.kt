@@ -35,6 +35,9 @@ class ExpenseEntity(
     var odometer: Int?,
     @Column(name = "note", length = 500)
     var note: String?,
+    /** BR-E6: the amount and/or date is a best guess; only marks the expense. */
+    @Column(name = "approximate", nullable = false)
+    var approximate: Boolean = false,
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now(),
 ) : AssignedIdEntity()

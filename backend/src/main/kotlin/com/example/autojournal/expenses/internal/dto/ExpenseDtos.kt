@@ -15,6 +15,8 @@ data class ExpenseData(
     val category: Category,
     val odometer: Int?,
     val note: String?,
+    /** BR-E6. */
+    val approximate: Boolean,
 )
 
 /** An expense with its amount in the user's display currency (BR-C6). */
