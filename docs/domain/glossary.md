@@ -9,6 +9,7 @@
 | **Vehicle**            | A car owned by exactly one user: nickname, make, model, year, optional plate, odometer at start, purchase price and date. |
 | **Garage**             | The list of the user's vehicles (home screen).                                                       |
 | **Expense**            | A real, paid cost of a vehicle: date, amount, currency, category, optional odometer and note.        |
+| **Approximate expense** | An expense whose amount, date or both are a best guess. Marked with `≈` in the list; counts like any other expense in totals. |
 | **Category**           | Fixed classification of an expense or planned expense: Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking & tolls, Other. |
 | **Planned expense**    | An expected future cost of a vehicle: category, estimated amount, currency, due date, recurrence, optional note. No title. |
 | **Recurrence**         | How often a planned expense repeats: *one-time*, or *every N months* (N ≥ 1; 12 = yearly).           |

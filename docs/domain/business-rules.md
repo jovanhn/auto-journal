@@ -46,6 +46,7 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | BR-E3 | Category is one of the fixed list: Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking & tolls, Other. | Contract `Category` enum → 400; DB check |
 | BR-E4 | An expense odometer may be lower than the current odometer (back-dated entries); it never lowers the current odometer. | No upper/lower check against the current odometer; BR-V5 takes the max |
 | BR-E5 | An expense can be edited and deleted; the current odometer follows (BR-V5).                   | `PUT`/`DELETE /api/expenses/{expenseId}`; UI confirm dialog |
+| BR-E6 | An expense can be marked as approximate (its amount, date or both are a best guess); default not approximate. The flag only marks the expense (`≈` in the list): approximate expenses count like any other in every total and insight and follow BR-E1…E4. Changing only the flag keeps the rate snapshot. | **Planned** (specs/approximate-expenses.md) |
 
 ## Planned expenses
 
