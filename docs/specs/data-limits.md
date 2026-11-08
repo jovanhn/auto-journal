@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned — release **v5 (limits)**.
+Implemented — release **v5 (limits)**.
 
 ## Goal
 
