@@ -275,6 +275,25 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/vehicles/{vehicleId}/insights/all-time:
+    get:
+      tags: [expenses]
+      operationId: getVehicleAllTimeInsights
+      summary: A vehicle's figures over all time (BR-I9) plus its car value, distance and cost per km
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: The vehicle's all-time insights, all money in the display currency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleAllTimeInsights'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/expenses/summary:
     get:
       tags: [expenses]
@@ -854,6 +873,8 @@ components:
         - carValue
         - distanceKm
         - costPerKm
+        - yearDistanceKm
+        - yearCostPerKm
       properties:
         year:
           type: integer
@@ -894,6 +915,74 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/Money'
+        yearDistanceKm:
+          type: integer
+          format: int32
+          nullable: true
+          description: Distance driven in the year (BR-I7); null when no expense in the year has an odometer reading.
+        yearCostPerKm:
+          description: The year's total ÷ distance driven in the year (BR-I8); null when that distance is null or 0.
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Money'
+    VehicleAllTimeInsights:
+      type: object
+      description: One vehicle's figures over all time (BR-I9) and its lifetime figures (BR-I4, BR-V7), in the display currency.
+      required:
+        - firstYear
+        - total
+        - averagePerMonth
+        - yearTotals
+        - categories
+        - carValue
+        - distanceKm
+        - costPerKm
+      properties:
+        firstYear:
+          type: integer
+          format: int32
+          description: Year of the vehicle's earliest expense, or the current year if it has none.
+        total:
+          $ref: '#/components/schemas/Money'
+        averagePerMonth:
+          description: total ÷ months from the month of the earlier of the purchase date and the first expense through the current month.
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        yearTotals:
+          type: array
+          description: One total per calendar year, firstYear … current year, oldest first.
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/YearTotal'
+        categories:
+          type: array
+          description: Categories with expenses, highest total first (BR-I2).
+          items:
+            $ref: '#/components/schemas/CategoryTotal'
+        carValue:
+          description: Car value (= purchase price, BR-V7) at its rate snapshot.
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        distanceKm:
+          type: integer
+          format: int32
+          description: Current odometer − odometer at start.
+        costPerKm:
+          description: (all expenses + purchase price) ÷ distance driven, lifetime (BR-I4); null when the distance is 0.
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Money'
+    YearTotal:
+      type: object
+      required: [year, total]
+      properties:
+        year:
+          type: integer
+          format: int32
+        total:
+          $ref: '#/components/schemas/Money'
     CategoryTotal:
       type: object
       required: [category, total, sharePercent]
