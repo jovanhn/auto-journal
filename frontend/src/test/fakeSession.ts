@@ -30,6 +30,30 @@ export async function signIn(email: string, password: string): Promise<void> {
   return Promise.resolve();
 }
 
+/** Fake Google sign-in: leaving for Google is recorded; only `fakeGoogle.validCode` completes it. */
+export const fakeGoogle = {
+  validCode: 'google-code',
+  email: 'google.driver@example.com',
+  redirects: [] as string[],
+  failStart: false,
+  reset() {
+    this.redirects = [];
+    this.failStart = false;
+  },
+};
+
+export async function signInWithGoogle(redirect: string): Promise<void> {
+  if (fakeGoogle.failStart) throw new Error('Network error');
+  fakeGoogle.redirects.push(redirect);
+  return Promise.resolve();
+}
+
+export async function completeGoogleSignIn(code: string): Promise<void> {
+  if (code !== fakeGoogle.validCode) throw new Error('Invalid code');
+  fakeAuth.signedIn(fakeGoogle.email);
+  return Promise.resolve();
+}
+
 export async function signOut(): Promise<void> {
   session = null;
   listeners.forEach((listener) => {

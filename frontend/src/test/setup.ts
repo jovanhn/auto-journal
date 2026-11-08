@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
-import { fakeAuth, fakeOAuth } from './fakeSession';
+import { fakeAuth, fakeGoogle, fakeOAuth } from './fakeSession';
 import { server } from './server';
 
 // Component tests never call Supabase: the auth module is replaced by an in-memory fake.
@@ -32,6 +32,7 @@ beforeAll(() => {
 beforeEach(() => {
   fakeAuth.signedIn();
   fakeOAuth.reset();
+  fakeGoogle.reset();
 });
 afterEach(() => {
   cleanup();
