@@ -302,6 +302,7 @@ class McpToolsIntegrationTest
             listOf(
                 "list_expenses" to mapOf("vehicleId" to theirs),
                 "get_vehicle_insights" to mapOf("vehicleId" to theirs),
+                "get_vehicle_all_time_insights" to mapOf("vehicleId" to theirs),
                 "list_planned_expenses" to mapOf("vehicleId" to theirs),
                 "update_vehicle" to vehicle("Mine") + ("vehicleId" to theirs),
                 "delete_vehicle" to mapOf("vehicleId" to theirs),

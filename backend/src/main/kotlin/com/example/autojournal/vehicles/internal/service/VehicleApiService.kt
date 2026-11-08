@@ -31,6 +31,7 @@ class VehicleApiService(
             id = vehicle.id,
             purchasePriceAmount = vehicle.purchasePriceAmount,
             purchasePriceRateToEur = vehicle.purchasePriceRateToEur,
+            purchaseDate = vehicle.purchaseDate,
             odometerAtStart = vehicle.odometerAtStart,
             currentOdometer = maxOf(vehicle.odometerAtStart, maxReading ?: 0),
         )

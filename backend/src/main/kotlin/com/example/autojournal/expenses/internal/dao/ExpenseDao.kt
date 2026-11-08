@@ -3,7 +3,6 @@ package com.example.autojournal.expenses.internal.dao
 import com.example.autojournal.expenses.internal.entity.ExpenseEntity
 import com.example.autojournal.expenses.internal.repository.ExpenseRepository
 import org.springframework.stereotype.Component
-import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
@@ -25,9 +24,10 @@ class ExpenseDao(
         to: LocalDate,
     ): List<ExpenseEntity> = repository.findAllByVehicleIdAndDateBetweenOrderByDateDescCreatedAtDesc(vehicleId, from, to)
 
-    fun earliestDate(vehicleId: UUID): LocalDate? = repository.findEarliestDate(vehicleId)
+    /** All of the vehicle's expenses, any order (insights over all years). */
+    fun findAllByVehicle(vehicleId: UUID): List<ExpenseEntity> = repository.findAllByVehicleId(vehicleId)
 
-    fun lifetimeTotalInEur(vehicleId: UUID): BigDecimal = repository.sumInEur(vehicleId)
+    fun earliestDate(vehicleId: UUID): LocalDate? = repository.findEarliestDate(vehicleId)
 
     fun delete(expense: ExpenseEntity) = repository.delete(expense)
 }

@@ -65,4 +65,28 @@ data class VehicleInsightsView(
     val distanceKm: Int,
     /** BR-I4; null when the distance driven is 0. */
     val costPerKm: BigDecimal?,
+    /** BR-I7; null when no expense in the year has an odometer reading. */
+    val yearDistanceKm: Int?,
+    /** BR-I8; null when [yearDistanceKm] is null or 0. */
+    val yearCostPerKm: BigDecimal?,
+)
+
+/** One vehicle's all-time insights (BR-I9); every amount in [currency] (BR-C6). */
+data class VehicleAllTimeInsightsView(
+    val firstYear: Int,
+    val currency: Currency,
+    val total: BigDecimal,
+    val averagePerMonth: BigDecimal,
+    /** firstYear … current year, oldest first. */
+    val yearTotals: List<YearTotalView>,
+    val categories: List<CategoryTotalView>,
+    val carValue: BigDecimal,
+    val distanceKm: Int,
+    /** BR-I4; null when the distance driven is 0. */
+    val costPerKm: BigDecimal?,
+)
+
+data class YearTotalView(
+    val year: Int,
+    val total: BigDecimal,
 )

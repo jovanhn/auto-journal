@@ -87,8 +87,8 @@ class ExpenseMcpTools(
                 title = "Vehicle insights",
                 description =
                     "A vehicle's figures for one calendar year (total, average per month, the 12 monthly totals, " +
-                        "totals by category) and lifetime figures (car value, distance, cost per km), in the display " +
-                        "currency. Use monthTotals and categories to draw charts.",
+                        "totals by category, distance and cost per km in that year) and lifetime figures (car value, " +
+                        "distance, cost per km), in the display currency. Use monthTotals and categories to draw charts.",
                 access = Access.READ,
                 inputSchema =
                     schemas.input(ids = mapOf(VEHICLE_ID to VEHICLE_ID_DESCRIPTION), extra = mapOf(YEAR to year("getVehicleInsights"))),
@@ -96,6 +96,16 @@ class ExpenseMcpTools(
             ) { args ->
                 insightsService.insights(currentUser.id(), args.id(VEHICLE_ID), args.optionalInt(YEAR, MIN_YEAR)).toContract()
             },
+            McpTool(
+                name = "get_vehicle_all_time_insights",
+                title = "Vehicle all-time insights",
+                description =
+                    "A vehicle's figures over all time (total, average per month, one total per year, totals by " +
+                        "category) and lifetime car value, distance and cost per km, in the display currency.",
+                access = Access.READ,
+                inputSchema = schemas.input(ids = mapOf(VEHICLE_ID to VEHICLE_ID_DESCRIPTION)),
+                outputSchema = schemas.schema("VehicleAllTimeInsights"),
+            ) { args -> insightsService.allTime(currentUser.id(), args.id(VEHICLE_ID)).toContract() },
         )
 
     private fun year(operationId: String) = schemas.parameter(operationId, YEAR)
