@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress — release **v6 (approximate expenses)**
+Implemented — release **v6 (approximate expenses)**
 
 ## Goal
 

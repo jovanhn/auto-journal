@@ -159,7 +159,7 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | `VehicleCard`          | Garage                  | Whole card is a link; icon tile, nickname, make·model·year·km, value, year-to-date total; optional footer with next planned expense (warning color when due soon) |
 | `PeriodSwitcher`       | Expenses                | Prev/next 44 px icon buttons around "2026 · All categories"                               |
 | `ExpenseMonthGroup`    | Expenses                | Month name + month total header, then a card of `ExpenseRow`s                             |
-| `ExpenseRow`           | Expenses                | Category dot, title (category · note), date · odometer (mono) or note, amount right       |
+| `ExpenseRow`           | Expenses                | Category dot, title (category · note), date · odometer (mono) or note, amount right (`≈ ` prefix when approximate) |
 | `MonthlyBarChart`      | Insights                | 10–12 bars, current month `accent`, others `chart-muted`; `role="img"` + `aria-label` summary; mono month initials |
 | `YearlyBarChart`       | Insights (All time)     | Same look as `MonthlyBarChart`, one bar per year, current year `accent`; full years up to 6 bars, `'25` beyond |
 | `PeriodToggle`         | Insights                | Two toggle buttons (`aria-pressed`) "Year" / "All time", selected = filled accent, like `CategoryPicker` |
@@ -168,6 +168,7 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | `StatusPill`           | Planned                 | `warning` ("Due in 24 days") and `neutral` ("In 4 months")                                |
 | `DashedAddButton`      | Garage, Planned         | 52 px, dashed border, plus icon                                                           |
 | `CategoryPicker`       | Add expense             | 2-column grid of toggle buttons (`aria-pressed`), selected = filled accent                |
+| Approximate checkbox   | Add expense             | shadcn `Checkbox` + label "Approximate" + hint "Amount or date is a best guess", below date · odometer |
 | `AmountInput`          | Add expense             | Centered, `€` prefix, 44 px tabular, `inputmode="decimal"`                                 |
 | Form field             | Add expense/vehicle     | shadcn `Field`: label 13/600 muted above a 48 px input; optional helper text 12 px muted; "(optional)" in the label |
 | `Fab`                  | Expenses                | Pill, icon + label, bottom-right above the tab bar                                         |
@@ -215,3 +216,4 @@ the affected part:
 | v0.0.1  | 2026-10-24 | Initial design: Garage, Vehicle (Expenses, Insights, Planned), Add expense, Add vehicle.       |
 | v0.0.2  | 2026-11-07 | Brand mark (fuel receipt) for favicon, app icon, Sign in, OAuth consent and the app bar. Export unchanged. |
 | v0.0.3  | 2026-11-08 | Insights: Year / All time `PeriodToggle`, `YearlyBarChart`, year distance and per km tiles. Export unchanged. |
+| v0.0.4  | 2026-11-08 | Approximate expenses: "Approximate" checkbox on the expense form, `≈` on `ExpenseRow`. Export unchanged. |

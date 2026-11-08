@@ -37,6 +37,7 @@ Depends on: specs/auth.md, specs/vehicles.md.
 - BR-V5: Current odometer = max(odometer at start, expense odometer readings).
 - BR-V6: Deleting a vehicle deletes its expenses.
 - BR-I1: Yearly and monthly totals = sum of the expenses dated in that year / month.
+- BR-E6: An expense can be marked as approximate (`≈` in the list); see specs/approximate-expenses.md.
 - BR-I6: All-cars summary: this year's total across vehicles; average per month = that total ÷ months
   elapsed this year, including the current month.
 
