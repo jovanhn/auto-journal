@@ -8,6 +8,7 @@ import type {
   ProblemDetail,
   UserProfile,
   Vehicle,
+  VehicleAllTimeInsights,
   VehicleInsights,
 } from '@/shared/api/generated/model';
 
@@ -62,6 +63,23 @@ export const aVehicleInsights = (overrides: Partial<VehicleInsights> = {}): Vehi
   total: eur('0.00'),
   averagePerMonth: eur('0.00'),
   monthTotals: Array.from({ length: 12 }, () => eur('0.00')),
+  categories: [],
+  carValue: eur('8500.00'),
+  distanceKm: 0,
+  costPerKm: null,
+  yearDistanceKm: null,
+  yearCostPerKm: null,
+  ...overrides,
+});
+
+/** All-time insights of a car without expenses unless overridden. */
+export const aVehicleAllTimeInsights = (
+  overrides: Partial<VehicleAllTimeInsights> = {},
+): VehicleAllTimeInsights => ({
+  firstYear: new Date().getFullYear(),
+  total: eur('0.00'),
+  averagePerMonth: eur('0.00'),
+  yearTotals: [{ year: new Date().getFullYear(), total: eur('0.00') }],
   categories: [],
   carValue: eur('8500.00'),
   distanceKm: 0,

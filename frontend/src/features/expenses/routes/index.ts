@@ -19,6 +19,14 @@ const validateYearSearch = (search: Record<string, unknown>): YearSearch => {
   return Number.isInteger(year) && year > 0 ? { year } : {};
 };
 
+export type InsightsSearch = YearSearch & {
+  /** `all` shows all-time insights; one year (`year`) when absent. */
+  period?: 'all';
+};
+
+const validateInsightsSearch = (search: Record<string, unknown>): InsightsSearch =>
+  search.period === 'all' ? { period: 'all' } : validateYearSearch(search);
+
 /** The vehicle page opens on its Expenses tab (specs/expenses.md, UI notes). */
 export const vehicleExpensesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -27,11 +35,11 @@ export const vehicleExpensesRoute = createRoute({
   component: VehicleExpensesPage,
 });
 
-/** Vehicle · Insights (specs/insights.md); same year switcher as Expenses. */
+/** Vehicle · Insights (specs/insights.md); Year (same year switcher as Expenses) or All time. */
 export const vehicleInsightsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/insights',
-  validateSearch: (search: Record<string, unknown>) => validateYearSearch(search),
+  validateSearch: (search: Record<string, unknown>) => validateInsightsSearch(search),
   component: InsightsPage,
 });
 
