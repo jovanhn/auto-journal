@@ -1,6 +1,7 @@
 /**
- * The only module that talks to Supabase, and only for auth (ADR 0015): sign in, session, token
- * refresh, sign out, and the consent step of Supabase's OAuth server for assistants (ADR 0018). Never use the Supabase client for data — only the backend reads the database.
+ * The only module that talks to Supabase, and only for auth (ADR 0015): sign in (password or Google,
+ * ADR 0019), session, token refresh, sign out, and the consent step of Supabase's OAuth server for
+ * assistants (ADR 0018). Never use the Supabase client for data — only the backend reads the database.
  * Tests replace this module with `src/test/fakeSession.ts`.
  */
 import { createClient, isAuthApiError, type SupabaseClient } from '@supabase/supabase-js';
@@ -17,7 +18,9 @@ const supabase = (): SupabaseClient => {
       throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be set (see .env.example).');
     }
     client = createClient(url, key, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+      // PKCE: Google sign-in returns a one-time `?code=` to /auth/callback, exchanged there by
+      // completeGoogleSignIn (not detected automatically, so the exchange happens exactly once).
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'pkce' },
     });
   }
   return client;
@@ -37,6 +40,27 @@ export async function signIn(email: string, password: string): Promise<void> {
   if (!error) return;
   if (isAuthApiError(error) && error.status === 400) throw new InvalidCredentialsError();
   throw error;
+}
+
+/**
+ * Leaves the app for Google's sign-in page. Supabase sends the browser back to `/auth/callback` with a
+ * one-time code; `redirect` is the app path to open afterwards. Any Google account may sign in
+ * (a new one becomes a new user, specs/auth.md BR-U5).
+ */
+export async function signInWithGoogle(redirect: string): Promise<void> {
+  const callback = new URL('/auth/callback', window.location.origin);
+  callback.searchParams.set('redirect', redirect);
+  const { error } = await supabase().auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: callback.toString() },
+  });
+  if (error) throw error;
+}
+
+/** Exchanges the code from the Google sign-in callback for a session. Throws if it is invalid or used. */
+export async function completeGoogleSignIn(code: string): Promise<void> {
+  const { error } = await supabase().auth.exchangeCodeForSession(code);
+  if (error) throw error;
 }
 
 /** Clears the session on this device only. Listeners registered with {@link onSignedOut} run. */
