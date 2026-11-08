@@ -43,6 +43,7 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `VITE_SUPABASE_URL`      | frontend (build) | project URL                                     | project URL                   |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | frontend (build) | project publishable key                  | project publishable key       |
 | `EXCHANGE_RATE_RSD_PER_EUR`, `EXCHANGE_RATE_USD_PER_EUR` | backend (`autojournal.exchange-rates.rsd-per-eur` / `usd-per-eur` → `shared.money.ExchangeRates`) | `117.00`, `1.10` | set by the owner (ADR 0014); a change affects only new rate snapshots and display conversions |
+| `LIMIT_VEHICLES_PER_USER`, `LIMIT_EXPENSES_PER_VEHICLE`, `LIMIT_PLANNED_EXPENSES_PER_VEHICLE`, `LIMIT_MAX_ODOMETER_KM`, `LIMIT_MAX_RECURRENCE_MONTHS`, `LIMIT_EARLIEST_DATE`, `LIMIT_PLANNED_YEARS_AHEAD` | backend (`autojournal.limits.*` → `shared.limits.LimitProperties`) | `10`, `3000`, `50`, `2000000`, `120`, `1900-01-01`, `10` | optional data limits (BR-L1…L7, specs/data-limits.md); numbers ≥ 1, earliest date not in the future, otherwise the backend does not start |
 | `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | e2e | test user in the Supabase project               | CI secrets only               |
 
 The Supabase and E2E variables come from the single Supabase project (specs/auth.md, ADR 0015). Locally,
@@ -133,7 +134,8 @@ sleeps when idle; the first request after that waits for a cold start (2–3 min
 | `MCP_RESOURCE_URL`     | `https://be-autojournal.skverly.com/mcp` (ADR 0018)                                |
 | `SPRING_PROFILES_ACTIVE` | not set — `prod` is the image default                                            |
 
-Exchange rates use the defaults from `application.yml`; set `EXCHANGE_RATE_*` on Render to change them.
+Exchange rates and data limits use the defaults from `application.yml`; set `EXCHANGE_RATE_*` or `LIMIT_*` on
+Render to change them.
 Changing an environment variable on Render restarts the service with the current image.
 
 **Rollback:** in Render, redeploy an earlier deploy, or deploy an older `:<sha>` tag. Avoid "Manual
