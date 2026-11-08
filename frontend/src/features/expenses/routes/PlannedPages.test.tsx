@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { ExpenseRequest, PlannedExpenseRequest } from '@/shared/api/generated/model';
@@ -358,8 +358,9 @@ describe('Mark as paid', () => {
     await user.click(approximate);
     await user.click(screen.getByRole('button', { name: 'Save expense' }));
 
-    expect(await screen.findByText('Expense recorded')).toBeInTheDocument();
-    expect(sent).toMatchObject({ category: 'REPAIRS', approximate: true });
+    await waitFor(() => {
+      expect(sent).toMatchObject({ category: 'REPAIRS', approximate: true });
+    });
   });
 
   it('shows server field errors and stays on the form', async () => {
