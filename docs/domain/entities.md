@@ -56,6 +56,7 @@ Vehicles are listed in the order they were added (`created_at` ascending).
 | `category`     | category      | Required; one of the fixed categories                              |
 | `odometer`     | integer (km)  | Optional, ≥ 0                                                      |
 | `note`         | text (≤ 500)  | Optional; blank stored as null                                     |
+| `approximate`  | boolean       | Required, default `false`; amount and/or date is a best guess (BR-E6) |
 | `created_at`   | timestamptz   | Set on creation                                                    |
 
 ## PlannedExpense — module `planning`, table `planned_expense`
