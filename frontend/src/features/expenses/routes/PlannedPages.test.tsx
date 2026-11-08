@@ -336,7 +336,30 @@ describe('Mark as paid', () => {
       date: plan.dueDate,
       odometer: null,
       note: 'timing belt',
+      approximate: false,
     });
+  });
+
+  // specs/approximate-expenses.md AC5.
+  it('can record the payment as approximate', async () => {
+    let sent: ExpenseRequest | undefined;
+    server.use(
+      ...plannedHandlers(aPlannedExpenseList({ items: [plan] })),
+      http.post(api(`/planned-expenses/${plan.id}/pay`), async ({ request }) => {
+        sent = (await request.json()) as ExpenseRequest;
+        return HttpResponse.json(anExpense({ vehicleId: vehicle.id }), { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp(`/vehicles/${vehicle.id}/planned/${plan.id}/pay`);
+
+    const approximate = await screen.findByRole('checkbox', { name: 'Approximate' });
+    expect(approximate).not.toBeChecked();
+    await user.click(approximate);
+    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    expect(await screen.findByText('Expense recorded')).toBeInTheDocument();
+    expect(sent).toMatchObject({ category: 'REPAIRS', approximate: true });
   });
 
   it('shows server field errors and stays on the form', async () => {

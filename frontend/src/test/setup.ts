@@ -22,6 +22,14 @@ Object.defineProperty(window, 'matchMedia', {
     }) as MediaQueryList,
 });
 
+// jsdom does not implement ResizeObserver (used by Radix primitives such as Checkbox to size hidden inputs).
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+Object.defineProperty(window, 'ResizeObserver', { writable: true, value: ResizeObserverStub });
+
 // The first render of a test file (cold module load) can take over the 1 s default under a parallel full run.
 configure({ asyncUtilTimeout: 3000 });
 

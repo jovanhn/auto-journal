@@ -18,6 +18,7 @@ const toFormInput = (plan: PlannedExpense): ExpenseFormInput => ({
   date: plan.dueDate,
   odometer: '',
   note: plan.note ?? '',
+  approximate: false,
 });
 
 /** Mark as paid: the Add expense form titled "Mark as paid"; Save records the expense and updates the plan. */

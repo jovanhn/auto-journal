@@ -42,6 +42,7 @@ export const anExpense = (overrides: Partial<Expense> = {}): Expense => ({
   category: 'FUEL',
   odometer: 184320,
   note: null,
+  approximate: false,
   createdAt: '2026-10-18T10:00:00Z',
   ...overrides,
 });

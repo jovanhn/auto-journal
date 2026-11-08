@@ -5,7 +5,17 @@ import { CURRENCIES } from '@/shared/lib/currency';
 import { applyServerErrors } from '@/shared/lib/form';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
-import { Field, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/shared/ui/field';
+import { Checkbox } from '@/shared/ui/checkbox';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '@/shared/ui/field';
 import { FormErrorAlert } from '@/shared/ui/FormErrorAlert';
 import { Input } from '@/shared/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/shared/ui/native-select';
@@ -177,6 +187,32 @@ export function ExpenseForm({
             )}
           />
         </div>
+
+        <Controller
+          name="approximate"
+          control={control}
+          render={({ field }) => (
+            <Field orientation="horizontal">
+              <Checkbox
+                id="expense-approximate"
+                name={field.name}
+                checked={field.value}
+                onCheckedChange={(checked) => {
+                  field.onChange(checked === true);
+                }}
+                onBlur={field.onBlur}
+                ref={field.ref}
+                aria-describedby="expense-approximate-hint"
+              />
+              <FieldContent>
+                <FieldLabel htmlFor="expense-approximate">Approximate</FieldLabel>
+                <FieldDescription id="expense-approximate-hint">
+                  Amount or date is a best guess
+                </FieldDescription>
+              </FieldContent>
+            </Field>
+          )}
+        />
 
         <Controller
           name="note"
