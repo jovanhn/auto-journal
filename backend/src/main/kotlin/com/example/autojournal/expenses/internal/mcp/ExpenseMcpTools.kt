@@ -52,7 +52,9 @@ class ExpenseMcpTools(
                         "Before calling: show the user the values (category, amount, currency, date, odometer, note) " +
                         "and get their confirmation, and check list_expenses for the same date, amount and category " +
                         "to avoid a duplicate. Currency: from the receipt, otherwise the display currency (say so). " +
-                        "Date: the receipt date, otherwise today. Put liters, price per liter or station in the note.",
+                        "Date: the receipt date, otherwise today. Put liters, price per liter or station in the note. " +
+                        "Set approximate to true only when the user says the amount or date is a guess " +
+                        "(\"around\", \"roughly\", \"sometime in\").",
                 access = Access.WRITE,
                 inputSchema = schemas.input(ids = mapOf(VEHICLE_ID to VEHICLE_ID_DESCRIPTION), body = "ExpenseRequest"),
                 outputSchema = schemas.schema("Expense"),

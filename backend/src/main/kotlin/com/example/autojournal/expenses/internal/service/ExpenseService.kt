@@ -93,6 +93,7 @@ class ExpenseService(
                 category = data.category,
                 odometer = data.odometer,
                 note = data.note,
+                approximate = data.approximate,
             )
         expenseDao.insert(expense)
         return expense.toView(userProfileApi.displayCurrency(ownerId))
@@ -115,6 +116,7 @@ class ExpenseService(
         expense.category = data.category
         expense.odometer = data.odometer
         expense.note = data.note
+        expense.approximate = data.approximate
         return expense.toView(userProfileApi.displayCurrency(ownerId))
     }
 

@@ -27,6 +27,7 @@ class ExpenseApiService(
                 category = expense.category,
                 odometer = expense.odometer,
                 note = expense.note,
+                approximate = expense.approximate,
             )
         val view = expenseService.create(ownerId, vehicleId, data)
         return with(view.expense) {
@@ -41,6 +42,7 @@ class ExpenseApiService(
                 category = category,
                 odometer = odometer,
                 note = note,
+                approximate = approximate,
                 createdAt = createdAt,
             )
         }
