@@ -161,6 +161,8 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | `ExpenseMonthGroup`    | Expenses                | Month name + month total header, then a card of `ExpenseRow`s                             |
 | `ExpenseRow`           | Expenses                | Category dot, title (category · note), date · odometer (mono) or note, amount right       |
 | `MonthlyBarChart`      | Insights                | 10–12 bars, current month `accent`, others `chart-muted`; `role="img"` + `aria-label` summary; mono month initials |
+| `YearlyBarChart`       | Insights (All time)     | Same look as `MonthlyBarChart`, one bar per year, current year `accent`; full years up to 6 bars, `'25` beyond |
+| `PeriodToggle`         | Insights                | Two toggle buttons (`aria-pressed`) "Year" / "All time", selected = filled accent, like `CategoryPicker` |
 | `CategoryBreakdown`    | Insights                | Per category: label, `%` (muted) · amount, 8 px progress bar                              |
 | `PlannedExpenseCard`   | Planned                 | Title, date · recurrence, amount; status pill; "Mark as paid" (accent outline when due soon, neutral otherwise) |
 | `StatusPill`           | Planned                 | `warning` ("Due in 24 days") and `neutral` ("In 4 months")                                |
@@ -176,7 +178,7 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | --- | ------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | 1   | Garage             | [01-garage.html](screens/src/01-garage.html)                  | All-cars year-to-date hero (total, vehicle count, avg/month); vehicle cards; Add vehicle        |
 | 2   | Vehicle · Expenses | [02-vehicle-expenses.html](screens/src/02-vehicle-expenses.html) | Tiles: this year, this month, per km; period switcher; expenses grouped by month; Add expense FAB |
-| 3   | Vehicle · Insights | [03-vehicle-insights.html](screens/src/03-vehicle-insights.html) | Tiles: total spent, avg/month, car value ("Purchase price"), distance; by-month chart; by-category breakdown |
+| 3   | Vehicle · Insights | [03-vehicle-insights.html](screens/src/03-vehicle-insights.html) | Tiles: total spent, avg/month, car value ("Purchase price"), distance; by-month chart; by-category breakdown. Implemented with a Year / All time toggle (specs/insights.md UI notes): Year shows that year's distance and per km instead of car value; All time adds car value and lifetime per km and a by-year chart |
 | 4   | Vehicle · Planned  | [04-vehicle-planned.html](screens/src/04-vehicle-planned.html)  | 12-month projection hero (planned + running costs); upcoming planned items with Mark as paid; Plan an expense |
 | 5   | Add expense        | [05-add-expense.html](screens/src/05-add-expense.html)        | Amount, vehicle, category (8 fixed), date, odometer, note                                       |
 | 6   | Add vehicle        | [06-add-vehicle.html](screens/src/06-add-vehicle.html)        | Nickname, make, model, year, plate (optional), current odometer, purchase price + date          |
@@ -212,3 +214,4 @@ the affected part:
 | ------- | ---------- | ---------------------------------------------------------------------------------------------- |
 | v0.0.1  | 2026-10-24 | Initial design: Garage, Vehicle (Expenses, Insights, Planned), Add expense, Add vehicle.       |
 | v0.0.2  | 2026-11-07 | Brand mark (fuel receipt) for favicon, app icon, Sign in, OAuth consent and the app bar. Export unchanged. |
+| v0.0.3  | 2026-11-08 | Insights: Year / All time `PeriodToggle`, `YearlyBarChart`, year distance and per km tiles. Export unchanged. |

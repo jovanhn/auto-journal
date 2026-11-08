@@ -61,7 +61,7 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 ## Insights
 
 All figures are in the display currency (BR-C6), from expenses by their date. Vehicle figures are for one
-vehicle and, unless stated otherwise, for one selected calendar year.
+vehicle and, unless stated otherwise, for the selected period: one calendar year or all time.
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
@@ -70,6 +70,9 @@ vehicle and, unless stated otherwise, for one selected calendar year.
 | BR-I3 | Average monthly cost = the selected year's total ÷ months elapsed in that year: 12 for a past year, January through the current month for the current year (months without expenses count). | `InsightsService` (UTC `Clock`) |
 | BR-I4 | Cost per km (lifetime, all years) = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at start). Not shown when distance driven is 0. | `InsightsService` (lifetime EUR sum + purchase price at its snapshot via `VehicleApi.findOwned`; `costPerKm` null at 0 km → UI "—") |
 | BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only (no estimated running costs): one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | `PlannedExpenseService.occurrencesInProjection` (UTC `Clock`): occurrences before today count once, then every occurrence from today to the end of the 11th month after the current one |
+| BR-I7 | Distance in a year = odometer at the end of that year − odometer at the end of the previous year; the odometer at the end of a year = the highest of the odometer at start and all expense readings dated on or before 31 December of that year. Unknown when no expense in the year has an odometer reading. Yearly distances add up to distance driven. | `InsightsService` (`VehicleInsights.yearDistanceKm`, null → UI "—") |
+| BR-I8 | Cost per km in a year = the year's total ÷ distance in that year (no purchase price). Not shown when that distance is unknown or 0. | `InsightsService` (`VehicleInsights.yearCostPerKm`, null → UI "—") |
+| BR-I9 | All-time figures: total and category breakdown over all of a vehicle's expenses; one total per calendar year from the first expense's year to the current year; average monthly cost = total ÷ months from the month of the earlier of the purchase date and the first expense through the current month (both inclusive). | `InsightsService.allTime` (UTC `Clock`; `GET /api/vehicles/{vehicleId}/insights/all-time`) |
 | BR-I6 | All-cars summary (Garage): this year's total = sum of all the user's expenses dated in the current calendar year, across vehicles; average per month = that total ÷ the number of months elapsed this year, including the current month. | `ExpenseService.summary` + `ExpenseSummaryReadDao` (`GET /api/expenses/summary`) |
 
 ## Assistant (MCP)

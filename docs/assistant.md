@@ -51,7 +51,8 @@ then wait about 50 seconds and retry, at most 3 times. If it still fails, ask ag
 | `list_vehicles`, `create_vehicle`, `update_vehicle`, `delete_vehicle` | Vehicles (delete removes all their expenses and plans) |
 | `get_garage_summary` | This year's total across all cars |
 | `list_expenses`, `create_expense`, `update_expense`, `delete_expense` | Expenses of a vehicle, per year |
-| `get_vehicle_insights` | Year figures, monthly totals, categories, cost per km |
+| `get_vehicle_insights` | Year figures, monthly totals, categories, distance and cost per km (year and lifetime) |
+| `get_vehicle_all_time_insights` | All-time totals, yearly totals, categories, cost per km |
 | `list_planned_expenses`, `list_next_due`, `create_planned_expense`, `update_planned_expense`, `delete_planned_expense`, `pay_planned_expense` | Planned expenses and the 12-month projection |
 
 Images never reach autojournal: Claude reads the photos and sends only the expense fields.

@@ -21,6 +21,8 @@
 | **Odometer at start**  | The vehicle's odometer reading when it was added to the app; starting point for distance driven.     |
 | **Current odometer**   | Derived: the highest of the odometer at start and all of the vehicle's expense odometer readings. Never entered directly. |
 | **Distance driven**    | Current odometer − odometer at start (distance since the vehicle was added).                         |
+| **Distance in a year** | Odometer at the end of the year − odometer at the end of the previous year, from the readings logged up to then; unknown when the year has no reading. |
+| **All time**           | The Insights period covering all of a vehicle's expenses, from its first expense (or purchase) to today. |
 | **Car value**          | For now equal to the purchase price. Later estimated from age and market data.                       |
 | **Cost per km**        | (Total expenses + purchase price) ÷ distance driven, over the vehicle's whole history, in the display currency. |
 | **Average monthly cost** | A year's total expenses ÷ months elapsed in that year (12 for a past year, through the current month for this year), including months without expenses. |
