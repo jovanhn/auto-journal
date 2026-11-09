@@ -251,4 +251,45 @@ describe('InsightsPage', () => {
       expect(await screen.findByText('No expenses yet')).toBeInTheDocument();
     });
   });
+
+  // specs/metric-info.md — AC 1–2.
+  describe('Metric info', () => {
+    it('explains each year stat in a popover that closes with Escape', async () => {
+      serve({});
+      const user = userEvent.setup();
+      renderApp(`/vehicles/${vehicle.id}/insights`);
+
+      for (const label of ['Total spent', 'Avg per month', 'Distance', 'Per km']) {
+        expect(await screen.findByRole('button', { name: `About ${label}` })).toBeInTheDocument();
+      }
+      await user.click(screen.getByRole('button', { name: 'About Per km' }));
+      const popover = await screen.findByRole('dialog');
+      expect(popover).toHaveTextContent(
+        `${currentYear} total ÷ distance in ${currentYear}; the purchase price is not included.`,
+      );
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('explains each all-time stat', async () => {
+      serve({});
+      server.use(
+        http.get(api(`/vehicles/${vehicle.id}/insights/all-time`), () =>
+          HttpResponse.json(aVehicleAllTimeInsights({})),
+        ),
+      );
+      const user = userEvent.setup();
+      renderApp(`/vehicles/${vehicle.id}/insights?period=all`);
+
+      for (const label of ['Total spent', 'Avg per month', 'Car value', 'Distance', 'Per km']) {
+        expect(await screen.findByRole('button', { name: `About ${label}` })).toBeInTheDocument();
+      }
+      await user.click(screen.getByRole('button', { name: 'About Per km' }));
+      expect(await screen.findByRole('dialog')).toHaveTextContent(
+        'Lifetime cost per km: (all expenses + purchase price) ÷ km driven',
+      );
+      await user.click(screen.getByRole('button', { name: 'About Per km' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
 });

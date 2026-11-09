@@ -258,4 +258,28 @@ describe('VehicleExpensesPage', () => {
 
     expect(await screen.findByText('Could not load the vehicle')).toBeInTheDocument();
   });
+
+  // specs/metric-info.md — AC 1–3.
+  it('explains each tile and labels per km as including the purchase price', async () => {
+    server.use(
+      http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
+      http.get(api(`/vehicles/${vehicle.id}/expenses`), () =>
+        HttpResponse.json(anExpenseYear({ year: currentYear })),
+      ),
+      http.get(api(`/vehicles/${vehicle.id}/insights`), () =>
+        HttpResponse.json(aVehicleInsights({ costPerKm: eur('0.85') })),
+      ),
+    );
+    const user = userEvent.setup();
+    renderApp(`/vehicles/${vehicle.id}`);
+
+    expect(await screen.findByText('Incl. purchase price')).toBeInTheDocument();
+    for (const label of ['This year', 'This month', 'Per km']) {
+      expect(screen.getByRole('button', { name: `About ${label}` })).toBeInTheDocument();
+    }
+    await user.click(screen.getByRole('button', { name: 'About This year' }));
+    expect(await screen.findByRole('dialog')).toHaveTextContent(
+      `Sum of all expenses dated in ${currentYear}.`,
+    );
+  });
 });
