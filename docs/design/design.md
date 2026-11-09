@@ -155,7 +155,8 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | Component              | Where                   | Notes                                                                                     |
 | ---------------------- | ----------------------- | ----------------------------------------------------------------------------------------- |
 | `HeroSummary`          | Garage, Planned         | Inverse card: label, 36 px value, 1–2 meta lines                                          |
-| `StatTile`             | Expenses, Insights      | Label + value (+ optional caption); `default` and `inverse` variants; 2- or 3-column grid |
+| `StatTile`             | Expenses, Insights      | Label + value (+ optional caption); `default` and `inverse` variants; 2- or 3-column grid; optional ⓘ (`MetricInfo`) |
+| `MetricInfo`           | Expenses, Insights, Garage | 14 px ⓘ after a stat label (44 px tap area) opening a popover: stat name + formula      |
 | `VehicleCard`          | Garage                  | Whole card is a link; icon tile, nickname, make·model·year·km, value, year-to-date total; optional footer with next planned expense (warning color when due soon) |
 | `PeriodSwitcher`       | Expenses                | Prev/next 44 px icon buttons around "2026 · All categories"                               |
 | `ExpenseMonthGroup`    | Expenses                | Month name + month total header, then a card of `ExpenseRow`s                             |
@@ -217,3 +218,4 @@ the affected part:
 | v0.0.2  | 2026-11-07 | Brand mark (fuel receipt) for favicon, app icon, Sign in, OAuth consent and the app bar. Export unchanged. |
 | v0.0.3  | 2026-11-08 | Insights: Year / All time `PeriodToggle`, `YearlyBarChart`, year distance and per km tiles. Export unchanged. |
 | v0.0.4  | 2026-11-08 | Approximate expenses: "Approximate" checkbox on the expense form, `≈` on `ExpenseRow`. Export unchanged. |
+| v0.0.5  | 2026-11-09 | Metric info: ⓘ popover on every stat tile and the Garage summary; Expenses Per km caption "Incl. purchase price". Export unchanged. |
