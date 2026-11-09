@@ -12,6 +12,7 @@ import { StatTile } from '../components/StatTile';
 import { VehicleAppBar } from '../components/VehicleAppBar';
 import { VehicleTabBar } from '../components/VehicleTabBar';
 import { monthIndexOf } from '@/shared/lib/dates';
+import { metricInfo } from '../metricInfo';
 import { useExpenseYear } from '../hooks/useExpenseYear';
 import { useVehicle } from '../hooks/useVehicle';
 import { useVehicleInsights } from '../hooks/useVehicleInsights';
@@ -118,9 +119,21 @@ function ExpenseYearView({
         <StatTile
           label={isCurrentYear ? 'This year' : `Total ${data.year}`}
           value={formatMoney(data.yearTotal)}
+          info={metricInfo.yearTotal(data.year)}
         />
-        {isCurrentYear && <StatTile label="This month" value={formatMoney(monthTotal(currentMonth))} />}
-        <StatTile label="Per km" value={costPerKm ? formatMoneyCents(costPerKm) : '—'} />
+        {isCurrentYear && (
+          <StatTile
+            label="This month"
+            value={formatMoney(monthTotal(currentMonth))}
+            info={metricInfo.monthTotal}
+          />
+        )}
+        <StatTile
+          label="Per km"
+          value={costPerKm ? formatMoneyCents(costPerKm) : '—'}
+          caption="Incl. purchase price"
+          info={metricInfo.lifetimeCostPerKm}
+        />
       </div>
       <PeriodSwitcher
         year={data.year}

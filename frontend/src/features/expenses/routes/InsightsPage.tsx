@@ -17,6 +17,7 @@ import { monthName } from '@/shared/lib/dates';
 import { useVehicle } from '../hooks/useVehicle';
 import { useVehicleAllTimeInsights, useVehicleInsights } from '../hooks/useVehicleInsights';
 import { peakIndex } from '../insights';
+import { metricInfo } from '../metricInfo';
 
 const route = getRouteApi('/_app/vehicles/$vehicleId/insights');
 
@@ -95,19 +96,32 @@ function YearView({ data, currentYear, onYearChange }: YearViewProps) {
         onChange={onYearChange}
       />
       <div className="grid grid-cols-2 gap-2">
-        <StatTile label="Total spent" value={formatMoney(data.total)} variant="inverse" size="large" />
-        <StatTile label="Avg per month" value={formatMoney(data.averagePerMonth)} size="large" />
+        <StatTile
+          label="Total spent"
+          value={formatMoney(data.total)}
+          variant="inverse"
+          size="large"
+          info={metricInfo.yearTotal(data.year)}
+        />
+        <StatTile
+          label="Avg per month"
+          value={formatMoney(data.averagePerMonth)}
+          size="large"
+          info={metricInfo.yearAverage(data.year)}
+        />
         <StatTile
           label="Distance"
           value={data.yearDistanceKm === null ? '—' : formatKm(data.yearDistanceKm)}
           caption={`In ${data.year}`}
           size="large"
+          info={metricInfo.yearDistance(data.year)}
         />
         <StatTile
           label="Per km"
           value={data.yearCostPerKm ? formatMoneyCents(data.yearCostPerKm) : '—'}
           caption={`In ${data.year}`}
           size="large"
+          info={metricInfo.yearCostPerKm(data.year)}
         />
       </div>
 
@@ -136,21 +150,39 @@ function AllTimeView({ data }: { data: VehicleAllTimeInsights }) {
 
   return (
     <>
-      <StatTile label="Total spent" value={formatMoney(data.total)} variant="inverse" size="large" />
+      <StatTile
+        label="Total spent"
+        value={formatMoney(data.total)}
+        variant="inverse"
+        size="large"
+        info={metricInfo.allTimeTotal}
+      />
       <div className="grid grid-cols-2 gap-2">
-        <StatTile label="Avg per month" value={formatMoney(data.averagePerMonth)} size="large" />
+        <StatTile
+          label="Avg per month"
+          value={formatMoney(data.averagePerMonth)}
+          size="large"
+          info={metricInfo.allTimeAverage}
+        />
         <StatTile
           label="Car value"
           value={formatMoney(data.carValue)}
           caption="Purchase price"
           size="large"
+          info={metricInfo.carValue}
         />
-        <StatTile label="Distance" value={formatKm(data.distanceKm)} size="large" />
+        <StatTile
+          label="Distance"
+          value={formatKm(data.distanceKm)}
+          size="large"
+          info={metricInfo.allTimeDistance}
+        />
         <StatTile
           label="Per km"
           value={data.costPerKm ? formatMoneyCents(data.costPerKm) : '—'}
           caption="Incl. purchase price"
           size="large"
+          info={metricInfo.lifetimeCostPerKm}
         />
       </div>
 

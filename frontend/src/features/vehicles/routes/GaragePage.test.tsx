@@ -159,4 +159,19 @@ describe('GaragePage', () => {
     expect(await screen.findByText("Could not load this year's totals")).toBeInTheDocument();
     expect(screen.getByText('Golf')).toBeInTheDocument();
   });
+
+  // specs/metric-info.md — AC 1–2.
+  it('explains the all-cars summary', async () => {
+    server.use(
+      http.get(api('/vehicles'), () => HttpResponse.json([aVehicle()])),
+      http.get(api('/expenses/summary'), () => HttpResponse.json(anExpenseSummary())),
+    );
+    const user = userEvent.setup();
+    renderApp('/');
+
+    await user.click(await screen.findByRole('button', { name: 'About All cars this year' }));
+    expect(await screen.findByRole('dialog')).toHaveTextContent(
+      'Sum of all expenses of all your vehicles this year; average = that ÷ months elapsed this year.',
+    );
+  });
 });
