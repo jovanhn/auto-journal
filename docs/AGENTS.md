@@ -19,7 +19,7 @@ Source-of-truth order: `domain` → `specs` → `contracts/openapi.yaml` → cod
   "n/a" rather than deleting one.
 - **Status:** `Planned` → `In progress` (when work starts) → `Implemented` (when merged with tests).
   Planned specs also name their **release** (v1 = MVP: auth, vehicles, expenses; v2 = insights;
-  v3 = planned expenses; v4 = assistant access over MCP; v5 = data limits; v6 = approximate expenses; v7 = metric info). Build releases in order; keep each spec as small as its goal allows.
+  v3 = planned expenses; v4 = assistant access over MCP; v5 = data limits; v6 = approximate expenses; v7 = metric info; v8 = journal). Build releases in order; keep each spec as small as its goal allows.
 - Business rules reference IDs in `domain/business-rules.md`; add new rules there first.
 - Acceptance criteria are numbered Given/When/Then; tests are written from them.
 - **E2E** lists critical user flows only (or "none"); each becomes a plan in `e2e/plans/`.
