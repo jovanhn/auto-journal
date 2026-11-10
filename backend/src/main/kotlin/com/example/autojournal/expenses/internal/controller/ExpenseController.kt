@@ -11,6 +11,7 @@ import com.example.contract.model.Expense
 import com.example.contract.model.ExpenseRequest
 import com.example.contract.model.ExpenseSummary
 import com.example.contract.model.ExpenseYear
+import com.example.contract.model.Journal
 import com.example.contract.model.LogEntry
 import com.example.contract.model.LogEntryRequest
 import com.example.contract.model.VehicleAllTimeInsights
@@ -32,6 +33,9 @@ class ExpenseController(
         vehicleId: UUID,
         year: Int?,
     ): ResponseEntity<ExpenseYear> = ResponseEntity.ok(expenseService.listYear(currentUser.id(), vehicleId, year).toContract())
+
+    override fun listJournal(vehicleId: UUID): ResponseEntity<Journal> =
+        ResponseEntity.ok(expenseService.listJournal(currentUser.id(), vehicleId).toContract())
 
     override fun createExpense(
         vehicleId: UUID,

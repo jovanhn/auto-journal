@@ -6,6 +6,7 @@ import com.example.autojournal.expenses.internal.dto.ExpenseData
 import com.example.autojournal.expenses.internal.dto.ExpenseSummaryView
 import com.example.autojournal.expenses.internal.dto.ExpenseView
 import com.example.autojournal.expenses.internal.dto.ExpenseYearView
+import com.example.autojournal.expenses.internal.dto.JournalView
 import com.example.autojournal.expenses.internal.dto.LogEntryData
 import com.example.autojournal.expenses.internal.dto.VehicleAllTimeInsightsView
 import com.example.autojournal.expenses.internal.dto.VehicleInsightsView
@@ -16,6 +17,7 @@ import com.example.contract.model.Expense
 import com.example.contract.model.ExpenseRequest
 import com.example.contract.model.ExpenseSummary
 import com.example.contract.model.ExpenseYear
+import com.example.contract.model.Journal
 import com.example.contract.model.LogEntry
 import com.example.contract.model.LogEntryRequest
 import com.example.contract.model.Money
@@ -75,6 +77,13 @@ fun ExpenseYearView.toContract(): ExpenseYear =
         firstYear = firstYear,
         yearTotal = money(yearTotal, currency),
         monthTotals = monthTotals.map { money(it, currency) },
+        expenses = expenses.map { it.toContract() },
+        logEntries = logEntries.map { it.toContract() },
+    )
+
+fun JournalView.toContract(): Journal =
+    Journal(
+        firstYear = firstYear,
         expenses = expenses.map { it.toContract() },
         logEntries = logEntries.map { it.toContract() },
     )

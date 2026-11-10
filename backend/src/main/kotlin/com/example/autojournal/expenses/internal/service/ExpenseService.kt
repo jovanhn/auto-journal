@@ -6,6 +6,7 @@ import com.example.autojournal.expenses.internal.dto.ExpenseData
 import com.example.autojournal.expenses.internal.dto.ExpenseSummaryView
 import com.example.autojournal.expenses.internal.dto.ExpenseView
 import com.example.autojournal.expenses.internal.dto.ExpenseYearView
+import com.example.autojournal.expenses.internal.dto.JournalView
 import com.example.autojournal.expenses.internal.entity.ExpenseEntity
 import com.example.autojournal.expenses.internal.entity.JournalEntryEntity
 import com.example.autojournal.shared.error.FieldViolation
@@ -62,6 +63,23 @@ class ExpenseService(
             yearTotal = fromEur(monthTotalsEur.fold(BigDecimal.ZERO, BigDecimal::add), displayCurrency),
             monthTotals = monthTotalsEur.map { fromEur(it, displayCurrency) },
             expenses = expenses.map { (entry, cost) -> view(entry, cost, displayCurrency) },
+            logEntries = entries.filter { it.cost == null }.map { it.entry },
+        )
+    }
+
+    /** The whole journal, all years (specs/journal-filters.md AC1, BR-J6); no totals, the client sums (BR-J7). */
+    @Transactional(readOnly = true)
+    fun listJournal(
+        ownerId: UUID,
+        vehicleId: UUID,
+    ): JournalView {
+        rules.ensureVehicleOwned(ownerId, vehicleId)
+        val currentYear = LocalDate.now(clock).year
+        val displayCurrency = userProfileApi.displayCurrency(ownerId)
+        val entries = expenseDao.findJournal(vehicleId)
+        return JournalView(
+            firstYear = entries.minOfOrNull { it.entry.date }?.year?.coerceAtMost(currentYear) ?: currentYear,
+            expenses = entries.mapNotNull { (entry, cost) -> cost?.let { view(entry, it, displayCurrency) } },
             logEntries = entries.filter { it.cost == null }.map { it.entry },
         )
     }

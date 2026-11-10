@@ -54,6 +54,14 @@ data class ExpenseYearView(
     val logEntries: List<JournalEntryEntity>,
 )
 
+/** One vehicle's whole journal, all years, without totals (BR-J6, BR-J7). */
+data class JournalView(
+    val firstYear: Int,
+    val expenses: List<ExpenseView>,
+    /** Newest date first; for the same date, newest created first (BR-J1). */
+    val logEntries: List<JournalEntryEntity>,
+)
+
 /** The current year across all of a user's vehicles; totals in [currency] (BR-I6). */
 data class ExpenseSummaryView(
     val year: Int,

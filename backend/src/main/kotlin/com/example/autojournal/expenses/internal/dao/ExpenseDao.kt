@@ -45,6 +45,10 @@ class ExpenseDao(
     ): List<JournalEntry> =
         withCosts(journalEntryRepository.findAllByVehicleIdAndDateBetweenOrderByDateDescCreatedAtDesc(vehicleId, from, to))
 
+    /** All of the vehicle's journal entries, newest date first; for the same date, newest created first (BR-J1). */
+    fun findJournal(vehicleId: UUID): List<JournalEntry> =
+        withCosts(journalEntryRepository.findAllByVehicleIdOrderByDateDescCreatedAtDesc(vehicleId))
+
     /** All of the vehicle's journal entries, any order (insights over all years). */
     fun findAllByVehicle(vehicleId: UUID): List<JournalEntry> = withCosts(journalEntryRepository.findAllByVehicleId(vehicleId))
 
