@@ -4,15 +4,16 @@ import type { PlannedExpense } from '@/shared/api/generated/model';
 import { ErrorState } from '@/shared/ui/ErrorState';
 import { FormPageHeader } from '@/shared/ui/FormPageHeader';
 import { LoadingState } from '@/shared/ui/LoadingState';
-import { ExpenseForm } from '../components/ExpenseForm';
+import { JournalEntryForm } from '../components/JournalEntryForm';
 import { usePayPlannedExpense } from '../hooks/usePayPlannedExpense';
 import { usePlannedExpenses } from '../hooks/usePlannedExpenses';
-import { toExpenseRequest, type ExpenseFormInput, type ExpenseFormValues } from '../schemas';
+import type { JournalEntryFormInput, JournalEntryFormValues } from '../schemas';
 
 const route = getRouteApi('/_app/vehicles/$vehicleId/planned/$plannedExpenseId/pay');
 
 /** BR-PL2: pre-filled from the plan; amount, currency, date, odometer and note can change, the category cannot. */
-const toFormInput = (plan: PlannedExpense): ExpenseFormInput => ({
+const toFormInput = (plan: PlannedExpense): JournalEntryFormInput => ({
+  kind: 'expense',
   amount: { ...plan.estimatedAmount },
   category: plan.category,
   date: plan.dueDate,
@@ -30,8 +31,10 @@ export function PayPlannedExpensePage() {
   const backToPlanned = { to: '/vehicles/$vehicleId/planned', params: { vehicleId } } as const;
   const plan = plans.data?.items.find((item) => item.id === plannedExpenseId);
 
-  const handlePay = async (values: ExpenseFormValues) => {
-    await payPlan.mutateAsync({ plannedExpenseId, data: toExpenseRequest(values) });
+  const handlePay = async (values: JournalEntryFormValues) => {
+    // The form has no Expense | Log switch here: mark as paid always records an expense (specs/journal.md).
+    if (values.kind !== 'expense') return;
+    await payPlan.mutateAsync({ plannedExpenseId, data: values.request });
     toast.success('Expense recorded');
     await navigate(backToPlanned);
   };
@@ -53,13 +56,14 @@ export function PayPlannedExpensePage() {
           error={new Error('It may have been paid or deleted.')}
         />
       ) : (
-        <ExpenseForm
+        <JournalEntryForm
           label="Mark as paid"
           defaultValues={toFormInput(plan)}
           submitLabel="Save expense"
           submittingLabel="Saving…"
           onSubmit={handlePay}
           categoryLocked
+          kindSwitch={false}
         />
       )}
     </div>

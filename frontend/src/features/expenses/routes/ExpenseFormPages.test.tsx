@@ -29,7 +29,7 @@ const listHandlers = () => [
 ];
 
 // specs/expenses.md — acceptance criteria 1, 2, 7 and 8 (UI side).
-describe('AddExpensePage', () => {
+describe('AddJournalEntryPage (expense)', () => {
   it('defaults the currency to the display currency and the date to today', async () => {
     server.use(http.get(api('/me'), () => HttpResponse.json(aUserProfile({ displayCurrency: 'RSD' }))));
 
@@ -59,7 +59,7 @@ describe('AddExpensePage', () => {
     await user.clear(screen.getByLabelText('Date'));
     await user.type(screen.getByLabelText('Date'), '2026-01-18');
     await user.type(screen.getByLabelText('Odometer (km, optional)'), '184,320');
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Expense added')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(`/vehicles/${vehicle.id}`);
@@ -93,7 +93,7 @@ describe('AddExpensePage', () => {
     await user.type(screen.getByLabelText('Amount'), '300');
     await user.click(screen.getByRole('button', { name: 'Tires' }));
     await user.click(approximate);
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
       expect(sent).toMatchObject({ amount: eur('300'), category: 'TIRES', approximate: true });
@@ -112,7 +112,7 @@ describe('AddExpensePage', () => {
     const user = userEvent.setup();
     renderApp(`/vehicles/${vehicle.id}/expenses/new`);
 
-    await user.click(await screen.findByRole('button', { name: 'Save expense' }));
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Amount is required')).toBeInTheDocument();
     expect(screen.getByText('Pick a category')).toBeInTheDocument();
 
@@ -122,7 +122,7 @@ describe('AddExpensePage', () => {
     await user.type(screen.getByLabelText('Date'), '2999-01-01');
     await user.click(screen.getByLabelText('Note (optional)'));
     await user.paste('x'.repeat(501));
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(
       await screen.findByText('Enter an amount of 0 or more with at most 2 decimals'),
@@ -148,14 +148,14 @@ describe('AddExpensePage', () => {
 
     await user.type(await screen.findByLabelText('Amount'), '10');
     await user.click(screen.getByRole('button', { name: 'Service' }));
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('must not be in the future')).toBeInTheDocument();
     expect(screen.getByLabelText('Date')).toHaveAttribute('aria-invalid', 'true');
   });
 });
 
-describe('AddExpensePage limits (specs/data-limits.md AC 3, 10)', () => {
+describe('AddJournalEntryPage limits (specs/data-limits.md AC 3, 10)', () => {
   it('shows the expense limit message and stays on the form', async () => {
     server.use(
       http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
@@ -170,7 +170,7 @@ describe('AddExpensePage limits (specs/data-limits.md AC 3, 10)', () => {
 
     await user.type(await screen.findByLabelText('Amount'), '10');
     await user.click(screen.getByRole('button', { name: 'Service' }));
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('A vehicle can have at most 3000 expenses.')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(`/vehicles/${vehicle.id}/expenses/new`);
@@ -191,7 +191,7 @@ describe('AddExpensePage limits (specs/data-limits.md AC 3, 10)', () => {
 
     await user.type(await screen.findByLabelText('Amount'), '10');
     await user.click(screen.getByRole('button', { name: 'Service' }));
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('must be at most 2000000')).toBeInTheDocument();
   });

@@ -2,6 +2,7 @@ import type {
   Expense,
   ExpenseSummary,
   ExpenseYear,
+  LogEntry,
   Money,
   PlannedExpense,
   PlannedExpenseList,
@@ -47,13 +48,24 @@ export const anExpense = (overrides: Partial<Expense> = {}): Expense => ({
   ...overrides,
 });
 
-/** A year with no expenses unless overridden; month totals are all 0. */
+export const aLogEntry = (overrides: Partial<LogEntry> = {}): LogEntry => ({
+  id: nextId(),
+  vehicleId: '00000000-0000-4000-8000-0000000000aa',
+  date: '2026-10-20',
+  odometer: 185000,
+  note: null,
+  createdAt: '2026-10-20T10:00:00Z',
+  ...overrides,
+});
+
+/** A year with no journal entries unless overridden; month totals are all 0. */
 export const anExpenseYear = (overrides: Partial<ExpenseYear> = {}): ExpenseYear => ({
   year: new Date().getFullYear(),
   firstYear: new Date().getFullYear(),
   yearTotal: eur('0.00'),
   monthTotals: Array.from({ length: 12 }, () => eur('0.00')),
   expenses: [],
+  logEntries: [],
   ...overrides,
 });
 

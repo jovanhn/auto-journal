@@ -1,8 +1,9 @@
 import { createRoute } from '@tanstack/react-router';
 import { authenticatedRoute } from '@/app/authenticatedRoute';
-import { AddExpensePage } from './AddExpensePage';
+import { AddJournalEntryPage } from './AddJournalEntryPage';
 import { AddPlannedExpensePage } from './AddPlannedExpensePage';
 import { EditExpensePage } from './EditExpensePage';
+import { EditLogEntryPage } from './EditLogEntryPage';
 import { EditPlannedExpensePage } from './EditPlannedExpensePage';
 import { InsightsPage } from './InsightsPage';
 import { PayPlannedExpensePage } from './PayPlannedExpensePage';
@@ -27,7 +28,7 @@ export type InsightsSearch = YearSearch & {
 const validateInsightsSearch = (search: Record<string, unknown>): InsightsSearch =>
   search.period === 'all' ? { period: 'all' } : validateYearSearch(search);
 
-/** The vehicle page opens on its Expenses tab (specs/expenses.md, UI notes). */
+/** The vehicle page opens on its Journal tab (specs/journal.md, UI notes). */
 export const vehicleExpensesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId',
@@ -35,7 +36,7 @@ export const vehicleExpensesRoute = createRoute({
   component: VehicleExpensesPage,
 });
 
-/** Vehicle · Insights (specs/insights.md); Year (same year switcher as Expenses) or All time. */
+/** Vehicle · Insights (specs/insights.md); Year (same year switcher as Journal) or All time. */
 export const vehicleInsightsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/insights',
@@ -43,16 +44,24 @@ export const vehicleInsightsRoute = createRoute({
   component: InsightsPage,
 });
 
+/** Add to journal: Expense | Log (specs/journal.md). */
 export const addExpenseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/expenses/new',
-  component: AddExpensePage,
+  component: AddJournalEntryPage,
 });
 
 export const editExpenseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/expenses/$expenseId/edit',
   component: EditExpensePage,
+});
+
+/** Edit log (specs/journal.md, UI notes). */
+export const editLogEntryRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/log-entries/$logEntryId/edit',
+  component: EditLogEntryPage,
 });
 
 /** Vehicle · Planned (specs/planned-expenses.md). */

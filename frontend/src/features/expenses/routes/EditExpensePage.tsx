@@ -4,16 +4,18 @@ import type { Expense } from '@/shared/api/generated/model';
 import { ErrorState } from '@/shared/ui/ErrorState';
 import { FormPageHeader } from '@/shared/ui/FormPageHeader';
 import { LoadingState } from '@/shared/ui/LoadingState';
-import { DeleteExpenseButton } from '../components/DeleteExpenseButton';
-import { ExpenseForm } from '../components/ExpenseForm';
+import { DeleteEntryButton } from '../components/DeleteEntryButton';
+import { JournalEntryForm } from '../components/JournalEntryForm';
+import { useConvertExpenseToLogEntry } from '../hooks/useConvertJournalEntry';
 import { useDeleteExpense } from '../hooks/useDeleteExpense';
 import { useExpense } from '../hooks/useExpense';
 import { useUpdateExpense } from '../hooks/useUpdateExpense';
-import { toExpenseRequest, type ExpenseFormInput, type ExpenseFormValues } from '../schemas';
+import type { JournalEntryFormInput, JournalEntryFormValues } from '../schemas';
 
 const route = getRouteApi('/_app/vehicles/$vehicleId/expenses/$expenseId/edit');
 
-const toFormInput = (expense: Expense): ExpenseFormInput => ({
+const toFormInput = (expense: Expense): JournalEntryFormInput => ({
+  kind: 'expense',
   amount: { ...expense.amount },
   category: expense.category,
   date: expense.date,
@@ -22,26 +24,35 @@ const toFormInput = (expense: Expense): ExpenseFormInput => ({
   approximate: expense.approximate,
 });
 
-/** Edit expense: the Add expense form, pre-filled, with Delete at the bottom (specs/expenses.md, UI notes). */
+/**
+ * Edit expense: the journal form, pre-filled, with Delete at the bottom (specs/expenses.md, UI notes). Switching to
+ * Log and saving removes the cost after confirmation (specs/journal.md AC17).
+ */
 export function EditExpensePage() {
   const { vehicleId, expenseId } = route.useParams();
   const navigate = route.useNavigate();
   const expense = useExpense(expenseId);
   const updateExpense = useUpdateExpense();
+  const convertToLog = useConvertExpenseToLogEntry();
   const deleteExpense = useDeleteExpense(vehicleId);
-  const backToList = { to: '/vehicles/$vehicleId', params: { vehicleId } } as const;
+  const backToJournal = { to: '/vehicles/$vehicleId', params: { vehicleId } } as const;
 
-  const handleSave = async (values: ExpenseFormValues) => {
-    await updateExpense.mutateAsync({ expenseId, data: toExpenseRequest(values) });
-    toast.success('Changes saved');
-    await navigate(backToList);
+  const handleSave = async (values: JournalEntryFormValues) => {
+    if (values.kind === 'expense') {
+      await updateExpense.mutateAsync({ expenseId, data: values.request });
+      toast.success('Changes saved');
+    } else {
+      await convertToLog.mutateAsync({ expenseId, data: values.request });
+      toast.success('Saved as a log');
+    }
+    await navigate(backToJournal);
   };
 
   const handleDelete = async () => {
     try {
       await deleteExpense.mutateAsync({ expenseId });
       toast.success('Expense deleted');
-      await navigate(backToList);
+      await navigate(backToJournal);
     } catch {
       toast.error('Could not delete the expense. Please try again.');
     }
@@ -49,7 +60,7 @@ export function EditExpensePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <FormPageHeader title="Edit expense" cancelTo={backToList} />
+      <FormPageHeader title="Edit expense" cancelTo={backToJournal} />
       {expense.isPending ? (
         <LoadingState label="Loading expense…" rows={5} />
       ) : expense.isError ? (
@@ -59,14 +70,19 @@ export function EditExpensePage() {
           onRetry={() => void expense.refetch()}
         />
       ) : (
-        <ExpenseForm
+        <JournalEntryForm
           label="Edit expense"
           defaultValues={toFormInput(expense.data)}
           submitLabel="Save changes"
           submittingLabel="Saving…"
           onSubmit={handleSave}
+          confirmCostRemoval
           footer={
-            <DeleteExpenseButton deleting={deleteExpense.isPending} onConfirm={() => void handleDelete()} />
+            <DeleteEntryButton
+              kind="expense"
+              deleting={deleteExpense.isPending}
+              onConfirm={() => void handleDelete()}
+            />
           }
         />
       )}

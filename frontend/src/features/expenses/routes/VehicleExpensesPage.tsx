@@ -6,12 +6,13 @@ import { Button } from '@/shared/ui/button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { ErrorState } from '@/shared/ui/ErrorState';
 import { LoadingState } from '@/shared/ui/LoadingState';
-import { ExpenseMonthGroup } from '../components/ExpenseMonthGroup';
+import { JournalMonthGroup } from '../components/JournalMonthGroup';
 import { PeriodSwitcher } from '../components/PeriodSwitcher';
 import { StatTile } from '../components/StatTile';
 import { VehicleAppBar } from '../components/VehicleAppBar';
 import { VehicleTabBar } from '../components/VehicleTabBar';
 import { monthIndexOf } from '@/shared/lib/dates';
+import { journalItems } from '../journal';
 import { metricInfo } from '../metricInfo';
 import { useExpenseYear } from '../hooks/useExpenseYear';
 import { useVehicle } from '../hooks/useVehicle';
@@ -20,8 +21,9 @@ import { useVehicleInsights } from '../hooks/useVehicleInsights';
 const route = getRouteApi('/_app/vehicles/$vehicleId');
 
 /**
- * Vehicle · Expenses (design screen 02): app bar with Edit vehicle, This year / This month / Per km tiles, the
- * year switcher, the year's expenses grouped by month (newest first), and the Add expense FAB.
+ * Vehicle · Journal (design screen 02, specs/journal.md): app bar with Edit vehicle, This year / This month / Per km
+ * tiles (expenses only), the year switcher, the year's expenses and log entries grouped by month (newest first),
+ * and the Add FAB.
  */
 export function VehicleExpensesPage() {
   const { vehicleId } = route.useParams();
@@ -56,10 +58,10 @@ export function VehicleExpensesPage() {
           onRetry={() => void vehicle.refetch()}
         />
       ) : expenses.isPending ? (
-        <LoadingState label="Loading expenses…" rows={5} />
+        <LoadingState label="Loading journal…" rows={5} />
       ) : expenses.isError ? (
         <ErrorState
-          title="Could not load the expenses"
+          title="Could not load the journal"
           error={expenses.error}
           onRetry={() => void expenses.refetch()}
         />
@@ -81,7 +83,7 @@ export function VehicleExpensesPage() {
       >
         <Link to="/vehicles/$vehicleId/expenses/new" params={{ vehicleId }}>
           <Plus className="size-[18px]" aria-hidden="true" />
-          Add expense
+          Add
         </Link>
       </Button>
       <VehicleTabBar vehicleId={vehicleId} />
@@ -108,8 +110,9 @@ function ExpenseYearView({
   costPerKm,
 }: ExpenseYearViewProps) {
   const currentMonth = new Date().getMonth();
-  // Expenses arrive newest first, so months come out newest first too.
-  const months = [...new Set(data.expenses.map((expense) => monthIndexOf(expense.date)))];
+  const items = journalItems(data);
+  // Items are newest first, so months come out newest first too.
+  const months = [...new Set(items.map((item) => monthIndexOf(item.entry.date)))];
   const monthTotal = (month: number) =>
     data.monthTotals[month] ?? { amount: '0.00', currency: data.yearTotal.currency };
 
@@ -141,25 +144,25 @@ function ExpenseYearView({
         lastYear={currentYear}
         onChange={onYearChange}
       />
-      {data.expenses.length === 0 ? (
+      {items.length === 0 ? (
         <EmptyState
-          title={`No expenses in ${data.year}`}
-          description="Log what this car costs to see your totals."
+          title={`No journal entries in ${data.year}`}
+          description="Log what this car costs, its odometer or anything you notice."
           action={
             <Button asChild className="mt-2">
               <Link to="/vehicles/$vehicleId/expenses/new" params={{ vehicleId }}>
-                Add an expense
+                Add to journal
               </Link>
             </Button>
           }
         />
       ) : (
         months.map((month) => (
-          <ExpenseMonthGroup
+          <JournalMonthGroup
             key={month}
             month={month}
             total={monthTotal(month)}
-            expenses={data.expenses.filter((expense) => monthIndexOf(expense.date) === month)}
+            items={items.filter((item) => monthIndexOf(item.entry.date) === month)}
           />
         ))
       )}
