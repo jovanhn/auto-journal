@@ -24,6 +24,8 @@ tags:
     description: Expenses module (what each car costs)
   - name: planning
     description: Planning module (a car's upcoming costs and the 12-month projection)
+  - name: issues
+    description: Issues module (problems with a car to keep an eye on until fixed, ADR 0021)
   - name: system
     description: Service status for clients that wait for a sleeping backend (implemented in `shared`, ADR 0018)
 
@@ -698,6 +700,181 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /api/vehicles/{vehicleId}/issues:
+    get:
+      tags: [issues]
+      operationId: listIssues
+      summary: List a vehicle's issues, open and resolved
+      description: |
+        Not paginated: a vehicle has at most *issues per vehicle* issues (BR-L8). Both lists are in BR-IS6 order.
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: The vehicle's open and resolved issues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [issues]
+      operationId: createIssue
+      summary: Note an open issue for a vehicle
+      description: |
+        A vehicle has at most *issues per vehicle* issues, open and resolved together (BR-L8, configurable,
+        default 200), checked by the server. Adding one more responds `409` with the limit in `detail`.
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRequest'
+      responses:
+        '201':
+          description: The created (open) issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/issues/{issueId}:
+    get:
+      tags: [issues]
+      operationId: getIssue
+      summary: Get one issue
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      responses:
+        '200':
+          description: The issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [issues]
+      operationId: updateIssue
+      summary: Replace an issue's editable fields
+      description: |
+        Open or resolved (BR-IS5). Never changes the status, outcome or resolved date. For a resolved issue the
+        date noticed must stay on or before the resolved date (`400`, field `noticedOn`).
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRequest'
+      responses:
+        '200':
+          description: The updated issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [issues]
+      operationId: deleteIssue
+      summary: Delete an issue (open or resolved); nothing else changes
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/issues/{issueId}/resolve:
+    post:
+      tags: [issues]
+      operationId: resolveIssue
+      summary: Resolve an open issue as fixed or gone
+      description: |
+        BR-IS3: `resolvedOn` is not in the future (UTC) and not before the date noticed (`400`, field
+        `resolvedOn`). Resolving an issue that is already resolved responds `409`.
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveIssueRequest'
+      responses:
+        '200':
+          description: The resolved issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/issues/{issueId}/reopen:
+    post:
+      tags: [issues]
+      operationId: reopenIssue
+      summary: Reopen a resolved issue
+      description: |
+        BR-IS4: clears the outcome and resolved date and keeps the other fields. Reopening an open issue responds
+        `409`.
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      responses:
+        '200':
+          description: The reopened issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -730,6 +907,13 @@ components:
         format: uuid
     PlannedExpenseId:
       name: plannedExpenseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IssueId:
+      name: issueId
       in: path
       required: true
       schema:
@@ -1385,3 +1569,131 @@ components:
           format: uuid
         plannedExpense:
           $ref: '#/components/schemas/PlannedExpense'
+
+    IssueSeverity:
+      type: string
+      description: How serious an issue is (BR-IS1); open issues are listed Urgent, Fix soon, Watch (BR-IS6).
+      enum: [WATCH, FIX_SOON, URGENT]
+    IssueSource:
+      type: string
+      description: Where an issue came from (BR-IS1).
+      enum: [NOTICED, MECHANIC, WARNING_LIGHT]
+    IssueOutcome:
+      type: string
+      description: How an issue was resolved (BR-IS3); GONE = went away by itself, not an issue.
+      enum: [FIXED, GONE]
+    IssueStatus:
+      type: string
+      enum: [OPEN, RESOLVED]
+    IssueRequest:
+      type: object
+      required: [title, severity, source, noticedOn]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 60
+          pattern: '.*\S.*'
+          description: Trimmed.
+        severity:
+          $ref: '#/components/schemas/IssueSeverity'
+        source:
+          $ref: '#/components/schemas/IssueSource'
+        noticedOn:
+          type: string
+          format: date
+          description: |
+            Not in the future and not before *earliest date* (BR-L7, configurable, default 1900-01-01); for a
+            resolved issue on or before its resolved date (BR-IS5). Checked by the server (UTC).
+        odometer:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: |
+            Optional reading in km, at most *max odometer* (BR-L5, configurable, default 2,000,000; checked by the
+            server). For information only; never changes the current odometer (BR-IS2). Omitted = cleared.
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional; trimmed, blank is stored as null. Omitted = cleared.
+    ResolveIssueRequest:
+      type: object
+      required: [outcome, resolvedOn]
+      properties:
+        outcome:
+          $ref: '#/components/schemas/IssueOutcome'
+        resolvedOn:
+          type: string
+          format: date
+          description: Not in the future (UTC) and not before the date noticed (BR-IS3); checked by the server.
+    Issue:
+      type: object
+      description: A problem with a vehicle to keep an eye on (BR-IS1); never counts in totals or the odometer (BR-IS2).
+      required:
+        - id
+        - vehicleId
+        - title
+        - severity
+        - source
+        - noticedOn
+        - odometer
+        - note
+        - status
+        - outcome
+        - resolvedOn
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        severity:
+          $ref: '#/components/schemas/IssueSeverity'
+        source:
+          $ref: '#/components/schemas/IssueSource'
+        noticedOn:
+          type: string
+          format: date
+        odometer:
+          type: integer
+          format: int32
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/IssueStatus'
+        outcome:
+          description: Set only when `status` is RESOLVED.
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/IssueOutcome'
+        resolvedOn:
+          type: string
+          format: date
+          nullable: true
+          description: Set only when `status` is RESOLVED.
+        createdAt:
+          type: string
+          format: date-time
+    IssueList:
+      type: object
+      required: [open, resolved]
+      properties:
+        open:
+          type: array
+          description: Severity (Urgent, Fix soon, Watch), then date noticed (newest first), then created (newest first).
+          items:
+            $ref: '#/components/schemas/Issue'
+        resolved:
+          type: array
+          description: Resolved date (newest first), then created (newest first).
+          items:
+            $ref: '#/components/schemas/Issue'
