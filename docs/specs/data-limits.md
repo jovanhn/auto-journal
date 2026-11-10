@@ -35,7 +35,7 @@ above what a real user needs.
 | Property                                          | Env var                              | Default    |
 | ------------------------------------------------- | ------------------------------------ | ---------- |
 | `autojournal.limits.vehicles-per-user`            | `LIMIT_VEHICLES_PER_USER`            | 10         |
-| `autojournal.limits.expenses-per-vehicle`         | `LIMIT_EXPENSES_PER_VEHICLE`         | 3000       |
+| `autojournal.limits.journal-entries-per-vehicle`  | `LIMIT_JOURNAL_ENTRIES_PER_VEHICLE`  | 3000       |
 | `autojournal.limits.planned-expenses-per-vehicle` | `LIMIT_PLANNED_EXPENSES_PER_VEHICLE` | 50         |
 | `autojournal.limits.max-odometer-km`              | `LIMIT_MAX_ODOMETER_KM`              | 2000000    |
 | `autojournal.limits.max-recurrence-months`        | `LIMIT_MAX_RECURRENCE_MONTHS`        | 120        |

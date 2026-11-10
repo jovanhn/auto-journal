@@ -3,7 +3,7 @@
 The visual design of autojournal: tokens, components, screens, and how the design is iterated. Read this
 before building or changing any UI.
 
-- **Design version:** v0.0.2 (2026-11-07) — see [Changelog](#changelog)
+- **Design version:** v0.0.6 (2026-11-10) — see [Changelog](#changelog)
 - **Reference screens:** [`screens/`](screens/) (6 mobile screens, 390 × 844)
 - **Made with:** Claude Design, exported as standalone HTML
 
@@ -134,15 +134,15 @@ Breakdown bars on Insights all use `accent`.
 ## Layout and navigation
 
 ```
-Garage ──tap vehicle card──▶ Vehicle [ Expenses | Insights | Planned ]  (bottom tab bar)
+Garage ──tap vehicle card──▶ Vehicle [ Journal | Insights | Planned ]  (bottom tab bar)
   │                              │ back ◀── app bar
-  └── Add vehicle (dashed btn)   └── Expenses FAB ──▶ Add expense
+  └── Add vehicle (dashed btn)   └── Journal FAB "Add" ──▶ Add to journal (Expense | Log)
 ```
 
 Three screen shells:
 
 1. **Top level (Garage):** mono eyebrow + 32 px title, no app bar, scrolling content.
-2. **Vehicle section (Expenses / Insights / Planned):** white app bar (44 px back button → Garage, vehicle
+2. **Vehicle section (Journal / Insights / Planned):** white app bar (44 px back button → Garage, vehicle
    nickname 20/600 + subtitle) · scrolling content · fixed 72 px bottom tab bar, 3 tabs with icon + label;
    active tab is `accent` + 600 with `aria-current="page"`.
 3. **Form (Add expense / Add vehicle):** app bar with `Cancel` (muted) · centered title · `Save` (accent) ·
@@ -159,8 +159,10 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | `MetricInfo`           | Expenses, Insights, Garage | 14 px ⓘ after a stat label (44 px tap area) opening a popover: stat name + formula      |
 | `VehicleCard`          | Garage                  | Whole card is a link; icon tile, nickname, make·model·year·km, value, year-to-date total; optional footer with next planned expense (warning color when due soon) |
 | `PeriodSwitcher`       | Expenses                | Prev/next 44 px icon buttons around "2026 · All categories"                               |
-| `ExpenseMonthGroup`    | Expenses                | Month name + month total header, then a card of `ExpenseRow`s                             |
-| `ExpenseRow`           | Expenses                | Category dot, title (category · note), date · odometer (mono) or note, amount right (`≈ ` prefix when approximate) |
+| `ExpenseMonthGroup`    | Journal                 | Month name + month total header (no total when the month has only log entries), then a card of `ExpenseRow`s and `LogRow`s, newest first (`JournalMonthGroup` in code) |
+| `ExpenseRow`           | Journal                 | Category dot, title (category · note), date · odometer (mono) or note, amount right (`≈ ` prefix when approximate) |
+| `LogRow`               | Journal                 | Neutral icon (muted `NotebookPen`) instead of the dot, the note as title ("Odometer reading" without one), date · odometer (mono), no amount; accessible text starts with "Log" (`LogEntryRow` in code) |
+| `EntryKindToggle`      | Add to journal, Edit    | Expense \| Log segmented control at the top of the form: two toggle buttons with `aria-pressed`, same look as `PeriodToggle`; Log hides amount, currency, category and Approximate |
 | `MonthlyBarChart`      | Insights                | 10–12 bars, current month `accent`, others `chart-muted`; `role="img"` + `aria-label` summary; mono month initials |
 | `YearlyBarChart`       | Insights (All time)     | Same look as `MonthlyBarChart`, one bar per year, current year `accent`; full years up to 6 bars, `'25` beyond |
 | `PeriodToggle`         | Insights                | Two toggle buttons (`aria-pressed`) "Year" / "All time", selected = filled accent, like `CategoryPicker` |
@@ -172,7 +174,7 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | Approximate checkbox   | Add expense             | shadcn `Checkbox` + label "Approximate" + hint "Amount or date is a best guess", below date · odometer |
 | `AmountInput`          | Add expense             | Centered, `€` prefix, 44 px tabular, `inputmode="decimal"`                                 |
 | Form field             | Add expense/vehicle     | shadcn `Field`: label 13/600 muted above a 48 px input; optional helper text 12 px muted; "(optional)" in the label |
-| `Fab`                  | Expenses                | Pill, icon + label, bottom-right above the tab bar                                         |
+| `Fab`                  | Journal                 | Pill, icon + label ("Add"), bottom-right above the tab bar                                 |
 
 ## Screens
 
@@ -219,3 +221,4 @@ the affected part:
 | v0.0.3  | 2026-11-08 | Insights: Year / All time `PeriodToggle`, `YearlyBarChart`, year distance and per km tiles. Export unchanged. |
 | v0.0.4  | 2026-11-08 | Approximate expenses: "Approximate" checkbox on the expense form, `≈` on `ExpenseRow`. Export unchanged. |
 | v0.0.5  | 2026-11-09 | Metric info: ⓘ popover on every stat tile and the Garage summary; Expenses Per km caption "Incl. purchase price". Export unchanged. |
+| v0.0.6  | 2026-11-10 | Journal: vehicle tab "Expenses" → "Journal", FAB "Add", `LogRow`, `EntryKindToggle` (Expense \| Log) on Add to journal / Edit expense / Edit log. Screen 02 still shows "Expenses" in the export. Export unchanged. |
