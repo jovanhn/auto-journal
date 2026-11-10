@@ -31,14 +31,15 @@ test.describe('Add, edit and delete expense', () => {
     await page.getByRole('link', { name: new RegExp(`^${escape(nickname)}`) }).click();
     await expect(page.getByRole('heading', { name: nickname, level: 1 })).toBeVisible();
     await expect(subtitle).toHaveText(/184,320 km$/);
-    await expect(tile(page, 'This year')).toContainText('€0');
-    await expect(tile(page, 'This month')).toContainText('€0');
+    await expect(tile(page, 'Spent')).toContainText('€0');
+    // The month total moved from the removed "This month" tile to the month header (specs/journal-filters.md).
+    await expect(page.getByRole('region', { name: monthName })).toHaveCount(0);
     await expect(page.getByText(`No journal entries in ${year}`)).toBeVisible();
 
     // 2. Add an expense
-    await page.getByRole('link', { name: 'Add', exact: true }).click();
+    await page.getByRole('link', { name: 'Add journal entry' }).click();
     await expect(page.getByRole('form', { name: 'Add to journal' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Expense', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('switch', { name: 'This is an expense' })).toHaveAttribute('aria-checked', 'true');
     await expect(page.getByRole('combobox', { name: 'Currency' })).toHaveValue('EUR');
     const todayIso = `${year}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     await expect(page.getByLabel('Date')).toHaveValue(todayIso);
@@ -56,8 +57,8 @@ test.describe('Add, edit and delete expense', () => {
     await expect(row).toContainText(shortDate);
     await expect(row).toContainText('184,500 km');
     await expect(row).toContainText('€52.40');
-    await expect(tile(page, 'This year')).toContainText('€52.40');
-    await expect(tile(page, 'This month')).toContainText('€52.40');
+    await expect(tile(page, 'Spent')).toContainText('€52.40');
+    await expect(page.getByRole('region', { name: monthName }).getByRole('heading')).toContainText('€52.40');
     await expect(subtitle).toHaveText(/184,500 km$/);
 
     // 3. Edit the expense
@@ -73,7 +74,7 @@ test.describe('Add, edit and delete expense', () => {
     await expect(page.getByText('Changes saved')).toBeVisible();
     await expect(page.getByRole('heading', { name: nickname, level: 1 })).toBeVisible();
     await expect(row).toContainText('€60.00');
-    await expect(tile(page, 'This year')).toContainText('€60');
+    await expect(tile(page, 'Spent')).toContainText('€60');
 
     // 4. Cancelling the delete confirmation keeps the expense
     await row.click();
@@ -93,7 +94,7 @@ test.describe('Add, edit and delete expense', () => {
     await expect(page.getByRole('heading', { name: nickname, level: 1 })).toBeVisible();
     await expect(page.getByText(`No journal entries in ${year}`)).toBeVisible();
     await expect(row).toHaveCount(0);
-    await expect(tile(page, 'This year')).toContainText('€0');
+    await expect(tile(page, 'Spent')).toContainText('€0');
     await expect(subtitle).toHaveText(/184,320 km$/);
   });
 });
