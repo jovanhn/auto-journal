@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned — release **v8 (journal)**
+Implemented — release **v8 (journal)**
 
 ## Goal
 
@@ -152,6 +152,9 @@ Additive, not breaking. Existing schemas, paths and expense ids are unchanged.
 - **New operations** (tag `expenses`)
   - `POST /api/vehicles/{vehicleId}/log-entries` → `createLogEntry` → 201 `LogEntry`; 400, 401, 404, 409
     (limit, BR-L2).
+  - `GET /api/log-entries/{logEntryId}` → `getLogEntry` → 200 `LogEntry`; 400, 401, 404 (an expense's id is
+    404). Used by Edit log; added during implementation (owner's decision, 2026-11-10). No MCP tool, like
+    `getExpense` (`list_expenses` returns log entries).
   - `PUT /api/log-entries/{logEntryId}` → `updateLogEntry` → 200 `LogEntry`; 400, 401, 404.
   - `DELETE /api/log-entries/{logEntryId}` → `deleteLogEntry` → 204; 401, 404.
   - `POST /api/log-entries/{logEntryId}/expense` → `convertLogEntryToExpense`, body `ExpenseRequest`

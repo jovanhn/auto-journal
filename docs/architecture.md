@@ -45,8 +45,8 @@ Root package `com.example.autojournal` (`@Modulithic`). Generated contract code 
 | Module     | Responsibility                       | Public API (`api` named interface) | Owns tables | Depends on      |
 | ---------- | ------------------------------------ | ---------------------------------- | ----------- | --------------- |
 | `users`    | User profile (display currency); `GET/PATCH /api/me` | `UserProfileApi` (`displayCurrency(userId)`) | `user_profile` | `shared` |
-| `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD; current odometer from expense readings | `VehicleApi` (`isOwnedBy`, `findOwned` → `VehicleFacts`: price snapshot, odometers) | `vehicle`   | `users::api`, `shared` (reads `expense` read-only) |
-| `expenses` | A vehicle's expenses; year list with totals; Garage summary; insights (year and all-time figures, category breakdown, distance and cost per km); `/api/vehicles/{vehicleId}/expenses`, `/api/vehicles/{vehicleId}/insights`, `/api/vehicles/{vehicleId}/insights/all-time`, `/api/expenses` | `ExpenseApi` (`create` → `CreatedExpense`), `Category` | `expense` | `vehicles::api`, `users::api`, `shared` (reads `vehicle` read-only) |
+| `vehicles` | A user's vehicles (Garage); `/api/vehicles` CRUD; current odometer from journal entry readings | `VehicleApi` (`isOwnedBy`, `findOwned` → `VehicleFacts`: price snapshot, odometers) | `vehicle`   | `users::api`, `shared` (reads `journal_entry` read-only) |
+| `expenses` | A vehicle's journal (expenses and log entries, ADR 0020); year list with totals; converting between the two; Garage summary; insights (year and all-time figures, category breakdown, distance and cost per km); `/api/vehicles/{vehicleId}/expenses`, `/api/vehicles/{vehicleId}/insights`, `/api/vehicles/{vehicleId}/insights/all-time`, `/api/vehicles/{vehicleId}/log-entries`, `/api/expenses`, `/api/log-entries` | `ExpenseApi` (`create` → `CreatedExpense`), `Category` | `journal_entry`, `expense` | `vehicles::api`, `users::api`, `shared` (reads `vehicle` read-only) |
 | `planning` | A vehicle's planned expenses; 12-month projection; due soon; mark as paid; Garage next-due; `/api/vehicles/{vehicleId}/planned-expenses`, `/api/planned-expenses` | — (none needed yet) | `planned_expense` | `vehicles::api`, `expenses::api`, `users::api`, `shared` (reads `vehicle` read-only) |
 | `shared`   | Error handling, security (JWT resource server, `CurrentUser`, OAuth protected resource metadata), money (`Currency`, `ExchangeRates`), data limits (`LimitProperties`, BR-L1…L7), UTC `Clock`, entity base; MCP server (`shared/mcp`); `GET /api/status` (tag `system`) | open module (all packages visible) | — | — |
 
@@ -61,9 +61,10 @@ Reference examples in the code (`vehicles` is the reference module):
 - **Write DAO:** `vehicles/internal/dao/VehicleDao` — wraps the module's JPA repository; `saveAndFlush` makes
   a unique-index violation surface in the service (→ 409 on `nickname`).
 - **Cross-module read:** `expenses/internal/dao/ExpenseSummaryReadDao` — a `JdbcClient` read DAO that JOINs
-  the `vehicle` table (owned by `vehicles`) read-only to sum one owner's expenses per vehicle;
-  `vehicles/internal/dao/ExpenseOdometerReadDao` reads the highest expense odometer per vehicle (BR-V5).
-  Both are covered by `ExpensesApiIntegrationTest` (AC 9, 10, 12).
+  the module's own `journal_entry` and the `vehicle` table (owned by `vehicles`) read-only to sum one owner's
+  expenses per vehicle; `vehicles/internal/dao/JournalOdometerReadDao` reads the highest journal entry odometer
+  per vehicle (BR-V5). Both are covered by `ExpensesApiIntegrationTest` (AC 9, 10, 12) and
+  `JournalApiIntegrationTest` (AC 1, 6, 8).
 - **Ownership through another module's api:** `ExpenseService` checks that a vehicle belongs to the user via
   `vehicles.api.VehicleApi` (implemented by `vehicles/internal/service/VehicleApiService`).
 - **Cross-module write in one transaction:** `planning/internal/service/PlannedExpenseService.pay` creates the
