@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned — release **v10 (issues)**
+Implemented — release **v10 (issues)**
 
 ## Goal
 

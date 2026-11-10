@@ -92,7 +92,7 @@ odometer (BR-V5).
 No title: a planned expense is identified by its category, recurrence and due date. No rate snapshot:
 planned amounts are estimates and are converted with the current configured rates.
 
-## Issue — module `issues`, table `issue` (Planned: v10, `expense_id` in v11)
+## Issue — module `issues`, table `issue` (V8, v10; `expense_id` planned for v11)
 
 ADR 0021. Not a journal entry: never counts in money, the current odometer or distance (BR-IS2).
 
@@ -124,9 +124,9 @@ shown as Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking &
 - A user has zero or more vehicles; a vehicle has exactly one owner.
 - A vehicle has zero or more journal entries (each is an expense or a log entry) and zero or more planned
   expenses.
-- Deleting a vehicle deletes its journal entries (with their costs) and planned expenses (FK
+- Deleting a vehicle deletes its journal entries (with their costs), planned expenses and issues (FK
   `ON DELETE CASCADE` on `vehicle_id`).
 - Paying a planned expense creates an expense; the two are not linked afterwards.
-- (Planned) A vehicle has zero or more issues; deleting the vehicle deletes them. A resolved issue may link
+- A vehicle has zero or more issues; deleting the vehicle deletes them. (Planned, v11) A resolved issue may link
   one expense; an expense may be linked by several issues; deleting the expense (or turning it into a log
   entry) clears the link.
