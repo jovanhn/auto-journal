@@ -4,6 +4,7 @@ import { API_URL } from './urls';
 
 type Currency = 'EUR' | 'RSD' | 'USD';
 type Vehicle = { id: string; nickname: string; make: string; model: string; year: number };
+type LogEntry = { id: string; vehicleId: string; date: string; odometer: number | null; note: string | null };
 
 /** Test data is created through the backend API, never by clicking through setup screens. */
 export class Api {
@@ -25,6 +26,18 @@ export class Api {
     });
     expect(res.status(), await res.text()).toBe(201);
     return (await res.json()) as Vehicle;
+  }
+
+  /** Adds a log entry (specs/journal.md) to a vehicle of the E2E user; the date defaults to today (UTC). */
+  async createLogEntry(
+    vehicleId: string,
+    entry: { date?: string; odometer?: number | null; note?: string | null },
+  ): Promise<LogEntry> {
+    const res = await this.request.post(`${API_URL}/vehicles/${vehicleId}/log-entries`, {
+      data: { date: new Date().toISOString().slice(0, 10), odometer: null, note: null, ...entry },
+    });
+    expect(res.status(), await res.text()).toBe(201);
+    return (await res.json()) as LogEntry;
   }
 }
 

@@ -90,8 +90,8 @@ test.describe('Plan and pay an expense', () => {
     await expect(card).toContainText(/In 1[12] months/);
     await expect(card).toHaveCount(1);
 
-    // 4. The expense is in the Expenses list
-    await page.getByRole('link', { name: 'Expenses' }).click();
+    // 4. The expense is in the journal
+    await page.getByRole('link', { name: 'Journal', exact: true }).click();
     const row = page.getByRole('link', { name: new RegExp(escape(title)) });
     await expect(row).toContainText(`${MONTHS[today.getMonth()]} ${today.getDate()}`);
     await expect(row).toContainText('€330.00');
