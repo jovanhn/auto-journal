@@ -171,7 +171,8 @@ class McpServerConfiguration {
         val INSTRUCTIONS =
             """
             autojournal is the user's private car expense tracker. You act as the signed-in user, with the same rules
-            as the autojournal app: vehicles, expenses, insights and planned (upcoming) expenses.
+            as the autojournal app: vehicles, the journal (expenses and log entries), insights and planned (upcoming)
+            expenses.
 
             - Expense categories: FUEL, SERVICE, REPAIRS, INSURANCE, REGISTRATION_TAX, TIRES, PARKING_TOLLS, OTHER.
             - Currencies: EUR, RSD, USD. Amounts are decimal strings with up to 2 decimals (e.g. "52.40").
@@ -183,6 +184,9 @@ class McpServerConfiguration {
               amount and category, and ask before creating a duplicate.
             - Dates are ISO (YYYY-MM-DD) and cannot be in the future (UTC). Odometer readings are in km; a reading
               lower than the current odometer is allowed, but mention it to the user.
+            - Use an expense when something was paid. Use a log entry (create_log_entry) for an odometer reading, a
+              condition or an observation without a cost; it never counts in totals, but its odometer reading does.
+              list_expenses returns both (expenses and logEntries).
             - There is no field for liters, price per liter or station: put them in the note (max 500 characters).
             - If a tool returns an error with field errors, fix the input and retry, or ask the user.
             - Wake-up rule: $WAKE_UP_RULE

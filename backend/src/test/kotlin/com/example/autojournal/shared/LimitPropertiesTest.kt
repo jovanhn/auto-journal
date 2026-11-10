@@ -19,7 +19,7 @@ class LimitPropertiesTest {
         earliestDate: LocalDate = LocalDate.of(1900, 1, 1),
     ) = LimitProperties(
         vehiclesPerUser = vehiclesPerUser,
-        expensesPerVehicle = 3000,
+        journalEntriesPerVehicle = 3000,
         plannedExpensesPerVehicle = 50,
         maxOdometerKm = 2_000_000,
         maxRecurrenceMonths = 120,
@@ -50,7 +50,7 @@ class LimitPropertiesTest {
             .withUserConfiguration(LimitConfiguration::class.java)
             .withPropertyValues(
                 "autojournal.limits.vehicles-per-user=10",
-                "autojournal.limits.expenses-per-vehicle=3000",
+                "autojournal.limits.journal-entries-per-vehicle=3000",
                 "autojournal.limits.planned-expenses-per-vehicle=50",
                 "autojournal.limits.max-odometer-km=2000000",
                 "autojournal.limits.max-recurrence-months=120",

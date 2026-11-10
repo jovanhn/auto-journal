@@ -15,15 +15,15 @@ import java.time.ZoneOffset
 class LimitProperties(
     /** BR-L1. */
     val vehiclesPerUser: Int,
-    /** BR-L2. */
-    val expensesPerVehicle: Int,
+    /** BR-L2: expenses and log entries together. */
+    val journalEntriesPerVehicle: Int,
     /** BR-L3. */
     val plannedExpensesPerVehicle: Int,
     /** BR-L5, in km. */
     val maxOdometerKm: Int,
     /** BR-L6. */
     val maxRecurrenceMonths: Int,
-    /** BR-L7: purchase and expense dates are on or after this date. */
+    /** BR-L7: purchase and journal entry dates are on or after this date. */
     val earliestDate: LocalDate,
     /** BR-L7: a planned due date is at most this many years after today. */
     val plannedYearsAhead: Int,
@@ -31,7 +31,7 @@ class LimitProperties(
     init {
         mapOf(
             "vehicles-per-user" to vehiclesPerUser,
-            "expenses-per-vehicle" to expensesPerVehicle,
+            "journal-entries-per-vehicle" to journalEntriesPerVehicle,
             "planned-expenses-per-vehicle" to plannedExpensesPerVehicle,
             "max-odometer-km" to maxOdometerKm,
             "max-recurrence-months" to maxRecurrenceMonths,

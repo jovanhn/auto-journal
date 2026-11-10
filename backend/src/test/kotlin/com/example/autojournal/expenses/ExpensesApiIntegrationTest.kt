@@ -507,8 +507,8 @@ class ExpensesApiIntegrationTest
             jdbc
                 .sql(
                     """
-                    INSERT INTO autojournal.expense (id, vehicle_id, date, amount, currency, rate_to_eur, category, created_at)
-                    VALUES (:id, :vehicleId, :date, 10, 'EUR', 1, 'OTHER', now())
+                    INSERT INTO autojournal.journal_entry (id, vehicle_id, date, created_at) VALUES (:id, :vehicleId, :date, now());
+                    INSERT INTO autojournal.expense (id, amount, currency, rate_to_eur, category) VALUES (:id, 10, 'EUR', 1, 'OTHER');
                     """.trimIndent(),
                 ).param("id", legacy)
                 .param("vehicleId", UUID.fromString(golf))

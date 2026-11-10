@@ -129,6 +129,11 @@ class McpServerIntegrationTest
                     "create_expense",
                     "update_expense",
                     "delete_expense",
+                    "create_log_entry",
+                    "update_log_entry",
+                    "delete_log_entry",
+                    "convert_log_entry_to_expense",
+                    "convert_expense_to_log_entry",
                     "get_vehicle_insights",
                     "get_vehicle_all_time_insights",
                     "list_planned_expenses",
@@ -151,7 +156,14 @@ class McpServerIntegrationTest
                     "list_planned_expenses",
                     "list_next_due",
                 )
-            val deletes = setOf("delete_vehicle", "delete_expense", "delete_planned_expense")
+            val deletes =
+                setOf(
+                    "delete_vehicle",
+                    "delete_expense",
+                    "delete_log_entry",
+                    "convert_expense_to_log_entry",
+                    "delete_planned_expense",
+                )
             byName.forEach { (name, tool) ->
                 assertTrue("50 seconds" in tool.get("description").asString(), name)
                 assertEquals("object", tool.get("inputSchema").get("type").asString(), name)

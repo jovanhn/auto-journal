@@ -6,14 +6,18 @@ import com.example.autojournal.expenses.internal.dto.ExpenseData
 import com.example.autojournal.expenses.internal.dto.ExpenseSummaryView
 import com.example.autojournal.expenses.internal.dto.ExpenseView
 import com.example.autojournal.expenses.internal.dto.ExpenseYearView
+import com.example.autojournal.expenses.internal.dto.LogEntryData
 import com.example.autojournal.expenses.internal.dto.VehicleAllTimeInsightsView
 import com.example.autojournal.expenses.internal.dto.VehicleInsightsView
+import com.example.autojournal.expenses.internal.entity.JournalEntryEntity
 import com.example.autojournal.shared.money.Currency
 import com.example.contract.model.CategoryTotal
 import com.example.contract.model.Expense
 import com.example.contract.model.ExpenseRequest
 import com.example.contract.model.ExpenseSummary
 import com.example.contract.model.ExpenseYear
+import com.example.contract.model.LogEntry
+import com.example.contract.model.LogEntryRequest
 import com.example.contract.model.Money
 import com.example.contract.model.VehicleAllTimeInsights
 import com.example.contract.model.VehicleExpenseTotal
@@ -32,22 +36,37 @@ fun ExpenseRequest.toData(): ExpenseData =
         currency = Currency.valueOf(amount.currency.name),
         category = Category.valueOf(category.name),
         odometer = odometer,
-        note = note?.trim()?.ifEmpty { null },
+        note = note.trimToNull(),
         approximate = approximate ?: false,
     )
 
+/** The note is trimmed; a blank note counts as none (specs/journal.md edge cases, BR-J2). */
+fun LogEntryRequest.toData(): LogEntryData = LogEntryData(date = date, odometer = odometer, note = note.trimToNull())
+
+fun JournalEntryEntity.toContract(): LogEntry =
+    LogEntry(
+        id = id,
+        vehicleId = vehicleId,
+        date = date,
+        odometer = odometer,
+        note = note,
+        createdAt = createdAt.atOffset(ZoneOffset.UTC),
+    )
+
+private fun String?.trimToNull(): String? = this?.trim()?.ifEmpty { null }
+
 fun ExpenseView.toContract(): Expense =
     Expense(
-        id = expense.id,
-        vehicleId = expense.vehicleId,
-        date = expense.date,
-        amount = money(expense.amount, expense.currency),
+        id = entry.id,
+        vehicleId = entry.vehicleId,
+        date = entry.date,
+        amount = money(cost.amount, cost.currency),
         displayAmount = money(displayAmount, displayCurrency),
-        category = ContractCategory.valueOf(expense.category.name),
-        odometer = expense.odometer,
-        note = expense.note,
-        approximate = expense.approximate,
-        createdAt = expense.createdAt.atOffset(ZoneOffset.UTC),
+        category = ContractCategory.valueOf(cost.category.name),
+        odometer = entry.odometer,
+        note = entry.note,
+        approximate = cost.approximate,
+        createdAt = entry.createdAt.atOffset(ZoneOffset.UTC),
     )
 
 fun ExpenseYearView.toContract(): ExpenseYear =
@@ -57,6 +76,7 @@ fun ExpenseYearView.toContract(): ExpenseYear =
         yearTotal = money(yearTotal, currency),
         monthTotals = monthTotals.map { money(it, currency) },
         expenses = expenses.map { it.toContract() },
+        logEntries = logEntries.map { it.toContract() },
     )
 
 fun ExpenseSummaryView.toContract(): ExpenseSummary =
