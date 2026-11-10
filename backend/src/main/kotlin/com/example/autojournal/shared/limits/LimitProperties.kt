@@ -7,7 +7,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 /**
- * Data limits (BR-L1…L7, specs/data-limits.md): count limits checked only on create and value bounds checked on
+ * Data limits (BR-L1…L8, specs/data-limits.md): count limits checked only on create and value bounds checked on
  * create and edit, both by the owning module's service. Defaults are in `application.yml`; an invalid value
  * stops the backend from starting.
  */
@@ -19,6 +19,8 @@ class LimitProperties(
     val journalEntriesPerVehicle: Int,
     /** BR-L3. */
     val plannedExpensesPerVehicle: Int,
+    /** BR-L8: open and resolved together. */
+    val issuesPerVehicle: Int,
     /** BR-L5, in km. */
     val maxOdometerKm: Int,
     /** BR-L6. */
@@ -33,6 +35,7 @@ class LimitProperties(
             "vehicles-per-user" to vehiclesPerUser,
             "journal-entries-per-vehicle" to journalEntriesPerVehicle,
             "planned-expenses-per-vehicle" to plannedExpensesPerVehicle,
+            "issues-per-vehicle" to issuesPerVehicle,
             "max-odometer-km" to maxOdometerKm,
             "max-recurrence-months" to maxRecurrenceMonths,
             "planned-years-ahead" to plannedYearsAhead,

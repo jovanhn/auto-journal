@@ -107,6 +107,16 @@ class McpToolsIntegrationTest
                 "dueDate" to today.plusDays(10).toString(),
             ) + overrides
 
+        private fun issue(vararg overrides: Pair<String, Any?>) =
+            mapOf(
+                "title" to "Brake pads at ~30%",
+                "severity" to "FIX_SOON",
+                "source" to "MECHANIC",
+                "noticedOn" to today.toString(),
+                "odometer" to 184200,
+                "note" to "Replace within ~5,000 km",
+            ) + overrides
+
         /**
          * A write tool returns the saved resource like the API's POST/PUT: equal to a later GET, except that
          * `createdAt` is not yet rounded to the database's microseconds.
@@ -297,6 +307,7 @@ class McpToolsIntegrationTest
             val theirs = apiPost("/api/vehicles", vehicle("Golf"), user = otherUser)
             val theirExpense = apiPost("/api/vehicles/$theirs/expenses", expense(), user = otherUser)
             val theirPlan = apiPost("/api/vehicles/$theirs/planned-expenses", plan(), user = otherUser)
+            val theirIssue = apiPost("/api/vehicles/$theirs/issues", issue(), user = otherUser)
             val unknown = UUID.randomUUID().toString()
 
             listOf(
@@ -312,6 +323,12 @@ class McpToolsIntegrationTest
                 "update_planned_expense" to plan() + ("plannedExpenseId" to theirPlan),
                 "pay_planned_expense" to expense() + ("plannedExpenseId" to theirPlan),
                 "delete_planned_expense" to mapOf("plannedExpenseId" to theirPlan),
+                "list_issues" to mapOf("vehicleId" to theirs),
+                "create_issue" to issue() + ("vehicleId" to theirs),
+                "update_issue" to issue() + ("issueId" to theirIssue),
+                "resolve_issue" to mapOf("issueId" to theirIssue, "outcome" to "FIXED", "resolvedOn" to today.toString()),
+                "reopen_issue" to mapOf("issueId" to theirIssue),
+                "delete_issue" to mapOf("issueId" to theirIssue),
                 "delete_vehicle" to mapOf("vehicleId" to unknown),
             ).forEach { (tool, arguments) ->
                 val problem = mcp.failure(tool, arguments)
@@ -323,5 +340,55 @@ class McpToolsIntegrationTest
             assertEquals(api("/api/vehicles/$theirs", user = otherUser).get("nickname").asString(), "Golf")
             assertEquals(1, count("expense"))
             assertEquals(1, count("planned_expense"))
+            assertEquals(1, count("issue"))
+        }
+
+        @Test
+        fun `issues can be listed, created, updated, resolved, reopened and deleted like in the API`() {
+            val golf = apiPost("/api/vehicles", vehicle("Golf"))
+            val created = mcp.success("create_issue", issue() + ("vehicleId" to golf))
+            val id = created.get("id").asString()
+            assertSameAsSaved(api("/api/issues/$id"), created)
+            assertEquals("OPEN", created.get("status").asString())
+
+            val watch = apiPost("/api/vehicles/$golf/issues", issue("title" to "Rattle", "severity" to "WATCH"))
+            assertEquals(api("/api/vehicles/$golf/issues"), mcp.success("list_issues", mapOf("vehicleId" to golf)))
+
+            val updated = mcp.success("update_issue", issue("severity" to "URGENT", "note" to null) + ("issueId" to id))
+            assertSameAsSaved(api("/api/issues/$id"), updated)
+            assertEquals("URGENT", updated.get("severity").asString())
+            assertTrue(updated.get("note").isNull)
+
+            val resolved =
+                mcp.success("resolve_issue", mapOf("issueId" to id, "outcome" to "FIXED", "resolvedOn" to today.toString()))
+            assertSameAsSaved(api("/api/issues/$id"), resolved)
+            assertEquals("RESOLVED", resolved.get("status").asString())
+
+            val invalid = mcp.failure("resolve_issue", mapOf("issueId" to watch, "outcome" to "GONE", "resolvedOn" to "2000-01-01"))
+            assertEquals(
+                "resolvedOn",
+                invalid
+                    .get("errors")
+                    .get(0)
+                    .get("field")
+                    .asString(),
+            )
+            assertEquals(
+                409,
+                mcp
+                    .failure(
+                        "resolve_issue",
+                        mapOf("issueId" to id, "outcome" to "GONE", "resolvedOn" to today.toString()),
+                    ).get("status")
+                    .asInt(),
+            )
+
+            val reopened = mcp.success("reopen_issue", mapOf("issueId" to id))
+            assertSameAsSaved(api("/api/issues/$id"), reopened)
+            assertEquals("OPEN", reopened.get("status").asString())
+            assertTrue(reopened.get("resolvedOn").isNull)
+
+            assertEquals(json.readTree("""{"deleted":true}"""), mcp.success("delete_issue", mapOf("issueId" to watch)))
+            assertEquals(1, count("issue"))
         }
     }
