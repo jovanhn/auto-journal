@@ -33,11 +33,12 @@ test.describe('Add, edit and delete expense', () => {
     await expect(subtitle).toHaveText(/184,320 km$/);
     await expect(tile(page, 'This year')).toContainText('€0');
     await expect(tile(page, 'This month')).toContainText('€0');
-    await expect(page.getByText(`No expenses in ${year}`)).toBeVisible();
+    await expect(page.getByText(`No journal entries in ${year}`)).toBeVisible();
 
     // 2. Add an expense
-    await page.getByRole('link', { name: 'Add expense' }).click();
-    await expect(page.getByRole('form', { name: 'New expense' })).toBeVisible();
+    await page.getByRole('link', { name: 'Add', exact: true }).click();
+    await expect(page.getByRole('form', { name: 'Add to journal' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Expense', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('combobox', { name: 'Currency' })).toHaveValue('EUR');
     const todayIso = `${year}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     await expect(page.getByLabel('Date')).toHaveValue(todayIso);
@@ -45,7 +46,7 @@ test.describe('Add, edit and delete expense', () => {
     await page.getByRole('button', { name: 'Fuel' }).click();
     await page.getByLabel('Odometer (km, optional)').fill('184,500');
     await page.getByLabel('Note (optional)').fill(note);
-    await page.getByRole('button', { name: 'Save expense' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
 
     await expect(page.getByText('Expense added')).toBeVisible();
     await expect(page.getByRole('heading', { name: nickname, level: 1 })).toBeVisible();
@@ -90,7 +91,7 @@ test.describe('Add, edit and delete expense', () => {
 
     await expect(page.getByText('Expense deleted')).toBeVisible();
     await expect(page.getByRole('heading', { name: nickname, level: 1 })).toBeVisible();
-    await expect(page.getByText(`No expenses in ${year}`)).toBeVisible();
+    await expect(page.getByText(`No journal entries in ${year}`)).toBeVisible();
     await expect(row).toHaveCount(0);
     await expect(tile(page, 'This year')).toContainText('€0');
     await expect(subtitle).toHaveText(/184,320 km$/);
