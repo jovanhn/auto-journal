@@ -18,6 +18,8 @@ interface JournalEntryRepository : JpaRepository<JournalEntryEntity, UUID> {
 
     fun findAllByVehicleId(vehicleId: UUID): List<JournalEntryEntity>
 
+    fun findAllByVehicleIdOrderByDateDescCreatedAtDesc(vehicleId: UUID): List<JournalEntryEntity>
+
     @Query("select min(e.date) from JournalEntryEntity e where e.vehicleId = :vehicleId")
     fun findEarliestDate(
         @Param("vehicleId") vehicleId: UUID,
