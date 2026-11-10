@@ -143,7 +143,7 @@ Breakdown bars on Insights all use `accent`.
 ## Layout and navigation
 
 ```
-Garage ──tap vehicle card──▶ Vehicle [ Journal | Insights | Planned ]  (bottom tab bar)
+Garage ──tap vehicle card──▶ Vehicle [ Journal | Insights | Planned | Issues ]  (bottom tab bar)
   │                              │ back ◀── app bar
   └── Add vehicle (dashed btn)   └── Journal FAB "Add" ──▶ Add to journal (Expense | Log)
 ```
@@ -151,8 +151,8 @@ Garage ──tap vehicle card──▶ Vehicle [ Journal | Insights | Planned ] 
 Three screen shells:
 
 1. **Top level (Garage):** mono eyebrow + 32 px title, no app bar, scrolling content.
-2. **Vehicle section (Journal / Insights / Planned):** white app bar (44 px back button → Garage, vehicle
-   nickname 20/600 + subtitle) · scrolling content · fixed 72 px bottom tab bar, 3 tabs with icon + label;
+2. **Vehicle section (Journal / Insights / Planned / Issues):** white app bar (44 px back button → Garage, vehicle
+   nickname 20/600 + subtitle) · scrolling content · fixed 72 px bottom tab bar, 4 tabs with icon + label;
    active tab is `accent` + 600 with `aria-current="page"`.
 3. **Form (Add expense / Add vehicle):** app bar with `Cancel` (muted) · centered title · `Save` (accent) ·
    scrolling fields · sticky full-width primary button at the bottom (Save expense / Add to garage).
@@ -185,7 +185,12 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | Approximate checkbox   | Add expense             | shadcn `Checkbox` + label "Approximate" + hint "Amount or date is a best guess", below date · odometer |
 | `AmountInput`          | Add expense             | Centered, `€` prefix, 44 px tabular, `inputmode="decimal"`                                 |
 | Form field             | Add expense/vehicle     | shadcn `Field`: label 13/600 muted above a 48 px input; optional helper text 12 px muted; "(optional)" in the label |
-| `Fab`                  | Journal                 | Pill, icon + label ("Add journal entry"), bottom-right above the tab bar                                 |
+| `Fab`                  | Journal, Issues         | Pill, icon + label ("Add journal entry", "Add issue"), bottom-right above the tab bar                    |
+| `IssueRow`             | Issues                  | Open: 10 px severity marker (Urgent `warning` dot, Fix soon `foreground` dot, Watch hollow ring), title, "source · date · odometer" (12 px muted), `SeverityPill`. Resolved (`ResolvedIssueRow`): muted, check (Fixed) or minus-circle (Gone) icon, title, "Fixed · Oct 21, 2026" |
+| `SeverityPill`         | Issues                  | Urgent = `warning-subtle` / `warning`, Fix soon = `divider` filled, Watch = outline (`input` border on card) |
+| Resolved section       | Issues                  | "Resolved · N" 44 px toggle button with chevron (`aria-expanded`), collapsed by default; expands a card of resolved rows |
+| `ChipSelector`         | New/Edit issue, Resolve | Equal-width 44 px toggle buttons (`aria-pressed`), selected = filled accent; 3 per row (2 for outcome) |
+| Resolve sheet          | Edit issue              | shadcn `Sheet` from the bottom: title "Resolve issue", the issue title, Outcome chips, Date resolved, button "Resolve"; opened by the outline accent "Resolve issue" button |
 
 ## Screens
 
@@ -247,4 +252,5 @@ the affected part:
 | v0.0.5  | 2026-11-09 | Metric info: ⓘ popover on every stat tile and the Garage summary; Expenses Per km caption "Incl. purchase price". Export unchanged. |
 | v0.0.6  | 2026-11-10 | Journal: vehicle tab "Expenses" → "Journal", FAB "Add", `LogRow`, `EntryKindToggle` (Expense \| Log) on Add to journal / Edit expense / Edit log. Screen 02 still shows "Expenses" in the export. Export unchanged. |
 | v0.0.7  | 2026-11-10 | Journal filters (Claude Design canvas "autojournal", boards *Vehicle · Journal*, *Journal · scrolling year chips*, *Journal · desktop hover state*, *Add journal entry*): `JournalFilterBar`, `YearChips` replace `PeriodSwitcher` on the Journal; tiles Spent · Avg / month · Entries; month headers muted (with the year under All); ring `LogRow`; FAB "Add journal entry"; `EntryKindToggle` as a switch row after date · odometer. Not in the export yet (still screen 02). |
+| v0.0.9  | 2026-11-10 | Issues implemented (specs/issues.md): 4th vehicle tab **Issues** (warning-triangle icon), `IssueRow`, `SeverityPill`, Resolved section, `ChipSelector`, Resolve sheet, Resolved issue screen; FAB "Add issue". The New issue mock's estimated cost and the Resolve sheet's Expense control are not built (v11). |
 | v0.0.8  | 2026-11-10 | The Claude Design canvas becomes the source of truth; the `screens/` export is a frozen v0.0.1 snapshot. Issues boards added (*Issues · open*, *· resolved expanded*, *· empty*, *· only resolved*, *New issue*, *Edit issue*, *Resolve issue (sheet)*, *Resolved issue*) for specs/issues.md and specs/issue-expenses.md; components are added here when implemented. |
