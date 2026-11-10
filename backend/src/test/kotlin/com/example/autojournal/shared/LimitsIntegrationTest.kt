@@ -32,7 +32,7 @@ import kotlin.test.assertEquals
 @TestPropertySource(
     properties = [
         "autojournal.limits.vehicles-per-user=2",
-        "autojournal.limits.expenses-per-vehicle=2",
+        "autojournal.limits.journal-entries-per-vehicle=2",
         "autojournal.limits.planned-expenses-per-vehicle=2",
         "autojournal.limits.max-odometer-km=500000",
         "autojournal.limits.max-recurrence-months=24",
@@ -125,6 +125,7 @@ class LimitsIntegrationTest
             id: String,
             changedColumn: String? = null,
             newValue: Any? = null,
+            newId: UUID = UUID.randomUUID(),
         ) {
             val columns =
                 jdbc
@@ -138,10 +139,18 @@ class LimitsIntegrationTest
             jdbc
                 .sql(
                     "INSERT INTO autojournal.$table (id, ${columns.joinToString()}) " +
-                        "SELECT gen_random_uuid(), $select FROM autojournal.$table WHERE id = :id::uuid",
+                        "SELECT :newId, $select FROM autojournal.$table WHERE id = :id::uuid",
                 ).param("id", id)
+                .param("newId", newId)
                 .param("value", newValue)
                 .update()
+        }
+
+        /** An expense is a journal entry plus its cost with the same id (ADR 0020). */
+        private fun copyExpense(id: String) {
+            val newId = UUID.randomUUID()
+            copyRow("journal_entry", id, newId = newId)
+            copyRow("expense", id, newId = newId)
         }
 
         @Test
@@ -166,7 +175,7 @@ class LimitsIntegrationTest
 
             post("/api/vehicles/$golf/expenses", expense()).andExpect {
                 status { isConflict() }
-                jsonPath("$.detail") { value("A vehicle can have at most 2 expenses.") }
+                jsonPath("$.detail") { value("A vehicle can have at most 2 journal entries.") }
             }
             assertEquals(2, count("expense"))
 
@@ -181,7 +190,7 @@ class LimitsIntegrationTest
 
             post("/api/planned-expenses/$planId/pay", expense()).andExpect {
                 status { isConflict() }
-                jsonPath("$.detail") { value("A vehicle can have at most 2 expenses.") }
+                jsonPath("$.detail") { value("A vehicle can have at most 2 journal entries.") }
             }
             assertEquals(2, count("expense"))
             mockMvc.get("/api/vehicles/$golf/planned-expenses") { signedInAs() }.andExpect {
@@ -189,6 +198,35 @@ class LimitsIntegrationTest
                 jsonPath("$.items[0].id") { value(planId) }
                 jsonPath("$.items[0].dueDate") { value("2027-03-02") }
             }
+        }
+
+        /** specs/journal.md AC13 and AC18: expenses and log entries count together; converting is not adding. */
+        @Test
+        fun `journal AC13 - the limit counts expenses and log entries, conversions still work`() {
+            val golf = create("/api/vehicles", vehicle("Golf"))
+            val expenseId = create("/api/vehicles/$golf/expenses", expense())
+            val logId = create("/api/vehicles/$golf/log-entries", mapOf("date" to "2026-10-20", "note" to "Noise"))
+            val planId = create("/api/vehicles/$golf/planned-expenses", plan())
+
+            val conflict = "A vehicle can have at most 2 journal entries."
+            for ((path, body) in listOf(
+                "/api/vehicles/$golf/expenses" to expense(),
+                "/api/vehicles/$golf/log-entries" to mapOf("date" to "2026-10-20", "odometer" to 185000),
+                "/api/planned-expenses/$planId/pay" to expense(),
+            )) {
+                post(path, body).andExpect {
+                    status { isConflict() }
+                    jsonPath("$.detail") { value(conflict) }
+                }
+            }
+            assertEquals(2, count("journal_entry"))
+            mockMvc.get("/api/vehicles/$golf/planned-expenses") { signedInAs() }.andExpect {
+                jsonPath("$.items[0].dueDate") { value("2027-03-02") }
+            }
+
+            post("/api/log-entries/$logId/expense", expense()).andExpect { status { isOk() } }
+            post("/api/expenses/$expenseId/log-entry", mapOf("date" to "2026-10-20", "note" to "Free")).andExpect { status { isOk() } }
+            assertEquals(2, count("journal_entry"))
         }
 
         @Test
@@ -209,8 +247,7 @@ class LimitsIntegrationTest
             create("/api/vehicles", vehicle("Clio"))
             copyRow("vehicle", golf, "nickname", "Polo")
             val expenseId = create("/api/vehicles/$golf/expenses", expense())
-            copyRow("expense", expenseId)
-            copyRow("expense", expenseId)
+            repeat(2) { copyExpense(expenseId) }
             val planId = create("/api/vehicles/$golf/planned-expenses", plan())
             copyRow("planned_expense", planId)
             copyRow("planned_expense", planId)
@@ -340,7 +377,7 @@ class LimitsIntegrationTest
 
             val expenseProblem = mcp.failure("create_expense", expense() + ("vehicleId" to golf))
             assertEquals(409, expenseProblem.get("status").asInt())
-            assertEquals("A vehicle can have at most 2 expenses.", expenseProblem.get("detail").asString())
+            assertEquals("A vehicle can have at most 2 journal entries.", expenseProblem.get("detail").asString())
 
             val planProblem = mcp.failure("create_planned_expense", plan() + ("vehicleId" to golf))
             assertEquals(409, planProblem.get("status").asInt())

@@ -45,7 +45,7 @@ autojournal:
   # Data limits (BR-L1…L7, specs/data-limits.md). Numbers ≥ 1; earliest-date an ISO date not in the future.
   limits:
     vehicles-per-user: ${LIMIT_VEHICLES_PER_USER:10}
-    expenses-per-vehicle: ${LIMIT_EXPENSES_PER_VEHICLE:3000}
+    journal-entries-per-vehicle: ${LIMIT_JOURNAL_ENTRIES_PER_VEHICLE:3000}
     planned-expenses-per-vehicle: ${LIMIT_PLANNED_EXPENSES_PER_VEHICLE:50}
     max-odometer-km: ${LIMIT_MAX_ODOMETER_KM:2000000}
     max-recurrence-months: ${LIMIT_MAX_RECURRENCE_MONTHS:120}

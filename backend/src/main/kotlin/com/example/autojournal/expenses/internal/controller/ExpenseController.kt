@@ -4,12 +4,15 @@ import com.example.autojournal.expenses.internal.mapper.toContract
 import com.example.autojournal.expenses.internal.mapper.toData
 import com.example.autojournal.expenses.internal.service.ExpenseService
 import com.example.autojournal.expenses.internal.service.InsightsService
+import com.example.autojournal.expenses.internal.service.LogEntryService
 import com.example.autojournal.shared.security.CurrentUser
 import com.example.contract.api.ExpensesApi
 import com.example.contract.model.Expense
 import com.example.contract.model.ExpenseRequest
 import com.example.contract.model.ExpenseSummary
 import com.example.contract.model.ExpenseYear
+import com.example.contract.model.LogEntry
+import com.example.contract.model.LogEntryRequest
 import com.example.contract.model.VehicleAllTimeInsights
 import com.example.contract.model.VehicleInsights
 import org.springframework.http.HttpStatus
@@ -22,6 +25,7 @@ import java.util.UUID
 class ExpenseController(
     private val expenseService: ExpenseService,
     private val insightsService: InsightsService,
+    private val logEntryService: LogEntryService,
     private val currentUser: CurrentUser,
 ) : ExpensesApi {
     override fun listExpenses(
@@ -50,6 +54,40 @@ class ExpenseController(
         expenseService.delete(currentUser.id(), expenseId)
         return ResponseEntity.noContent().build()
     }
+
+    override fun convertLogEntryToExpense(
+        logEntryId: UUID,
+        expenseRequest: ExpenseRequest,
+    ): ResponseEntity<Expense> =
+        ResponseEntity.ok(expenseService.convertLogEntry(currentUser.id(), logEntryId, expenseRequest.toData()).toContract())
+
+    override fun createLogEntry(
+        vehicleId: UUID,
+        logEntryRequest: LogEntryRequest,
+    ): ResponseEntity<LogEntry> =
+        ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(logEntryService.create(currentUser.id(), vehicleId, logEntryRequest.toData()).toContract())
+
+    override fun getLogEntry(logEntryId: UUID): ResponseEntity<LogEntry> =
+        ResponseEntity.ok(logEntryService.get(currentUser.id(), logEntryId).toContract())
+
+    override fun updateLogEntry(
+        logEntryId: UUID,
+        logEntryRequest: LogEntryRequest,
+    ): ResponseEntity<LogEntry> =
+        ResponseEntity.ok(logEntryService.update(currentUser.id(), logEntryId, logEntryRequest.toData()).toContract())
+
+    override fun deleteLogEntry(logEntryId: UUID): ResponseEntity<Unit> {
+        logEntryService.delete(currentUser.id(), logEntryId)
+        return ResponseEntity.noContent().build()
+    }
+
+    override fun convertExpenseToLogEntry(
+        expenseId: UUID,
+        logEntryRequest: LogEntryRequest,
+    ): ResponseEntity<LogEntry> =
+        ResponseEntity.ok(logEntryService.convertExpense(currentUser.id(), expenseId, logEntryRequest.toData()).toContract())
 
     override fun getExpenseSummary(): ResponseEntity<ExpenseSummary> =
         ResponseEntity.ok(expenseService.summary(currentUser.id()).toContract())

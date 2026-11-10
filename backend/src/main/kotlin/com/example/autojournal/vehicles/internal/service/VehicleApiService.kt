@@ -2,7 +2,7 @@ package com.example.autojournal.vehicles.internal.service
 
 import com.example.autojournal.vehicles.api.VehicleApi
 import com.example.autojournal.vehicles.api.VehicleFacts
-import com.example.autojournal.vehicles.internal.dao.ExpenseOdometerReadDao
+import com.example.autojournal.vehicles.internal.dao.JournalOdometerReadDao
 import com.example.autojournal.vehicles.internal.dao.VehicleDao
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -12,7 +12,7 @@ import java.util.UUID
 @Service
 class VehicleApiService(
     private val vehicleDao: VehicleDao,
-    private val expenseOdometerReadDao: ExpenseOdometerReadDao,
+    private val journalOdometerReadDao: JournalOdometerReadDao,
 ) : VehicleApi {
     @Transactional(readOnly = true)
     override fun isOwnedBy(
@@ -26,7 +26,7 @@ class VehicleApiService(
         ownerId: UUID,
     ): VehicleFacts? {
         val vehicle = vehicleDao.findOwned(vehicleId, ownerId) ?: return null
-        val maxReading = expenseOdometerReadDao.maxReadings(listOf(vehicleId))[vehicleId]
+        val maxReading = journalOdometerReadDao.maxReadings(listOf(vehicleId))[vehicleId]
         return VehicleFacts(
             id = vehicle.id,
             purchasePriceAmount = vehicle.purchasePriceAmount,
