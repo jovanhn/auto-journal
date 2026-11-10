@@ -31,4 +31,9 @@
 | **Cost per km**        | (Total expenses + purchase price) ÷ distance driven, over the vehicle's whole history, in the display currency. |
 | **Average monthly cost** | A year's total expenses ÷ months elapsed in that year (12 for a past year, through the current month for this year), including months without expenses. |
 | **Due soon**           | A planned expense due within the next 30 days, or already overdue.                                   |
+| **Issue**              | A problem with a vehicle to keep an eye on (a warning light, a noise, a mechanic's remark): title, severity, source, date noticed, optional odometer and note. *Open* until resolved; never counts in totals or the odometer. |
+| **Severity**           | How serious an issue is: *Watch*, *Fix soon* or *Urgent*. Orders the open issues.                    |
+| **Source**             | Where an issue came from: *I noticed*, *Mechanic* or *Warning light*.                                |
+| **Resolve**            | Close an issue with an outcome — *Fixed*, or *Gone* (not an issue) — and a resolved date; from v11 optionally linking the expense that fixed it. *Reopen* undoes it. |
+| **Linked expense**     | The expense recorded as the fix of a resolved issue (v11). One expense can be linked by several issues. |
 | **Assistant**          | An AI client (e.g. Claude) connected over MCP that the user authorized to read and change their data on their behalf. |
