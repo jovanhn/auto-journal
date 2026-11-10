@@ -1,6 +1,8 @@
 import type {
   Expense,
   ExpenseSummary,
+  Issue,
+  IssueList,
   ExpenseYear,
   Journal,
   LogEntry,
@@ -148,5 +150,29 @@ export const problem = (status: number, overrides: Partial<ProblemDetail> = {}):
   type: 'about:blank',
   title: 'Error',
   status,
+  ...overrides,
+});
+
+/** An open Fix soon issue noticed by the mechanic unless overridden. */
+export const anIssue = (overrides: Partial<Issue> = {}): Issue => ({
+  id: nextId(),
+  vehicleId: '00000000-0000-4000-8000-0000000000aa',
+  title: 'Brake pads at ~30%',
+  severity: 'FIX_SOON',
+  source: 'MECHANIC',
+  noticedOn: '2026-10-12',
+  odometer: 184200,
+  note: 'Replace within ~5,000 km',
+  status: 'OPEN',
+  outcome: null,
+  resolvedOn: null,
+  createdAt: '2026-10-12T10:00:00Z',
+  ...overrides,
+});
+
+/** No issues unless overridden. */
+export const anIssueList = (overrides: Partial<IssueList> = {}): IssueList => ({
+  open: [],
+  resolved: [],
   ...overrides,
 });

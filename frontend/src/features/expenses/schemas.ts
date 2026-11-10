@@ -2,7 +2,12 @@ import { z } from 'zod';
 import {
   Category,
   Currency,
+  IssueOutcome,
+  IssueSeverity,
+  IssueSource,
   type ExpenseRequest,
+  type IssueRequest,
+  type ResolveIssueRequest,
   type LogEntryRequest,
   type PlannedExpenseRequest,
 } from '@/shared/api/generated/model';
@@ -14,6 +19,10 @@ import {
   createPlannedExpenseBodyEstimatedAmountAmountRegExp,
   createPlannedExpenseBodyNoteMax,
 } from '@/shared/api/generated/zod/planning/planning.zod';
+import {
+  createIssueBodyNoteMax,
+  createIssueBodyTitleMax,
+} from '@/shared/api/generated/zod/issues/issues.zod';
 
 /**
  * Journal entry forms. Inputs hold text, so this schema re-declares the fields as strings (UI-only:
@@ -186,3 +195,72 @@ export const PLANNED_EXPENSE_FORM_FIELDS = [
 ] as const;
 
 export const toPlannedExpenseRequest = (values: PlannedExpenseFormValues): PlannedExpenseRequest => values;
+
+/**
+ * New issue / Edit issue (specs/issues.md, UI notes; BR-IS1). Same text-input approach as the journal form; the
+ * date noticed may not be in the future (checked again by the server, with *earliest date* and, for a resolved
+ * issue, the resolved date).
+ */
+export const issueFormSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, 'Title is required')
+    .max(createIssueBodyTitleMax, `Title must be at most ${createIssueBodyTitleMax} characters`),
+  severity: z.enum(IssueSeverity),
+  source: z.enum(IssueSource),
+  noticedOn: z
+    .string()
+    .min(1, 'Date noticed is required')
+    .refine((value) => value <= todayIso(), 'Date cannot be in the future'),
+  /** Optional; accepts `184320`, `184,320` and `184,320 km`. */
+  odometer: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/[,\s]|km$/gi, ''))
+    .refine(
+      (value) => value === '' || /^\d{1,9}$/.test(value),
+      'Odometer must be a whole number of 0 or more',
+    )
+    .transform((value) => (value === '' ? null : Number(value))),
+  note: z
+    .string()
+    .trim()
+    .max(createIssueBodyNoteMax, `Note must be at most ${createIssueBodyNoteMax} characters`)
+    .transform((value) => value || null),
+});
+
+export type IssueFormInput = z.input<typeof issueFormSchema>;
+export type IssueFormValues = z.output<typeof issueFormSchema>;
+
+/** Field names as the server reports them in `ProblemDetail.errors`. */
+export const ISSUE_FORM_FIELDS = ['title', 'severity', 'source', 'noticedOn', 'odometer', 'note'] as const;
+
+export const toIssueRequest = (values: IssueFormValues): IssueRequest => values;
+
+/** Empty New issue values: Watch, I noticed, today (specs/issues.md, UI notes). */
+export const emptyIssue = (): IssueFormInput => ({
+  title: '',
+  severity: 'WATCH',
+  source: 'NOTICED',
+  noticedOn: todayIso(),
+  odometer: '',
+  note: '',
+});
+
+/** Resolve issue sheet (BR-IS3): not in the future and not before [noticedOn]; the server checks both again. */
+export const resolveIssueFormSchema = (noticedOn: string) =>
+  z.object({
+    outcome: z.enum(IssueOutcome),
+    resolvedOn: z
+      .string()
+      .min(1, 'Date resolved is required')
+      .refine((value) => value <= todayIso(), 'Date cannot be in the future')
+      .refine((value) => value >= noticedOn, 'Date cannot be before the date noticed'),
+  });
+
+export type ResolveIssueFormValues = z.output<ReturnType<typeof resolveIssueFormSchema>>;
+
+export const RESOLVE_ISSUE_FORM_FIELDS = ['outcome', 'resolvedOn'] as const;
+
+export const toResolveIssueRequest = (values: ResolveIssueFormValues): ResolveIssueRequest => values;
