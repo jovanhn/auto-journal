@@ -158,11 +158,13 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | `StatTile`             | Expenses, Insights      | Label + value (+ optional caption); `default` and `inverse` variants; 2- or 3-column grid; optional ⓘ (`MetricInfo`) |
 | `MetricInfo`           | Expenses, Insights, Garage | 14 px ⓘ after a stat label (44 px tap area) opening a popover: stat name + formula      |
 | `VehicleCard`          | Garage                  | Whole card is a link; icon tile, nickname, make·model·year·km, value, year-to-date total; optional footer with next planned expense (warning color when due soon) |
-| `PeriodSwitcher`       | Expenses                | Prev/next 44 px icon buttons around "2026 · All categories"                               |
+| `PeriodSwitcher`       | Insights                | Prev/next 44 px icon buttons around the year                                              |
+| `JournalFilterBar`     | Journal                 | Under the app bar on the page background, bottom border: 48 px search input (search icon, "Search") and a 148 px entry type select ("All entries"; *Entry type*: Expenses, Log entries; *Expense category*: the eight categories), accent border + `primary-subtle` tint while it narrows; then `YearChips` |
+| `YearChips`            | Journal                 | "All · 2026 · 2025 …" 44 px toggle buttons (`aria-pressed`, selected = filled accent) in one row that scrolls sideways; on hover-capable devices 32 px round arrows appear on hover at the ends that can scroll |
 | `ExpenseMonthGroup`    | Journal                 | Month name + month total header (no total when the month has only log entries), then a card of `ExpenseRow`s and `LogRow`s, newest first (`JournalMonthGroup` in code) |
 | `ExpenseRow`           | Journal                 | Category dot, title (category · note), date · odometer (mono) or note, amount right (`≈ ` prefix when approximate) |
-| `LogRow`               | Journal                 | Neutral icon (muted `NotebookPen`) instead of the dot, the note as title ("Odometer reading" without one), date · odometer (mono), no amount; accessible text starts with "Log" (`LogEntryRow` in code) |
-| `EntryKindToggle`      | Add to journal, Edit    | Expense \| Log segmented control at the top of the form: two toggle buttons with `aria-pressed`, same look as `PeriodToggle`; Log hides amount, currency, category and Approximate |
+| `LogRow`               | Journal                 | Hollow 10 px ring (1.5 px `category-neutral` border) instead of the dot, the note as title ("Odometer reading" without one), date · odometer (mono), no amount; accessible text starts with "Log" (`LogEntryRow` in code) |
+| `EntryKindToggle`      | Add to journal, Edit    | Switch row after date · odometer: card with "This is an expense" + hint "Adds amount, currency and category" and a 48×28 track (accent when on); `role="switch"`; off = Log hides amount, currency, category and Approximate |
 | `MonthlyBarChart`      | Insights                | 10–12 bars, current month `accent`, others `chart-muted`; `role="img"` + `aria-label` summary; mono month initials |
 | `YearlyBarChart`       | Insights (All time)     | Same look as `MonthlyBarChart`, one bar per year, current year `accent`; full years up to 6 bars, `'25` beyond |
 | `PeriodToggle`         | Insights                | Two toggle buttons (`aria-pressed`) "Year" / "All time", selected = filled accent, like `CategoryPicker` |
@@ -174,7 +176,7 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 | Approximate checkbox   | Add expense             | shadcn `Checkbox` + label "Approximate" + hint "Amount or date is a best guess", below date · odometer |
 | `AmountInput`          | Add expense             | Centered, `€` prefix, 44 px tabular, `inputmode="decimal"`                                 |
 | Form field             | Add expense/vehicle     | shadcn `Field`: label 13/600 muted above a 48 px input; optional helper text 12 px muted; "(optional)" in the label |
-| `Fab`                  | Journal                 | Pill, icon + label ("Add"), bottom-right above the tab bar                                 |
+| `Fab`                  | Journal                 | Pill, icon + label ("Add journal entry"), bottom-right above the tab bar                                 |
 
 ## Screens
 
@@ -222,3 +224,4 @@ the affected part:
 | v0.0.4  | 2026-11-08 | Approximate expenses: "Approximate" checkbox on the expense form, `≈` on `ExpenseRow`. Export unchanged. |
 | v0.0.5  | 2026-11-09 | Metric info: ⓘ popover on every stat tile and the Garage summary; Expenses Per km caption "Incl. purchase price". Export unchanged. |
 | v0.0.6  | 2026-11-10 | Journal: vehicle tab "Expenses" → "Journal", FAB "Add", `LogRow`, `EntryKindToggle` (Expense \| Log) on Add to journal / Edit expense / Edit log. Screen 02 still shows "Expenses" in the export. Export unchanged. |
+| v0.0.7  | 2026-11-10 | Journal filters (Claude Design canvas "autojournal", boards *Vehicle · Journal*, *Journal · scrolling year chips*, *Journal · desktop hover state*, *Add journal entry*): `JournalFilterBar`, `YearChips` replace `PeriodSwitcher` on the Journal; tiles Spent · Avg / month · Entries; month headers muted (with the year under All); ring `LogRow`; FAB "Add journal entry"; `EntryKindToggle` as a switch row after date · odometer. Not in the export yet (still screen 02). |
