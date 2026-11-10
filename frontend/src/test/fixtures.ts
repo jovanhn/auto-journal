@@ -2,6 +2,7 @@ import type {
   Expense,
   ExpenseSummary,
   ExpenseYear,
+  Journal,
   LogEntry,
   Money,
   PlannedExpense,
@@ -64,6 +65,14 @@ export const anExpenseYear = (overrides: Partial<ExpenseYear> = {}): ExpenseYear
   firstYear: new Date().getFullYear(),
   yearTotal: eur('0.00'),
   monthTotals: Array.from({ length: 12 }, () => eur('0.00')),
+  expenses: [],
+  logEntries: [],
+  ...overrides,
+});
+
+/** A journal (all years) with no entries unless overridden. */
+export const aJournal = (overrides: Partial<Journal> = {}): Journal => ({
+  firstYear: new Date().getFullYear(),
   expenses: [],
   logEntries: [],
   ...overrides,

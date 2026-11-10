@@ -2,16 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { ExpenseRequest, LogEntryRequest } from '@/shared/api/generated/model';
-import {
-  anExpense,
-  anExpenseYear,
-  aLogEntry,
-  aUserProfile,
-  aVehicle,
-  aVehicleInsights,
-  eur,
-  problem,
-} from '@/test/fixtures';
+import { anExpense, aJournal, aLogEntry, aUserProfile, aVehicle, eur, problem } from '@/test/fixtures';
 import { renderApp } from '@/test/renderApp';
 import { todayIso } from '../schemas';
 import { api, server } from '@/test/server';
@@ -21,9 +12,11 @@ const vehicle = aVehicle({ nickname: 'Golf' });
 /** The journal the forms return to. */
 const journalHandlers = () => [
   http.get(api(`/vehicles/${vehicle.id}`), () => HttpResponse.json(vehicle)),
-  http.get(api(`/vehicles/${vehicle.id}/expenses`), () => HttpResponse.json(anExpenseYear())),
-  http.get(api(`/vehicles/${vehicle.id}/insights`), () => HttpResponse.json(aVehicleInsights())),
+  http.get(api(`/vehicles/${vehicle.id}/journal`), () => HttpResponse.json(aJournal())),
+  http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
 ];
+
+const expenseSwitch = () => screen.findByRole('switch', { name: 'This is an expense' });
 
 // specs/journal.md — acceptance criteria 1, 2, 5 and the UI notes (journal list).
 describe('Journal list', () => {
@@ -45,13 +38,10 @@ describe('Journal list', () => {
     const newerLog = aLogEntry({ vehicleId: vehicle.id, date: '2025-10-20', odometer: 185000, note: null });
     const logOnly = aLogEntry({ vehicleId: vehicle.id, date: '2025-08-02', odometer: 183000, note: null });
     server.use(
-      http.get(api(`/vehicles/${vehicle.id}/expenses`), () =>
+      http.get(api(`/vehicles/${vehicle.id}/journal`), () =>
         HttpResponse.json(
-          anExpenseYear({
-            year: 2025,
+          aJournal({
             firstYear: 2025,
-            yearTotal: eur('52.40'),
-            monthTotals: Array.from({ length: 12 }, (_, month) => eur(month === 9 ? '52.40' : '0.00')),
             expenses: [expense],
             logEntries: [newerLog, sameDayLog, logOnly],
           }),
@@ -66,13 +56,13 @@ describe('Journal list', () => {
     expect(within(october).getByRole('heading')).toHaveTextContent('October€52.40');
     const rows = within(october).getAllByRole('listitem');
     expect(rows.map((row) => row.textContent)).toEqual([
-      'Log: Odometer readingOct 20 · 185,000 km',
-      'Log: Brake noise when coldOct 18',
-      'FuelOct 18€52.40',
+      'Log: Odometer readingOct 20, 2025 · 185,000 km',
+      'Log: Brake noise when coldOct 18, 2025',
+      'FuelOct 18, 2025€52.40',
     ]);
     expect(within(rows[0]!).getByRole('link')).toHaveAttribute(
       'href',
-      `/vehicles/${vehicle.id}/log-entries/${newerLog.id}/edit`,
+      `/vehicles/${vehicle.id}/log-entries/${newerLog.id}/edit?year=2025`,
     );
     // A month with only log entries has no total in its header.
     const august = screen.getByRole('region', { name: 'August' });
@@ -102,8 +92,10 @@ describe('Add to journal: Log', () => {
     const user = userEvent.setup();
     const { router } = renderApp(`/vehicles/${vehicle.id}/expenses/new`);
 
-    expect(await screen.findByRole('button', { name: 'Expense' })).toHaveAttribute('aria-pressed', 'true');
-    await user.click(screen.getByRole('button', { name: 'Log' }));
+    const kind = await expenseSwitch();
+    expect(kind).toHaveAttribute('aria-checked', 'true');
+    await user.click(kind);
+    expect(kind).toHaveAttribute('aria-checked', 'false');
     expect(screen.queryByLabelText('Amount')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fuel' })).not.toBeInTheDocument();
     expect(screen.getByText('Add an odometer reading, a note, or both')).toBeInTheDocument();
@@ -127,7 +119,7 @@ describe('Add to journal: Log', () => {
     const user = userEvent.setup();
     renderApp(`/vehicles/${vehicle.id}/expenses/new`);
 
-    await user.click(await screen.findByRole('button', { name: 'Log' }));
+    await user.click(await expenseSwitch());
     await user.type(screen.getByLabelText('Note (optional)'), '   ');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -149,7 +141,7 @@ describe('Add to journal: Log', () => {
     const user = userEvent.setup();
     renderApp(`/vehicles/${vehicle.id}/expenses/new`);
 
-    await user.click(await screen.findByRole('button', { name: 'Log' }));
+    await user.click(await expenseSwitch());
     await user.type(screen.getByLabelText('Odometer (km, optional)'), '3000000');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -185,7 +177,7 @@ describe('Edit log', () => {
     expect(await screen.findByRole('heading', { name: 'Edit log' })).toBeInTheDocument();
     const note = await screen.findByLabelText('Note (optional)');
     expect(note).toHaveValue('New wipers');
-    expect(screen.getByRole('button', { name: 'Log' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await expenseSwitch()).toHaveAttribute('aria-checked', 'false');
     expect(screen.getByLabelText('Odometer (km, optional)')).toHaveValue('185000');
     await user.clear(note);
     await user.type(note, 'Wipers replaced');
@@ -200,8 +192,8 @@ describe('Edit log', () => {
     let sent: ExpenseRequest | undefined;
     server.use(
       getEntry(),
-      ...journalHandlers(),
       http.get(api('/me'), () => HttpResponse.json(aUserProfile({ displayCurrency: 'RSD' }))),
+      ...journalHandlers(),
       http.post(api(`/log-entries/${entry.id}/expense`), async ({ request }) => {
         sent = (await request.json()) as ExpenseRequest;
         return HttpResponse.json(anExpense({ id: entry.id, vehicleId: vehicle.id }));
@@ -210,7 +202,7 @@ describe('Edit log', () => {
     const user = userEvent.setup();
     renderApp(editUrl);
 
-    await user.click(await screen.findByRole('button', { name: 'Expense' }));
+    await user.click(await expenseSwitch());
     expect(screen.getByRole('combobox', { name: 'Currency' })).toHaveValue('RSD');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Currency' }), 'EUR');
     await user.type(screen.getByLabelText('Amount'), '25.00');
@@ -283,7 +275,7 @@ describe('Edit expense: switch to Log', () => {
     const user = userEvent.setup();
     const { router } = renderApp(`/vehicles/${vehicle.id}/expenses/${expense.id}/edit`);
 
-    await user.click(await screen.findByRole('button', { name: 'Log' }));
+    await user.click(await expenseSwitch());
     expect(screen.queryByLabelText('Amount')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Note (optional)')).toHaveValue('Check');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));

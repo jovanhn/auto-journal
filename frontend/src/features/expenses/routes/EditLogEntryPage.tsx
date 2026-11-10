@@ -35,7 +35,12 @@ export function EditLogEntryPage() {
   const updateLogEntry = useUpdateLogEntry();
   const convertToExpense = useConvertLogEntryToExpense();
   const deleteLogEntry = useDeleteLogEntry(vehicleId);
-  const backToJournal = { to: '/vehicles/$vehicleId', params: { vehicleId } } as const;
+  // Back to the journal with its filters (specs/journal-filters.md AC8).
+  const backToJournal = {
+    to: '/vehicles/$vehicleId',
+    params: { vehicleId },
+    search: route.useSearch(),
+  } as const;
 
   const handleSave = async (values: JournalEntryFormValues) => {
     if (values.kind === 'log') {

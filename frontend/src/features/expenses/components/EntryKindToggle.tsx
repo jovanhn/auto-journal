@@ -1,5 +1,4 @@
 import { cn } from '@/shared/lib/utils';
-import { Button } from '@/shared/ui/button';
 import type { JournalEntryKind } from '../schemas';
 
 type EntryKindToggleProps = {
@@ -7,32 +6,41 @@ type EntryKindToggleProps = {
   onChange: (kind: JournalEntryKind) => void;
 };
 
-const KINDS: { kind: JournalEntryKind; label: string }[] = [
-  { kind: 'expense', label: 'Expense' },
-  { kind: 'log', label: 'Log' },
-];
-
-/** Expense | Log at the top of the journal form (specs/journal.md); toggle buttons like the period toggle. */
+/**
+ * "This is an expense" switch row of the journal form (design: Add journal entry; specs/journal-filters.md): on =
+ * Expense, off = Log.
+ */
 export function EntryKindToggle({ kind, onChange }: EntryKindToggleProps) {
+  const isExpense = kind === 'expense';
   return (
-    <div role="group" aria-label="Entry type" className="grid grid-cols-2 gap-2">
-      {KINDS.map(({ kind: option, label }) => {
-        const selected = option === kind;
-        return (
-          <Button
-            key={option}
-            type="button"
-            variant={selected ? 'default' : 'outline'}
-            aria-pressed={selected}
-            className={cn('h-11', !selected && 'bg-card')}
-            onClick={() => {
-              if (!selected) onChange(option);
-            }}
-          >
-            {label}
-          </Button>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={isExpense}
+      aria-labelledby="entry-kind-label"
+      aria-describedby="entry-kind-hint"
+      onClick={() => {
+        onChange(isExpense ? 'log' : 'expense');
+      }}
+      className="flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <span className="flex flex-col gap-0.5">
+        <span id="entry-kind-label" className="text-[15px] font-semibold">
+          This is an expense
+        </span>
+        <span id="entry-kind-hint" className="text-[13px] text-muted-foreground">
+          Adds amount, currency and category
+        </span>
+      </span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          'flex h-7 w-12 shrink-0 rounded-full p-[3px] transition-colors',
+          isExpense ? 'justify-end bg-primary' : 'justify-start bg-input',
+        )}
+      >
+        <span className="size-[22px] rounded-full bg-card shadow-sm" />
+      </span>
+    </button>
   );
 }

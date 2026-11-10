@@ -1,5 +1,6 @@
 import { createRoute } from '@tanstack/react-router';
 import { authenticatedRoute } from '@/app/authenticatedRoute';
+import { isJournalType, type JournalSearch } from '../journal';
 import { AddJournalEntryPage } from './AddJournalEntryPage';
 import { AddPlannedExpensePage } from './AddPlannedExpensePage';
 import { EditExpensePage } from './EditExpensePage';
@@ -20,6 +21,12 @@ const validateYearSearch = (search: Record<string, unknown>): YearSearch => {
   return Number.isInteger(year) && year > 0 ? { year } : {};
 };
 
+const validateJournalSearch = (search: Record<string, unknown>): JournalSearch => ({
+  ...(search.year === 'all' ? { year: 'all' as const } : validateYearSearch(search)),
+  ...(isJournalType(search.type) ? { type: search.type } : {}),
+  ...(typeof search.q === 'string' && search.q !== '' ? { q: search.q } : {}),
+});
+
 export type InsightsSearch = YearSearch & {
   /** `all` shows all-time insights; one year (`year`) when absent. */
   period?: 'all';
@@ -32,7 +39,7 @@ const validateInsightsSearch = (search: Record<string, unknown>): InsightsSearch
 export const vehicleExpensesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId',
-  validateSearch: (search: Record<string, unknown>) => validateYearSearch(search),
+  validateSearch: validateJournalSearch,
   component: VehicleExpensesPage,
 });
 
@@ -48,12 +55,16 @@ export const vehicleInsightsRoute = createRoute({
 export const addExpenseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/expenses/new',
+  // Keeps the journal filters so Save and Cancel return to the same view (specs/journal-filters.md AC8).
+  validateSearch: validateJournalSearch,
   component: AddJournalEntryPage,
 });
 
 export const editExpenseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/expenses/$expenseId/edit',
+  // Keeps the journal filters so Save and Cancel return to the same view (specs/journal-filters.md AC8).
+  validateSearch: validateJournalSearch,
   component: EditExpensePage,
 });
 
@@ -61,6 +72,8 @@ export const editExpenseRoute = createRoute({
 export const editLogEntryRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/log-entries/$logEntryId/edit',
+  // Keeps the journal filters so Save and Cancel return to the same view (specs/journal-filters.md AC8).
+  validateSearch: validateJournalSearch,
   component: EditLogEntryPage,
 });
 
