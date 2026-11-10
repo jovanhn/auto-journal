@@ -31,9 +31,9 @@ expenses (due date, estimated amount, one-time or every N months), mark them as 
 expenses, and see a 12-month cost projection. The domain is defined in [docs/domain](docs/domain).
 
 Keep the scope minimal: no shared vehicles, sync, receipt photos, notifications, or live exchange rates for now. The UI is
-mobile-first; follow [docs/design/design.md](docs/design/design.md) and the reference screens in
-`docs/design/screens/` (Garage, Expenses, Insights, Planned, Add expense, Add vehicle) for layout,
-navigation, and styling.
+mobile-first; follow [docs/design/design.md](docs/design/design.md) and the boards of the Claude Design
+canvas https://claude.ai/artifact/UKHaVhojYYmcVKV2PZTf1E (Garage, Journal, Insights, Planned, Issues and
+their forms) for layout, navigation, and styling.
 
 Full-stack monorepo: Kotlin + Spring Boot modular monolith, React + TypeScript SPA, contract-first OpenAPI,
 PostgreSQL (Supabase in production).
@@ -71,14 +71,15 @@ access: [docs/operations.md#deployment](docs/operations.md#deployment).
 
 Higher wins. **If they conflict, stop and ask.** Do not invent product requirements.
 
-`docs/design/design.md` (+ `docs/design/screens/`) is the source of truth for **how the UI looks** — layout,
+The Claude Design canvas (+ `docs/design/design.md`) is the source of truth for **how the UI looks** — layout,
 navigation, styling — but never for behavior: a field, rule, or calculation that appears only in a mock is
 not a requirement; ask.
 
 ## Feature workflow
 
 1. Read the spec (`docs/specs/`), the relevant domain docs (`docs/domain/`), the ADRs (`docs/adr/`), and for
-   UI work `docs/design/design.md` and the affected screens in `docs/design/screens/src/`.
+   UI work `docs/design/design.md` and the affected boards of the design canvas (read as in
+   [design.md](docs/design/design.md#the-canvas)).
 2. If the spec is missing or ambiguous, **ask before coding**.
 3. Update `contracts/openapi.yaml` first, then `make gen`.
 4. Backend: migration → domain → persistence → application → api (Flyway migration, entity, repository/DAO,
@@ -101,7 +102,8 @@ not a requirement; ask.
   > without architectural approval.
 - **No new dependencies or frameworks** without approval via an ADR. Ask first.
 - **Never edit generated code** (`backend/target/generated-sources`, `frontend/src/shared/api/generated`,
-  `docs/design/screens/src`) or the Claude Design export (`docs/design/screens/*.html`).
+  `docs/design/screens/src`) or the frozen Claude Design export (`docs/design/screens/*.html`). Never publish to the design canvas
+  unless the owner asks.
 - **Never edit applied migrations.** Add a new `V<n>__<description>.sql`.
 - **No server data in Redux.** Server data lives in TanStack Query.
 - **Contract-first, always.** API changes start in `contracts/openapi.yaml`. Breaking changes need explicit approval.
@@ -128,7 +130,7 @@ Run from the repo root (GNU make + POSIX shell; Git Bash on Windows).
 | `make lint`           | All linters                                                            |
 | `make test`           | Backend + frontend tests                                               |
 | `make e2e`            | Build both apps and run Playwright against the full stack              |
-| `make design-unpack`  | Extract readable screen sources from the Claude Design export          |
+| `make design-unpack`  | Extract screen sources from the old (frozen) Claude Design export      |
 | `make check`          | **Exactly what CI runs** — must pass before you finish                 |
 
 ## Definition of Done

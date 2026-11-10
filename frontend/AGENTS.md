@@ -60,7 +60,8 @@ Never put server data in Redux. Use `useAppDispatch` / `useAppSelector` from `@/
 ## Components and UI
 
 - **Design:** follow [docs/design/design.md](../docs/design/design.md) (tokens, components, screen shells)
-  and the screen sources in `docs/design/screens/src/`. Mobile-first (390 px). Translate mock colors and sizes
+  and the boards of the design canvas linked there (the source of truth; `docs/design/screens/` is a frozen
+  old snapshot). Mobile-first (390 px). Translate mock colors and sizes
   to the theme CSS variables and Tailwind classes; never copy the mocks' hex values or inline styles. New
   design tokens go into `src/index.css` (light and dark), not into components.
 

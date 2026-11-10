@@ -3,9 +3,12 @@
 The visual design of autojournal: tokens, components, screens, and how the design is iterated. Read this
 before building or changing any UI.
 
-- **Design version:** v0.0.6 (2026-11-10) — see [Changelog](#changelog)
-- **Reference screens:** [`screens/`](screens/) (6 mobile screens, 390 × 844)
-- **Made with:** Claude Design, exported as standalone HTML
+- **Design version:** v0.0.8 (2026-11-10) — see [Changelog](#changelog)
+- **Source of truth:** the Claude Design canvas **https://claude.ai/artifact/UKHaVhojYYmcVKV2PZTf1E**
+  (mobile boards, 390 × 844). It is improved over time; always read the current version.
+- **Snapshot:** [`screens/`](screens/) holds an old export (v0.0.1, 6 screens). It is frozen and no longer
+  updated; when it disagrees with the canvas, the canvas wins.
+- **Made with:** Claude Design
 
 ## Scope and authority
 
@@ -19,35 +22,41 @@ before building or changing any UI.
   from `src/shared/ui/` (see [frontend/AGENTS.md](../../frontend/AGENTS.md), ADR 0011).
 - Mobile-first: design for 390 px width first; wider layouts are an [open question](#open-questions).
 
+## The canvas
+
+The canvas is private to the owner. Commit only the plain URL above, never a share link with `?sk=…` (the
+repo is public and the key opens the design to anyone).
+
+Each board is one file in the canvas: `project/canvas.json` is the index (board file → title, position) and
+`project/<Board>.dc.html` holds a board's template (markup, inline styles, and a small `class Component
+extends DCLogic` script with its props/state). Boards are referred to by their title or file, e.g. "Issues ·
+open" (`Issues.dc.html`).
+
+**Reading it (agents):** in Claude Code, use the Artifact tool's `read` action on the URL, first with `path:
+"project/canvas.json"`, then with `paths` for the boards you need. Agents without claude.ai access ask the
+owner. Agents read the canvas but never publish to it unless the owner asks.
+
 ## Files
 
 ```
 docs/design/
   design.md                    this file — tokens, components, screens, open questions, changelog
-  screens/
-    autojournal_v_0_0_1.html   Claude Design export (open in a browser to view); never edit by hand
-    src/                       readable per-screen sources, generated from the export — never edit
-      01-garage.html … 06-add-vehicle.html
+  screens/                     frozen v0.0.1 snapshot (see above); never edit
+    autojournal_v_0_0_1.html   old Claude Design export
+    src/                       per-screen sources generated from it (`make design-unpack`)
   tools/
-    unpack-bundle.mjs          extracts screens/src/ from the export (`make design-unpack`)
+    unpack-bundle.mjs          extracts screens/src/ from an export
 ```
-
-The export is a single self-unpacking file (~600 KB, minified runtime + gzipped pages), useless in a diff.
-`screens/src/` holds each screen's template (markup, inline styles, and the small `class Component extends
-DCLogic` script with its props/state) so design changes are reviewable in `git diff` and readable by agents.
-The `src/` files need the Claude Design runtime to render — to *look* at the screens, open the export.
 
 ## Updating the design (iteration workflow)
 
-1. Edit the design in Claude Design (start from the current export or the `screens/src/` sources).
-2. Export as standalone HTML and replace the file in `screens/` (keep exactly one export there; name it
-   `autojournal_v_<major>_<minor>_<patch>.html`; git keeps old versions).
-3. Run `make design-unpack` and review `git diff docs/design/screens/src/` — that diff *is* the design change.
-4. Update this file in the same commit: tokens/components that changed, new screens in the
+1. Edit the design in the canvas (Claude Design). The canvas keeps its own version history.
+2. Update this file in a `docs(design): …` commit: tokens/components that changed, new boards in the
    [screen inventory](#screens), resolved/new [open questions](#open-questions), and a
-   [changelog](#changelog) entry (version, date, what changed).
-5. Commit as `docs(design): …`. Implementing the change in the frontend is a separate `feat(frontend)` commit
-   that updates the token CSS variables and components, never hex values in components.
+   [changelog](#changelog) entry (version, date, which boards changed and how). This changelog is the
+   reviewable record of design changes in git.
+3. Implementing the change in the frontend is a separate `feat(frontend)` commit that updates the token CSS
+   variables and components, never hex values in components.
 
 If a design change implies new behavior (new field, new calculation), update `docs/domain` / `docs/specs`
 first — the design alone is not a requirement.
@@ -180,14 +189,27 @@ Candidates for `src/shared/ui/` (if generic) or `src/features/<f>/components/`. 
 
 ## Screens
 
-| #   | Screen             | Source                                                        | Shows                                                                                           |
-| --- | ------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 1   | Garage             | [01-garage.html](screens/src/01-garage.html)                  | All-cars year-to-date hero (total, vehicle count, avg/month); vehicle cards; Add vehicle        |
-| 2   | Vehicle · Expenses | [02-vehicle-expenses.html](screens/src/02-vehicle-expenses.html) | Tiles: this year, this month, per km; period switcher; expenses grouped by month; Add expense FAB |
-| 3   | Vehicle · Insights | [03-vehicle-insights.html](screens/src/03-vehicle-insights.html) | Tiles: total spent, avg/month, car value ("Purchase price"), distance; by-month chart; by-category breakdown. Implemented with a Year / All time toggle (specs/insights.md UI notes): Year shows that year's distance and per km instead of car value; All time adds car value and lifetime per km and a by-year chart |
-| 4   | Vehicle · Planned  | [04-vehicle-planned.html](screens/src/04-vehicle-planned.html)  | 12-month projection hero (planned + running costs); upcoming planned items with Mark as paid; Plan an expense |
-| 5   | Add expense        | [05-add-expense.html](screens/src/05-add-expense.html)        | Amount, vehicle, category (8 fixed), date, odometer, note                                       |
-| 6   | Add vehicle        | [06-add-vehicle.html](screens/src/06-add-vehicle.html)        | Nickname, make, model, year, plate (optional), current odometer, purchase price + date          |
+Boards of the canvas (file under `project/`). Behavior on a board that no spec has is not a requirement.
+
+| Board (title)                      | File                               | Shows                                                                         |
+| ---------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| Garage                             | `Main.dc.html`                     | All-cars year-to-date hero (total, vehicle count, avg/month); vehicle cards; Add vehicle |
+| Vehicle · Journal                  | `Expenses.dc.html`                 | Filter bar, year chips, tiles Spent · Avg / month · Entries, entries grouped by month, FAB |
+| Journal · scrolling year chips     | `ExpensesScrollChips.dc.html`      | Year chips overflowing horizontally                                           |
+| Journal · desktop hover state      | `ExpensesScrollChipsHover.dc.html` | Hover states on wider screens                                                 |
+| Vehicle · Insights                 | `Insights.dc.html`                 | Tiles, by-month chart, by-category breakdown (Year / All time per specs/insights.md) |
+| Vehicle · Planned                  | `Planned.dc.html`                  | 12-month projection hero; upcoming planned items with Mark as paid; Plan an expense |
+| Add journal entry · expense        | `AddExpense.dc.html`               | Expense form: amount, category, date, odometer, note, approximate, Expense \| Log switch |
+| Add journal entry · not an expense | `AddJournalEntry.dc.html`          | Log form: date, odometer, note                                                |
+| Add vehicle                        | `AddVehicle.dc.html`               | Nickname, make, model, year, plate (optional), odometer, purchase price + date |
+| Issues · open                      | `Issues.dc.html`                   | Open issues by severity, collapsed Resolved section, Add issue FAB, 4th tab Issues (specs/issues.md) |
+| Issues · resolved expanded         | `IssuesResolved.dc.html`           | Resolved section expanded                                                     |
+| Issues · empty                     | `IssuesEmpty.dc.html`              | No issues at all                                                              |
+| Issues · only resolved             | `IssuesAllResolved.dc.html`        | No open issues, resolved ones collapsed                                       |
+| New issue                          | `NewIssue.dc.html`                 | Title, severity, source, date noticed, odometer, note (its estimated cost is dropped) |
+| Edit issue                         | `EditIssue.dc.html`                | Same form + Resolve issue, Delete issue                                       |
+| Resolve issue (sheet)              | `ResolveIssue.dc.html`             | Outcome, date resolved; Expense None \| Link existing \| Add new (v11, specs/issue-expenses.md) |
+| Resolved issue                     | `ResolvedIssue.dc.html`            | Outcome pill, details, linked expense (v11), Reopen issue                     |
 
 Copy conventions seen in the screens: euro prefix with thousands comma (`€2,148`, cents only in lists:
 `€52.40`), `km` suffix, short dates (`Oct 18`, `Nov 14, 2026`), sentence case, `≈`/`~` for estimates.
@@ -225,3 +247,4 @@ the affected part:
 | v0.0.5  | 2026-11-09 | Metric info: ⓘ popover on every stat tile and the Garage summary; Expenses Per km caption "Incl. purchase price". Export unchanged. |
 | v0.0.6  | 2026-11-10 | Journal: vehicle tab "Expenses" → "Journal", FAB "Add", `LogRow`, `EntryKindToggle` (Expense \| Log) on Add to journal / Edit expense / Edit log. Screen 02 still shows "Expenses" in the export. Export unchanged. |
 | v0.0.7  | 2026-11-10 | Journal filters (Claude Design canvas "autojournal", boards *Vehicle · Journal*, *Journal · scrolling year chips*, *Journal · desktop hover state*, *Add journal entry*): `JournalFilterBar`, `YearChips` replace `PeriodSwitcher` on the Journal; tiles Spent · Avg / month · Entries; month headers muted (with the year under All); ring `LogRow`; FAB "Add journal entry"; `EntryKindToggle` as a switch row after date · odometer. Not in the export yet (still screen 02). |
+| v0.0.8  | 2026-11-10 | The Claude Design canvas becomes the source of truth; the `screens/` export is a frozen v0.0.1 snapshot. Issues boards added (*Issues · open*, *· resolved expanded*, *· empty*, *· only resolved*, *New issue*, *Edit issue*, *Resolve issue (sheet)*, *Resolved issue*) for specs/issues.md and specs/issue-expenses.md; components are added here when implemented. |
