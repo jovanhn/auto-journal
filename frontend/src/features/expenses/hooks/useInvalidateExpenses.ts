@@ -11,8 +11,8 @@ import {
 } from '@/shared/api/generated/endpoints/vehicles/vehicles';
 
 /**
- * Refreshes everything an expense change affects: the vehicle's year lists and insights, the Garage summary,
- * and the vehicle itself (its current odometer follows expense readings, BR-V5).
+ * Refreshes everything a journal change affects: the vehicle's journal years and insights, the Garage summary,
+ * and the vehicle itself (its current odometer follows journal entry readings, BR-V5).
  */
 export function useInvalidateExpenses() {
   const queryClient = useQueryClient();

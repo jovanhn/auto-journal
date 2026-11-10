@@ -9,7 +9,7 @@ const tabClass = 'flex min-w-20 flex-col items-center justify-center gap-1 text-
 const activeProps = { className: 'font-semibold text-primary' } as const;
 const activeOptions = { exact: true, includeSearch: false } as const;
 
-/** Bottom tab bar of the vehicle section (design.md, "Vehicle section" shell): Expenses, Insights, Planned. */
+/** Bottom tab bar of the vehicle section (design.md, "Vehicle section" shell): Journal, Insights, Planned. */
 export function VehicleTabBar({ vehicleId }: VehicleTabBarProps) {
   return (
     <nav
@@ -24,7 +24,7 @@ export function VehicleTabBar({ vehicleId }: VehicleTabBarProps) {
         activeOptions={activeOptions}
       >
         <List className="size-[22px]" aria-hidden="true" />
-        Expenses
+        Journal
       </Link>
       <Link
         to="/vehicles/$vehicleId/insights"

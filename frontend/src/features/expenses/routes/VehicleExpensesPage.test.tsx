@@ -13,7 +13,7 @@ const monthTotals = (totals: Record<number, string>): Money[] =>
   Array.from({ length: 12 }, (_, month) => eur(totals[month] ?? '0.00'));
 
 // specs/expenses.md — acceptance criteria 1 and 3–6 (UI side).
-describe('VehicleExpensesPage', () => {
+describe('VehicleExpensesPage (journal)', () => {
   const vehicle = aVehicle({ nickname: 'Golf', make: 'VW', model: 'Golf 7', currentOdometer: 184320 });
 
   it('shows the app bar, the tiles and the year grouped by month, newest first', async () => {
@@ -81,7 +81,7 @@ describe('VehicleExpensesPage', () => {
       'href',
       expect.stringMatching(new RegExp(`^/vehicles/${vehicle.id}/expenses/.+/edit$`)),
     );
-    expect(screen.getByRole('link', { name: 'Add expense' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Add' })).toHaveAttribute(
       'href',
       `/vehicles/${vehicle.id}/expenses/new`,
     );
@@ -120,8 +120,8 @@ describe('VehicleExpensesPage', () => {
 
     renderApp(`/vehicles/${vehicle.id}`);
 
-    expect(await screen.findByText(`No expenses in ${currentYear}`)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Add an expense' })).toBeInTheDocument();
+    expect(await screen.findByText(`No journal entries in ${currentYear}`)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Add to journal' })).toBeInTheDocument();
     expect(screen.getByText('This year').nextSibling).toHaveTextContent('€0');
     expect(screen.getByText('This month').nextSibling).toHaveTextContent('€0');
     expect(screen.getByRole('button', { name: 'Previous year' })).toBeDisabled();
@@ -221,7 +221,7 @@ describe('VehicleExpensesPage', () => {
 
     costPerKm = null;
     renderApp(`/vehicles/${vehicle.id}`);
-    expect(await screen.findByText(`No expenses in ${currentYear}`)).toBeInTheDocument();
+    expect(await screen.findByText(`No journal entries in ${currentYear}`)).toBeInTheDocument();
     expect(screen.getByText('Per km').nextSibling).toHaveTextContent('—');
   });
 
@@ -239,11 +239,11 @@ describe('VehicleExpensesPage', () => {
     const user = userEvent.setup();
     renderApp(`/vehicles/${vehicle.id}`);
 
-    expect(await screen.findByText('Could not load the expenses')).toBeInTheDocument();
+    expect(await screen.findByText('Could not load the journal')).toBeInTheDocument();
     fail = false;
     await user.click(screen.getByRole('button', { name: 'Try again' }));
 
-    expect(await screen.findByText(`No expenses in ${currentYear}`)).toBeInTheDocument();
+    expect(await screen.findByText(`No journal entries in ${currentYear}`)).toBeInTheDocument();
   });
 
   it('shows an error state for a vehicle that does not exist', async () => {
