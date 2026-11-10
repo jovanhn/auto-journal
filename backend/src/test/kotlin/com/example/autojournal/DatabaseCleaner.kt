@@ -5,6 +5,6 @@ import org.springframework.jdbc.core.simple.JdbcClient
 /** Truncates all application tables. Call from `@BeforeEach` in integration tests. */
 fun JdbcClient.truncateAll() {
     sql(
-        "TRUNCATE autojournal.planned_expense, autojournal.expense, autojournal.journal_entry, autojournal.vehicle, autojournal.user_profile",
+        "TRUNCATE autojournal.issue, autojournal.planned_expense, autojournal.expense, autojournal.journal_entry, autojournal.vehicle, autojournal.user_profile",
     ).update()
 }

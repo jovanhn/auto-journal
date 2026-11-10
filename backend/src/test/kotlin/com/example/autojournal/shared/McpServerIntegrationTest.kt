@@ -142,6 +142,12 @@ class McpServerIntegrationTest
                     "update_planned_expense",
                     "delete_planned_expense",
                     "pay_planned_expense",
+                    "list_issues",
+                    "create_issue",
+                    "update_issue",
+                    "delete_issue",
+                    "resolve_issue",
+                    "reopen_issue",
                 ),
                 byName.keys,
             )
@@ -155,6 +161,7 @@ class McpServerIntegrationTest
                     "get_vehicle_all_time_insights",
                     "list_planned_expenses",
                     "list_next_due",
+                    "list_issues",
                 )
             val deletes =
                 setOf(
@@ -163,6 +170,7 @@ class McpServerIntegrationTest
                     "delete_log_entry",
                     "convert_expense_to_log_entry",
                     "delete_planned_expense",
+                    "delete_issue",
                 )
             byName.forEach { (name, tool) ->
                 assertTrue("50 seconds" in tool.get("description").asString(), name)

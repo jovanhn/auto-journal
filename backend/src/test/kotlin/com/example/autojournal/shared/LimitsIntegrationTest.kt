@@ -34,6 +34,7 @@ import kotlin.test.assertEquals
         "autojournal.limits.vehicles-per-user=2",
         "autojournal.limits.journal-entries-per-vehicle=2",
         "autojournal.limits.planned-expenses-per-vehicle=2",
+        "autojournal.limits.issues-per-vehicle=2",
         "autojournal.limits.max-odometer-km=500000",
         "autojournal.limits.max-recurrence-months=24",
         "autojournal.limits.earliest-date=2000-01-01",
@@ -80,6 +81,14 @@ class LimitsIntegrationTest
                 "estimatedAmount" to mapOf("amount" to "300", "currency" to "EUR"),
                 "dueDate" to "2027-03-02",
                 "recurrenceMonths" to 12,
+            ) + overrides
+
+        private fun issue(vararg overrides: Pair<String, Any?>) =
+            mapOf(
+                "title" to "Brake pads at ~30%",
+                "severity" to "FIX_SOON",
+                "source" to "MECHANIC",
+                "noticedOn" to "2026-10-12",
             ) + overrides
 
         private fun post(
@@ -239,6 +248,43 @@ class LimitsIntegrationTest
                 jsonPath("$.detail") { value("A vehicle can have at most 2 planned expenses.") }
             }
             assertEquals(2, count("planned_expense"))
+        }
+
+        @Test
+        fun `issues AC12 - the issue limit counts open and resolved issues, and the other operations still work`() {
+            val golf = create("/api/vehicles", vehicle("Golf"))
+            val open = create("/api/vehicles/$golf/issues", issue())
+            val resolved = create("/api/vehicles/$golf/issues", issue("title" to "Rattle"))
+            post("/api/issues/$resolved/resolve", mapOf("outcome" to "GONE", "resolvedOn" to "2026-10-20"))
+                .andExpect { status { isOk() } }
+
+            post("/api/vehicles/$golf/issues", issue()).andExpect {
+                status { isConflict() }
+                jsonPath("$.detail") { value("A vehicle can have at most 2 issues.") }
+            }
+            assertEquals(2, count("issue"))
+
+            put("/api/issues/$open", issue("severity" to "URGENT")).andExpect { status { isOk() } }
+            post("/api/issues/$open/resolve", mapOf("outcome" to "FIXED", "resolvedOn" to "2026-10-21"))
+                .andExpect { status { isOk() } }
+            mockMvc.post("/api/issues/$resolved/reopen") { signedInAs() }.andExpect { status { isOk() } }
+            mockMvc.delete("/api/issues/$open") { signedInAs() }.andExpect { status { isNoContent() } }
+            create("/api/vehicles/$golf/issues", issue())
+        }
+
+        @Test
+        fun `issues - odometer and date noticed outside the bounds are a 400 on the field`() {
+            val golf = create("/api/vehicles", vehicle("Golf"))
+            post("/api/vehicles/$golf/issues", issue("odometer" to 500001)).andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errors[0].field") { value("odometer") }
+            }
+            post("/api/vehicles/$golf/issues", issue("noticedOn" to "1999-12-31")).andExpect {
+                status { isBadRequest() }
+                jsonPath("$.errors[0].field") { value("noticedOn") }
+            }
+            post("/api/vehicles/$golf/issues", issue("odometer" to 500000, "noticedOn" to "2000-01-01"))
+                .andExpect { status { isCreated() } }
         }
 
         @Test
