@@ -1,14 +1,18 @@
 import { createRoute } from '@tanstack/react-router';
 import { authenticatedRoute } from '@/app/authenticatedRoute';
 import { isJournalType, type JournalSearch } from '../journal';
+import { AddIssuePage } from './AddIssuePage';
 import { AddJournalEntryPage } from './AddJournalEntryPage';
 import { AddPlannedExpensePage } from './AddPlannedExpensePage';
 import { EditExpensePage } from './EditExpensePage';
+import { EditIssuePage } from './EditIssuePage';
 import { EditLogEntryPage } from './EditLogEntryPage';
 import { EditPlannedExpensePage } from './EditPlannedExpensePage';
 import { InsightsPage } from './InsightsPage';
+import { IssuesPage } from './IssuesPage';
 import { PayPlannedExpensePage } from './PayPlannedExpensePage';
 import { PlannedPage } from './PlannedPage';
+import { ResolvedIssuePage } from './ResolvedIssuePage';
 import { VehicleExpensesPage } from './VehicleExpensesPage';
 
 export type YearSearch = {
@@ -100,4 +104,30 @@ export const payPlannedExpenseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/planned/$plannedExpenseId/pay',
   component: PayPlannedExpensePage,
+});
+
+/** Vehicle · Issues (specs/issues.md). */
+export const vehicleIssuesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/issues',
+  component: IssuesPage,
+});
+
+export const addIssueRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/issues/new',
+  component: AddIssuePage,
+});
+
+export const editIssueRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/issues/$issueId/edit',
+  component: EditIssuePage,
+});
+
+/** Resolved issue: details and Reopen. */
+export const resolvedIssueRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/issues/$issueId',
+  component: ResolvedIssuePage,
 });
