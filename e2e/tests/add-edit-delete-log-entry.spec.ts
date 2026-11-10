@@ -37,10 +37,10 @@ test.describe('Add, edit and delete log entry', () => {
     await expect(page.getByText(`No journal entries in ${year}`)).toBeVisible();
 
     // 2. Add a log entry with an odometer reading
-    await page.getByRole('link', { name: 'Add', exact: true }).click();
+    await page.getByRole('link', { name: 'Add journal entry' }).click();
     await expect(page.getByRole('form', { name: 'Add to journal' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Expense', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: 'Log', exact: true }).click();
+    await expect(page.getByRole('switch', { name: 'This is an expense' })).toHaveAttribute('aria-checked', 'true');
+    await page.getByRole('switch', { name: 'This is an expense' }).click();
     await expect(page.getByLabel('Amount')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Fuel' })).toHaveCount(0);
     await expect(page.getByText('Add an odometer reading, a note, or both')).toBeVisible();
@@ -55,14 +55,13 @@ test.describe('Add, edit and delete log entry', () => {
     await expect(readingRow).toContainText(shortDate);
     await expect(readingRow).toContainText('185,000 km');
     await expect(readingRow).not.toContainText('€');
-    await expect(tile(page, 'This year')).toContainText('€0');
-    await expect(tile(page, 'This month')).toContainText('€0');
+    await expect(tile(page, 'Spent')).toContainText('€0');
     await expect(subtitle).toHaveText(/185,000 km$/);
 
     // 3. Edit its note
     await readingRow.click();
     await expect(page.getByRole('form', { name: 'Edit log' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Log', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('switch', { name: 'This is an expense' })).toHaveAttribute('aria-checked', 'false');
     await expect(page.getByLabel('Odometer (km, optional)')).toHaveValue('185000');
     await page.getByLabel('Note (optional)').fill(note);
     await page.getByRole('button', { name: 'Save changes' }).click();

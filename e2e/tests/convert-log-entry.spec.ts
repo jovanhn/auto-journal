@@ -34,13 +34,13 @@ test.describe('Convert log entry', () => {
     await expect(logRow).toContainText(shortDate);
     await expect(logRow).toContainText('185,000 km');
     await expect(logRow).not.toContainText('€');
-    await expect(tile(page, 'This year')).toContainText('€0');
+    await expect(tile(page, 'Spent')).toContainText('€0');
 
     // 2. Turn the log entry into an expense
     await logRow.click();
     await expect(page.getByRole('form', { name: 'Edit log' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Log', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: 'Expense', exact: true }).click();
+    await expect(page.getByRole('switch', { name: 'This is an expense' })).toHaveAttribute('aria-checked', 'false');
+    await page.getByRole('switch', { name: 'This is an expense' }).click();
     await expect(page.getByRole('combobox', { name: 'Currency' })).toHaveValue('EUR');
     await expect(page.getByLabel('Date')).toHaveValue(entry.date);
     await expect(page.getByLabel('Odometer (km, optional)')).toHaveValue('185000');
@@ -54,14 +54,14 @@ test.describe('Convert log entry', () => {
     await expect(expenseRow).toContainText(shortDate);
     await expect(expenseRow).toContainText('185,000 km');
     await expect(expenseRow).toContainText('€25.00');
-    await expect(tile(page, 'This year')).toContainText('€25');
+    await expect(tile(page, 'Spent')).toContainText('€25');
 
     // 3. Cancelling the cost removal keeps the expense
     await expenseRow.click();
     await expect(page.getByRole('form', { name: 'Edit expense' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Expense', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('switch', { name: 'This is an expense' })).toHaveAttribute('aria-checked', 'true');
     await expect(page.getByLabel('Amount')).toHaveValue('25.00');
-    await page.getByRole('button', { name: 'Log', exact: true }).click();
+    await page.getByRole('switch', { name: 'This is an expense' }).click();
     await expect(page.getByLabel('Amount')).toHaveCount(0);
     await expect(page.getByLabel('Note (optional)')).toHaveValue(note);
     await page.getByRole('button', { name: 'Save changes' }).click();
@@ -82,6 +82,6 @@ test.describe('Convert log entry', () => {
     await expect(logRow).toContainText('185,000 km');
     await expect(logRow).not.toContainText('€');
     await expect(expenseRow).toHaveCount(0);
-    await expect(tile(page, 'This year')).toContainText('€0');
+    await expect(tile(page, 'Spent')).toContainText('€0');
   });
 });
