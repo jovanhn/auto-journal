@@ -187,6 +187,29 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/vehicles/{vehicleId}/journal:
+    get:
+      tags: [expenses]
+      operationId: listJournal
+      summary: List a vehicle's whole journal, all years
+      description: |
+        Every expense and log entry of the vehicle (BR-J1, BR-J6), without totals: the client filters by period,
+        type and search and sums `Expense.displayAmount` (BR-J7). At most *journal entries per vehicle* entries
+        (BR-L2), so not paginated.
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: The vehicle's expenses and log entries of all years
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journal'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/vehicles/{vehicleId}/expenses:
     get:
       tags: [expenses]
@@ -1026,6 +1049,30 @@ components:
           description: |
             The year's log entries, newest date first; for the same date, newest created first. Merge them with
             `expenses` by `date`, then `createdAt`, for the journal timeline (BR-J1).
+          items:
+            $ref: '#/components/schemas/LogEntry'
+    Journal:
+      type: object
+      description: |
+        One vehicle's whole journal: its expenses and log entries of all years (BR-J1, BR-J6). No totals; amounts
+        are in the display currency in `Expense.displayAmount` (BR-J7).
+      required: [firstYear, expenses, logEntries]
+      properties:
+        firstYear:
+          type: integer
+          format: int32
+          description: |
+            Year of the vehicle's earliest journal entry (expense or log entry), or the current year if it has none.
+        expenses:
+          type: array
+          description: All years, newest date first; for the same date, newest created first.
+          items:
+            $ref: '#/components/schemas/Expense'
+        logEntries:
+          type: array
+          description: |
+            All years, newest date first; for the same date, newest created first. Merge them with `expenses` by
+            `date`, then `createdAt`, for the journal timeline (BR-J1).
           items:
             $ref: '#/components/schemas/LogEntry'
     LogEntryRequest:
