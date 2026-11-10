@@ -220,8 +220,9 @@ paths:
       operationId: createExpense
       summary: Add an expense to a vehicle
       description: |
-        A vehicle has at most *expenses per vehicle* expenses (BR-L2, configurable, default 3,000), checked by
-        the server. Adding one more responds `409` with the limit in `detail`.
+        A vehicle has at most *journal entries per vehicle* journal entries, expenses and log entries together
+        (BR-L2, configurable, default 3,000), checked by the server. Adding one more responds `409` with the
+        limit in `detail`.
       parameters:
         - $ref: '#/components/parameters/VehicleId'
       requestBody:
@@ -370,6 +371,166 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/expenses/{expenseId}/log-entry:
+    post:
+      tags: [expenses]
+      operationId: convertExpenseToLogEntry
+      summary: Turn an expense into a log entry, removing its cost
+      description: |
+        The entry keeps its id and place in the journal (BR-J5). Date, odometer and note are replaced from the
+        request (like an edit); amount, currency, rate snapshot, category and approximate are deleted. The result
+        must follow BR-J2 (`400`, field `note`). Converting is not adding, so the journal entry limit does not
+        apply (BR-L2, BR-L4).
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogEntryRequest'
+      responses:
+        '200':
+          description: The log entry, with the expense's id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/vehicles/{vehicleId}/log-entries:
+    post:
+      tags: [expenses]
+      operationId: createLogEntry
+      summary: Add a log entry (an odometer reading, condition or observation without a cost) to a vehicle
+      description: |
+        A log entry needs an odometer reading, a note or both (BR-J2; `400`, field `note`). It never counts in
+        totals; its odometer reading counts for the current odometer and distances (BR-J3). A vehicle has at most
+        *journal entries per vehicle* journal entries, expenses and log entries together (BR-L2, configurable,
+        default 3,000), checked by the server. Adding one more responds `409` with the limit in `detail`.
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogEntryRequest'
+      responses:
+        '201':
+          description: The created log entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/log-entries/{logEntryId}:
+    get:
+      tags: [expenses]
+      operationId: getLogEntry
+      summary: Get a log entry
+      description: An expense's id is not a log entry (`404`), like another user's (BR-U2).
+      parameters:
+        - $ref: '#/components/parameters/LogEntryId'
+      responses:
+        '200':
+          description: The log entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [expenses]
+      operationId: updateLogEntry
+      summary: Replace a log entry's data
+      description: Omitting `odometer` or `note` clears it; the result must follow BR-J2 (`400`, field `note`).
+      parameters:
+        - $ref: '#/components/parameters/LogEntryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogEntryRequest'
+      responses:
+        '200':
+          description: The updated log entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [expenses]
+      operationId: deleteLogEntry
+      summary: Delete a log entry
+      parameters:
+        - $ref: '#/components/parameters/LogEntryId'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/log-entries/{logEntryId}/expense:
+    post:
+      tags: [expenses]
+      operationId: convertLogEntryToExpense
+      summary: Turn a log entry into an expense
+      description: |
+        The entry keeps its id and place in the journal (BR-J5). All fields are replaced from the request (like an
+        edit), the expense follows BR-E1…E6 and takes a rate snapshot now (BR-C4). Converting is not adding, so
+        the journal entry limit does not apply (BR-L2, BR-L4).
+      parameters:
+        - $ref: '#/components/parameters/LogEntryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+      responses:
+        '200':
+          description: The expense, with the log entry's id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/vehicles/{vehicleId}/planned-expenses:
     get:
       tags: [planning]
@@ -489,7 +650,7 @@ paths:
         Creates the expense from the request (BR-PL2) with the plan's category (the request's `category` is
         ignored), then removes a one-time plan or moves a recurring plan's due date forward by its recurrence
         (BR-PL3), in one transaction. The expense is not linked to the plan afterwards. When the vehicle already
-        has *expenses per vehicle* expenses (BR-L2), it responds `409` and the plan is unchanged.
+        has *journal entries per vehicle* journal entries (BR-L2), it responds `409` and the plan is unchanged.
       parameters:
         - $ref: '#/components/parameters/PlannedExpenseId'
       requestBody:
@@ -532,6 +693,13 @@ components:
         format: uuid
     ExpenseId:
       name: expenseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LogEntryId:
+      name: logEntryId
       in: path
       required: true
       schema:
@@ -826,8 +994,10 @@ components:
           format: date-time
     ExpenseYear:
       type: object
-      description: One vehicle's expenses of a calendar year; all totals in the display currency (BR-I1).
-      required: [year, firstYear, yearTotal, monthTotals, expenses]
+      description: |
+        One vehicle's journal of a calendar year: its expenses and log entries (BR-J1). All totals are in the
+        display currency and come from expenses only (BR-I1, BR-J3).
+      required: [year, firstYear, yearTotal, monthTotals, expenses, logEntries]
       properties:
         year:
           type: integer
@@ -835,7 +1005,8 @@ components:
         firstYear:
           type: integer
           format: int32
-          description: Year of the vehicle's earliest expense, or the current year if it has none.
+          description: |
+            Year of the vehicle's earliest journal entry (expense or log entry), or the current year if it has none.
         yearTotal:
           $ref: '#/components/schemas/Money'
         monthTotals:
@@ -850,6 +1021,63 @@ components:
           description: Newest date first; for the same date, newest created first.
           items:
             $ref: '#/components/schemas/Expense'
+        logEntries:
+          type: array
+          description: |
+            The year's log entries, newest date first; for the same date, newest created first. Merge them with
+            `expenses` by `date`, then `createdAt`, for the journal timeline (BR-J1).
+          items:
+            $ref: '#/components/schemas/LogEntry'
+    LogEntryRequest:
+      type: object
+      required: [date]
+      description: |
+        A log entry needs `odometer`, `note` or both (BR-J2); the server checks it (`400`, field `note`). A note
+        that is blank after trimming counts as none.
+      properties:
+        date:
+          type: string
+          format: date
+          description: |
+            Not in the future and not before *earliest date* (BR-L7, configurable, default 1900-01-01); checked by
+            the server. May be before the purchase date.
+        odometer:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: |
+            Optional reading in km, at most *max odometer* (BR-L5, configurable, default 2,000,000; checked by the
+            server); may be lower than the current odometer and never lowers it (BR-J3).
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional condition or observation; trimmed, blank is stored as null.
+    LogEntry:
+      type: object
+      description: A journal entry without a cost (BR-J2); never counts in totals (BR-J3).
+      required: [id, vehicleId, date, odometer, note, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        odometer:
+          type: integer
+          format: int32
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
     ExpenseSummary:
       type: object
       description: The current year across all the user's vehicles, in the display currency (BR-I6).
