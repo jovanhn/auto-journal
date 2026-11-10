@@ -110,6 +110,39 @@ export function JournalEntryForm({
     <form onSubmit={(event) => void submit(event)} noValidate aria-label={label}>
       <FieldGroup>
         <FormErrorAlert message={form.formState.errors.root?.server?.message} />
+        <div className="grid grid-cols-2 gap-3">
+          <Controller
+            name="date"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="expense-date">Date</FieldLabel>
+                <Input {...field} id="expense-date" type="date" aria-invalid={fieldState.invalid} />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+          <Controller
+            name="odometer"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="expense-odometer">Odometer (km, optional)</FieldLabel>
+                <Input
+                  {...field}
+                  id="expense-odometer"
+                  inputMode="numeric"
+                  placeholder="184,320"
+                  autoComplete="off"
+                  className="font-mono"
+                  aria-invalid={fieldState.invalid}
+                />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        </div>
+
         {kindSwitch && (
           <Controller
             name="kind"
@@ -209,68 +242,32 @@ export function JournalEntryForm({
                 )
               }
             />
+            <Controller
+              name="approximate"
+              control={control}
+              render={({ field }) => (
+                <Field orientation="horizontal">
+                  <Checkbox
+                    id="expense-approximate"
+                    name={field.name}
+                    checked={field.value}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked === true);
+                    }}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    aria-describedby="expense-approximate-hint"
+                  />
+                  <FieldContent>
+                    <FieldLabel htmlFor="expense-approximate">Approximate</FieldLabel>
+                    <FieldDescription id="expense-approximate-hint">
+                      Amount or date is a best guess
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+              )}
+            />
           </>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          <Controller
-            name="date"
-            control={control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="expense-date">Date</FieldLabel>
-                <Input {...field} id="expense-date" type="date" aria-invalid={fieldState.invalid} />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-          <Controller
-            name="odometer"
-            control={control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="expense-odometer">Odometer (km, optional)</FieldLabel>
-                <Input
-                  {...field}
-                  id="expense-odometer"
-                  inputMode="numeric"
-                  placeholder="184,320"
-                  autoComplete="off"
-                  className="font-mono"
-                  aria-invalid={fieldState.invalid}
-                />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        </div>
-
-        {isExpense && (
-          <Controller
-            name="approximate"
-            control={control}
-            render={({ field }) => (
-              <Field orientation="horizontal">
-                <Checkbox
-                  id="expense-approximate"
-                  name={field.name}
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked === true);
-                  }}
-                  onBlur={field.onBlur}
-                  ref={field.ref}
-                  aria-describedby="expense-approximate-hint"
-                />
-                <FieldContent>
-                  <FieldLabel htmlFor="expense-approximate">Approximate</FieldLabel>
-                  <FieldDescription id="expense-approximate-hint">
-                    Amount or date is a best guess
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-            )}
-          />
         )}
 
         <Controller

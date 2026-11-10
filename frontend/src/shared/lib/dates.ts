@@ -27,6 +27,10 @@ export const shortDate = (isoDate: string): string =>
 export const mediumDate = (isoDate: string): string =>
   `${shortDate(isoDate)}, ${Number(isoDate.slice(0, 4))}`;
 
+/** `Oct 18` in [currentYear], `Mar 14, 2025` in any other year (journal rows). */
+export const journalDate = (isoDate: string, currentYear: number): string =>
+  Number(isoDate.slice(0, 4)) === currentYear ? shortDate(isoDate) : mediumDate(isoDate);
+
 const utcDay = (isoDate: string): number =>
   Date.UTC(Number(isoDate.slice(0, 4)), Number(isoDate.slice(5, 7)) - 1, Number(isoDate.slice(8, 10)));
 

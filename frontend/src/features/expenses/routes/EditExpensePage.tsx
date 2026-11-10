@@ -35,7 +35,12 @@ export function EditExpensePage() {
   const updateExpense = useUpdateExpense();
   const convertToLog = useConvertExpenseToLogEntry();
   const deleteExpense = useDeleteExpense(vehicleId);
-  const backToJournal = { to: '/vehicles/$vehicleId', params: { vehicleId } } as const;
+  // Back to the journal with its filters (specs/journal-filters.md AC8).
+  const backToJournal = {
+    to: '/vehicles/$vehicleId',
+    params: { vehicleId },
+    search: route.useSearch(),
+  } as const;
 
   const handleSave = async (values: JournalEntryFormValues) => {
     if (values.kind === 'expense') {
