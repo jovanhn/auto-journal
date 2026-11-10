@@ -7,8 +7,8 @@ docs/
   domain/           glossary.md, entities.md, business-rules.md — the top source of truth
   specs/            _template.md + one spec per feature
   adr/              _template.md + numbered ADRs
-  design/           design.md (tokens, components, screens, open questions, changelog),
-                    screens/ (Claude Design export + generated src/), tools/
+  design/           design.md (canvas link, tokens, components, boards, open questions, changelog),
+                    screens/ (frozen old export + generated src/), tools/
 ```
 
 Source-of-truth order: `domain` → `specs` → `contracts/openapi.yaml` → code. If they conflict, stop and ask.
@@ -35,10 +35,10 @@ Source-of-truth order: `domain` → `specs` → `contracts/openapi.yaml` → cod
 
 ## Updating the design
 
-Follow the iteration workflow in [design/design.md](design/design.md#updating-the-design-iteration-workflow):
-replace the export in `design/screens/`, run `make design-unpack`, review the `design/screens/src/` diff, and
-update `design.md` (tokens, components, screen inventory, open questions, changelog) in the same commit.
-Never hand-edit the export or `screens/src/`. Design gaps that imply behavior go to `domain/` / `specs/`.
+The Claude Design canvas linked in [design/design.md](design/design.md) is the source of truth and changes
+over time. Follow the [iteration workflow](design/design.md#updating-the-design-iteration-workflow): the design
+is edited in the canvas, and `design.md` (tokens, components, boards, open questions, changelog) records each
+change. Never hand-edit the frozen export or `screens/src/`; never commit the canvas's `?sk=` share link. Design gaps that imply behavior go to `domain/` / `specs/`.
 
 ## Keeping docs current
 

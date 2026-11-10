@@ -33,8 +33,8 @@ Work autonomously, but **stop and ask** at the checkpoints marked ✋. Talk to t
 ## 2. Read and check
 
 Read, in this order: the spec; `docs/domain/` (entities, business rules, glossary); the ADRs it references;
-`docs/architecture.md`; for UI work `docs/design/design.md` and the affected `docs/design/screens/src/`
-screens; the `AGENTS.md` of every sub-project you will touch. Look at the module that is currently the
+`docs/architecture.md`; for UI work `docs/design/design.md` and the affected boards of the design canvas it links (Artifact tool
+`read`, see design.md "The canvas"); the `AGENTS.md` of every sub-project you will touch. Look at the module that is currently the
 reference (see `backend/AGENTS.md`, "Reference implementations").
 
 ✋ Stop and ask before writing code when:
