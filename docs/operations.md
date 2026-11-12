@@ -89,12 +89,12 @@ Supabase dashboard; there is no email sign-up).
 
 ## Deployment
 
-ADRs 0016 (backend) and 0017 (frontend). Everything deploys from `main`; there are no staging or preview
+ADRs 0016 (backend), 0017 (frontend hosting) and 0022 (frontend delivery). Everything deploys from `main`; there are no staging or preview
 environments.
 
 | Part     | URL                                  | Host                                           | Deployed by                                   |
 | -------- | ------------------------------------ | ---------------------------------------------- | --------------------------------------------- |
-| Frontend | https://autojournal.skverly.com      | Cloudflare Worker `auto-journal` (static assets) | Cloudflare Workers Builds, every push to `main` |
+| Frontend | https://autojournal.skverly.com      | Cloudflare Worker `auto-journal` (static assets) | GitHub Actions `ci.yml` → `wrangler deploy`     |
 | Backend  | https://be-autojournal.skverly.com   | Render web service (Docker image from GHCR)    | GitHub Actions `ci.yml` → Render deploy hook  |
 | Database | —                                    | Supabase project `dnkgfohtcbidlzjivkkl` (Postgres + Auth) | Flyway at backend startup             |
 
@@ -192,17 +192,23 @@ Grants can be revoked in the dashboard; a user revokes access by removing the co
 ### Frontend (Cloudflare)
 
 The Worker `auto-journal` serves the Vite build as static assets (`frontend/wrangler.jsonc`; unknown paths
-fall back to `index.html`). Cloudflare Workers Builds builds and deploys every push to `main` on its own,
-independent of CI; its "Workers Builds: auto-journal" check shows on PRs but is not part of `ci-ok`.
+fall back to `index.html`). Cloudflare only hosts it; Workers Builds is disconnected from the repo (ADR 0022).
 
-Workers Builds settings (Cloudflare dashboard → Worker → Settings → Build):
+**Flow:** push to `main` touching `frontend/**`, `contracts/**` or `ci.yml` → CI passes (`ci-ok`) →
+`frontend-deploy` (GitHub environment `production`) runs `pnpm build` with the production `VITE_*` values,
+then `npx --yes wrangler@<pinned> deploy` from `frontend/`. Pull requests never deploy.
 
-- Root directory `frontend`; build command `pnpm build`; deploy command `npx wrangler deploy`.
-- **Build** variables (not the Worker's runtime variables — Vite inlines `VITE_*` at build time;
-  publishable values only):
-  `VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`,
+GitHub environment `production` (the owner sets the secret; the variables are publishable values, which
+Vite inlines at build time):
+
+- Secret `CLOUDFLARE_API_TOKEN`: custom API token, *Account → Workers Scripts → Edit* on the account.
+- Variables `CLOUDFLARE_ACCOUNT_ID`, `VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`,
   `VITE_SUPABASE_URL=https://dnkgfohtcbidlzjivkkl.supabase.co`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
-- Custom domain `autojournal.skverly.com`.
+- Custom domain `autojournal.skverly.com` (Cloudflare dashboard).
+
+**Redeploy** without a code change (e.g. after changing a `VITE_*` variable): re-run the `frontend-deploy`
+job of the latest `main` run. **Rollback:** Cloudflare dashboard → Worker → Deployments, or
+`wrangler rollback`.
 
 A frontend origin that must call the API (another domain, the `*.workers.dev` URL) has to be added to
 `CORS_ALLOWED_ORIGINS` on Render, comma-separated. Supabase → Authentication → URL Configuration: the Site
@@ -210,8 +216,8 @@ URL is `https://autojournal.skverly.com`.
 
 ### GitHub
 
-- Environment `production` (no protection rules): secret `RENDER_DEPLOY_HOOK_URL` (a credential: anyone
-  with it can deploy). The mock workflow `deploy-protected.yml` also uses this environment.
+- Environment `production` (no protection rules): secrets `RENDER_DEPLOY_HOOK_URL` (a credential: anyone
+  with it can deploy) and `CLOUDFLARE_API_TOKEN`; variables for the frontend build (see above). The mock workflow `deploy-protected.yml` also uses this environment.
 - Repository secrets for the `e2e` job: see [CI](#ci).
 - The GHCR package `auto-journal-backend` is public and linked to the repo (`org.opencontainers.image.source`).
 
@@ -220,11 +226,11 @@ URL is `https://autojournal.skverly.com`.
 | Change                               | Also do                                                                     |
 | ------------------------------------ | --------------------------------------------------------------------------- |
 | New/renamed backend env var          | `application*.yml`, `.env.example`, the env var table above, **and set it on Render before merging** (a missing `prod` value stops the app from starting) |
-| New/renamed `VITE_*` variable        | `.env.example`, this doc, **and the Cloudflare build variables** (owner)     |
+| New/renamed `VITE_*` variable        | `.env.example`, this doc, `frontend-deploy` env in `ci.yml`, **and the `production` environment variables** |
 | New frontend domain                  | `CORS_ALLOWED_ORIGINS` on Render; Supabase URL configuration                 |
 | Supabase OAuth server / OAuth apps   | Owner, in the dashboard (see above); the consent page is `/oauth/consent`   |
 | New Flyway migration                 | Nothing extra — runs on the next backend deploy; it must be safe against production data |
-| `Dockerfile` / `ci.yml` delivery jobs | ADR 0016; verify on `main` (the image jobs never run on PRs)                |
+| `Dockerfile` / `ci.yml` delivery jobs | ADR 0016/0022; verify on `main` (the deploy jobs never run on PRs)          |
 
 ### Access for agents
 
@@ -234,8 +240,8 @@ URL is `https://autojournal.skverly.com`.
   create image-backed services or change service settings (domains, health check, plan) — those are
   dashboard-only. Use `list_events` to see why a deploy failed (it reports exit codes and health check
   failures that logs may not show).
-- **Cloudflare:** no agent access. The GitHub check for Workers Builds only links to the dashboard; ask the
-  owner for the build log or to change build settings.
+- **Cloudflare:** no dashboard access for agents. Deploys run in GitHub Actions (`frontend-deploy` logs via
+  `gh`); ask the owner for dashboard changes (domains, rollback in the UI).
 - **Ask before** changing Render environment variables, triggering deploys or rollbacks, or touching
   GitHub environments and secrets — these change production. Reading status and logs is fine.
 - **Secrets:** never read secret values from `.env` into the conversation or logs, and never commit them.

@@ -93,14 +93,15 @@ Never put server data in Redux. Use `useAppDispatch` / `useAppSelector` from `@/
 
 ## Deployment
 
-Cloudflare Workers Builds builds and deploys every push to `main` as the static-assets Worker
-`auto-journal` (`wrangler.jsonc`, ADR 0017) at https://autojournal.skverly.com. Details:
+GitHub Actions (`ci.yml` job `frontend-deploy`, after `ci-ok`, only when `frontend/**`, `contracts/**` or
+`ci.yml` changed) builds and deploys `main` to the static-assets Worker `auto-journal` (`wrangler.jsonc`,
+ADRs 0017/0022) at https://autojournal.skverly.com. Details:
 [docs/operations.md#deployment](../docs/operations.md#deployment).
 
 - `VITE_*` variables are inlined at **build** time. A new one must be added to `.env.example`,
-  `docs/operations.md`, and the Cloudflare **build** variables (by the owner — agents have no Cloudflare
-  access) before the merge. Only publishable values: everything in the bundle is public.
+  `docs/operations.md`, the `frontend-deploy` env in `ci.yml`, and the GitHub environment `production`
+  variables before the merge. Only publishable values: everything in the bundle is public.
 - Production calls the API cross-origin (`VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`);
   the backend must list the frontend origin in `CORS_ALLOWED_ORIGINS`.
 - Client-side routes work on reload via the SPA fallback; don't add a `_redirects` file or Worker code.
-- Don't add `wrangler` to `package.json`; the deploy command fetches it with `npx`.
+- Don't add `wrangler` to `package.json`; `frontend-deploy` fetches a pinned version with `npx`.
