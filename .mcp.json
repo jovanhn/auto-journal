@@ -8,6 +8,10 @@
         "--config",
         "e2e/playwright.config.ts"
       ]
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
     }
   }
 }

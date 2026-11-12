@@ -465,6 +465,114 @@ class ExpensesApiIntegrationTest
             }
         }
 
+        /** specs/approximate-expenses.md AC1. */
+        @Test
+        fun `approximate AC1 adds an approximate expense`() {
+            val golf = createVehicle()
+            mockMvc
+                .post("/api/vehicles/$golf/expenses") {
+                    signedInAs()
+                    contentType = MediaType.APPLICATION_JSON
+                    content = expense("amount" to eur("300"), "category" to "TIRES", "approximate" to true)
+                }.andExpect {
+                    status { isCreated() }
+                    jsonPath("$.approximate") { value(true) }
+                }
+            mockMvc.get("/api/vehicles/$golf/expenses") { signedInAs() }.andExpect {
+                jsonPath("$.expenses[0].approximate") { value(true) }
+            }
+        }
+
+        /** specs/approximate-expenses.md AC2, AC6, edge case: omitted or null = exact, existing rows are exact. */
+        @Test
+        fun `approximate AC2 an expense without the flag is exact`() {
+            val golf = createVehicle()
+            mockMvc
+                .post("/api/vehicles/$golf/expenses") {
+                    signedInAs()
+                    contentType = MediaType.APPLICATION_JSON
+                    content = expense()
+                }.andExpect {
+                    status { isCreated() }
+                    jsonPath("$.approximate") { value(false) }
+                }
+            mockMvc
+                .post("/api/vehicles/$golf/expenses") {
+                    signedInAs()
+                    contentType = MediaType.APPLICATION_JSON
+                    content = expense("approximate" to null)
+                }.andExpect { jsonPath("$.approximate") { value(false) } }
+            // A row written without the column (as before V6) is exact.
+            val legacy = UUID.randomUUID()
+            jdbc
+                .sql(
+                    """
+                    INSERT INTO autojournal.journal_entry (id, vehicle_id, date, created_at) VALUES (:id, :vehicleId, :date, now());
+                    INSERT INTO autojournal.expense (id, amount, currency, rate_to_eur, category) VALUES (:id, 10, 'EUR', 1, 'OTHER');
+                    """.trimIndent(),
+                ).param("id", legacy)
+                .param("vehicleId", UUID.fromString(golf))
+                .param("date", today)
+                .update()
+            mockMvc.get("/api/expenses/$legacy") { signedInAs() }.andExpect {
+                status { isOk() }
+                jsonPath("$.approximate") { value(false) }
+            }
+        }
+
+        /** specs/approximate-expenses.md AC3, BR-C4: changing only the flag keeps the rate snapshot. */
+        @Test
+        fun `approximate AC3 editing the flag keeps the amount and the rate snapshot`() {
+            val golf = createVehicle()
+            val rsd = mapOf("amount" to "1170.00", "currency" to "RSD")
+            val id = createExpense(golf, expense("amount" to rsd, "approximate" to true))
+            setRateSnapshot(id, "0.0080000000000000")
+
+            mockMvc
+                .put("/api/expenses/$id") {
+                    signedInAs()
+                    contentType = MediaType.APPLICATION_JSON
+                    content = expense("amount" to rsd, "approximate" to false)
+                }.andExpect {
+                    status { isOk() }
+                    jsonPath("$.approximate") { value(false) }
+                    jsonPath("$.amount.amount") { value("1170.00") }
+                }
+            assertEquals(0, BigDecimal("0.0080000000000000").compareTo(rateSnapshot(id)))
+
+            mockMvc
+                .put("/api/expenses/$id") {
+                    signedInAs()
+                    contentType = MediaType.APPLICATION_JSON
+                    content = expense("amount" to rsd, "approximate" to true)
+                }.andExpect { jsonPath("$.approximate") { value(true) } }
+            mockMvc
+                .put("/api/expenses/$id") {
+                    signedInAs()
+                    contentType = MediaType.APPLICATION_JSON
+                    content = expense("amount" to rsd)
+                }.andExpect { jsonPath("$.approximate") { value(false) } }
+        }
+
+        /** specs/approximate-expenses.md AC4: approximate expenses count like any other. */
+        @Test
+        fun `approximate AC4 totals include approximate expenses`() {
+            val golf = createVehicle()
+            createExpense(golf, expense("amount" to eur("100")))
+            createExpense(golf, expense("amount" to eur("300"), "approximate" to true))
+
+            mockMvc.get("/api/vehicles/$golf/expenses") { signedInAs() }.andExpect {
+                jsonPath("$.yearTotal.amount") { value("400.00") }
+                jsonPath("$.monthTotals[${today.monthValue - 1}].amount") { value("400.00") }
+            }
+            mockMvc.get("/api/expenses/summary") { signedInAs() }.andExpect {
+                jsonPath("$.total.amount") { value("400.00") }
+            }
+            mockMvc.get("/api/vehicles/$golf/insights") { signedInAs() }.andExpect {
+                jsonPath("$.total.amount") { value("400.00") }
+            }
+        }
+
         private companion object {
             val REMOVE = Any()
         }

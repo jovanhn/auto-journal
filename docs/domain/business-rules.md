@@ -7,10 +7,11 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
-| BR-U1 | Every API request requires a signed-in user (Supabase Auth, email + password).                | `shared/security/SecurityConfig` (JWT resource server, every `/api` request authenticated) → 401 |
-| BR-U2 | A user sees and changes only their own vehicles and everything under them. Another user's data responds as not found (404). | `VehicleService` (every query scoped to `owner_id`); `ExpenseService`, `PlannedExpenseService` (ownership via `VehicleApi.isOwnedBy`) → 404 |
+| BR-U1 | Every API request requires a signed-in user (Supabase Auth: Google or email + password).      | `shared/security/SecurityConfig` (JWT resource server, every `/api` request authenticated) → 401 |
+| BR-U2 | A user sees and changes only their own vehicles and everything under them (including log entries and issues). Another user's data responds as not found (404). | `VehicleService` (every query scoped to `owner_id`); `ExpenseService`, `LogEntryService` (via `JournalRules`), `PlannedExpenseService`, `IssueService` (ownership via `VehicleApi.isOwnedBy`) → 404 |
 | BR-U3 | A user profile is created on the user's first authenticated request, with display currency `EUR`. | `UserProfileService.getOrCreate` (insert if absent) |
 | BR-U4 | A user can change their display currency to any supported currency.                           | `PATCH /api/me` → `UserProfileService`; contract enum → 400 |
+| BR-U5 | Any Google account can sign in; a new one becomes a new user, a matching email signs in as that user. | Supabase Auth Google provider, sign-ups on (ADR 0019); frontend `/auth/callback`; profile per BR-U3 |
 
 ## Money and currency
 
@@ -31,8 +32,8 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | BR-V2 | Year is between 1900 and next calendar year.                                                  | Contract `minimum` → 400; upper bound `VehicleService` (UTC `Clock`) → 400 field `year` |
 | BR-V3 | Purchase date is not in the future; odometer at start (the reading when the vehicle is added) is ≥ 0. | `VehicleService` (UTC `Clock`) → 400 field `purchaseDate`; contract `minimum` → 400 |
 | BR-V4 | Nickname is unique among one user's vehicles, case-insensitive. Plate is not unique.          | `VehicleService` → 409 with field error `nickname`; unique index `(owner_id, lower(nickname))` |
-| BR-V5 | Current odometer = the highest of the odometer at start and all of the vehicle's expense odometer readings. It is never entered directly. | `VehicleService` + `ExpenseOdometerReadDao` (read-only `currentOdometer`) |
-| BR-V6 | A vehicle can be edited and deleted. Deleting (after confirmation in the UI) also deletes its expenses and planned expenses. | `PUT`/`DELETE /api/vehicles/{vehicleId}`; UI confirm dialog; cascade to expenses via FK `expense.vehicle_id … ON DELETE CASCADE` (V4); cascade to planned expenses via FK `planned_expense.vehicle_id … ON DELETE CASCADE` (V5) |
+| BR-V5 | Current odometer = the highest of the odometer at start and all of the vehicle's journal entry odometer readings (expenses and log entries). It is never entered directly. | `VehicleService` + `JournalOdometerReadDao` (read-only `currentOdometer`, reads `journal_entry`) |
+| BR-V6 | A vehicle can be edited and deleted. Deleting (after confirmation in the UI) also deletes its expenses, planned expenses and issues. | `PUT`/`DELETE /api/vehicles/{vehicleId}`; UI confirm dialog; cascade to expenses via FK `expense.vehicle_id … ON DELETE CASCADE` (V4); cascade to planned expenses via FK `planned_expense.vehicle_id … ON DELETE CASCADE` (V5); cascade to issues via FK `issue.vehicle_id … ON DELETE CASCADE` (V8) |
 | BR-V7 | Car value equals the purchase price (for now).                                                | `VehicleService`, `InsightsService` (purchase price converted at its snapshot to the display currency) |
 | BR-V8 | A user's vehicles are listed in the order they were added (oldest first).                     | `VehicleRepository` (`created_at` ascending)  |
 
@@ -45,6 +46,22 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | BR-E3 | Category is one of the fixed list: Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking & tolls, Other. | Contract `Category` enum → 400; DB check |
 | BR-E4 | An expense odometer may be lower than the current odometer (back-dated entries); it never lowers the current odometer. | No upper/lower check against the current odometer; BR-V5 takes the max |
 | BR-E5 | An expense can be edited and deleted; the current odometer follows (BR-V5).                   | `PUT`/`DELETE /api/expenses/{expenseId}`; UI confirm dialog |
+| BR-E6 | An expense can be marked as approximate (its amount, date or both are a best guess); default not approximate. The flag only marks the expense (`≈` in the list): approximate expenses count like any other in every total and insight and follow BR-E1…E4. Changing only the flag keeps the rate snapshot. | Contract `ExpenseRequest.approximate` (default `false`) / `Expense.approximate`; `ExpenseService` (stored as given, no effect on rate snapshot or totals); column `expense.approximate` (V6) |
+
+## Journal
+
+A vehicle's *journal* is its expenses and log entries (specs/journal.md, ADR 0020). Expense rules (BR-E*)
+are unchanged.
+
+| ID    | Rule                                                                                         | Enforced    |
+| ----- | -------------------------------------------------------------------------------------------- | ----------- |
+| BR-J1 | A vehicle's journal lists its expenses and log entries of the selected period (a year, or all years, BR-J6) together: newest date first, for the same date newest created first. | `ExpenseService.listYear` (`ExpenseYear.expenses` + `logEntries`); merged in the UI (`journalItems`) |
+| BR-J2 | A log entry has a date (as BR-E2, BR-L7), an optional odometer (≥ 0, BR-L5) and an optional note (≤ 500 chars); it needs at least one of odometer and note (a blank note counts as none). | `LogEntryService` → 400 field `note`; journal form (zod) |
+| BR-J3 | Log entries never count in totals, summaries or insights; only their odometer reading is used (BR-V5, BR-I7). Like an expense's, it may be lower than the current odometer and never lowers it. | Money queries start from `expense` (`ExpenseService`, `InsightsService`, `ExpenseSummaryReadDao`); readings from `journal_entry` |
+| BR-J4 | A log entry can be edited and deleted (after confirmation in the UI); the current odometer follows. | `LogEntryService` (`PUT`/`DELETE /api/log-entries/{id}`); UI confirm dialog |
+| BR-J5 | A log entry can be turned into an expense (adding amount, currency, category, approximate; the result follows BR-E1…E6 and takes a new rate snapshot), and an expense into a log entry (its cost is removed, after confirmation in the UI; the result follows BR-J2). The entry keeps its id and place in the journal; conversion does not count as creating (BR-L2, BR-L4). | `ExpenseService.convertLogEntry`, `LogEntryService.convertExpense` (no limit check); UI "Remove the cost from this entry?" |
+| BR-J6 | The journal can be narrowed by period (one year or all years), entry type (all, expenses, log entries, or one expense category) and search text (case-insensitive, in the row title: category or "Odometer reading", and the note); it shows the entries that match all three. Default: the current year, all entries, no search. With all years, BR-J1 applies to the whole journal. | `ExpenseService.listJournal` (`GET /api/vehicles/{vehicleId}/journal`); filtered in the UI (`filterJournal`, URL search params) |
+| BR-J7 | The journal tiles describe the entries shown: *Spent* = sum of the shown expenses (display currency); *Avg / month* = Spent ÷ the months of the period (one year: as BR-I3; all years: as BR-I9); *Entries* = number of shown expenses and log entries. Month headers sum the shown expenses of the month. Log entries never add to money (BR-J3). | UI (`sumExpenses`, `averageMonths` in `features/expenses/journal.ts`), from `Expense.displayAmount` |
 
 ## Planned expenses
 
@@ -57,10 +74,26 @@ Each rule has an ID referenced by specs and tests. "Enforced" says where the rul
 | BR-PL5 | A planned expense whose due date has passed stays listed (overdue) until paid or deleted.    | `PlannedExpenseDao.findByVehicle` (no date filter) |
 | BR-PL6 | A planned expense is *due soon* when its due date is within the next 30 days or has passed (overdue). | `PlannedExpenseService.isDueSoon` (UTC `Clock`) → `PlannedExpense.dueSoon` |
 
+## Issues
+
+An *issue* is a problem with a vehicle to keep an eye on until it is fixed or goes away (specs/issues.md,
+specs/issue-expenses.md, ADR 0021). BR-IS1…IS6 are enforced since v10; BR-IS7…IS8 are **Planned** for v11.
+
+| ID     | Rule                                                                                        | Enforced    |
+| ------ | ------------------------------------------------------------------------------------------- | ----------- |
+| BR-IS1 | An issue has a title (required, 1–60 chars after trimming), a severity (Watch, Fix soon, Urgent), a source (I noticed, Mechanic, Warning light), a date noticed (not in the future, BR-L7), an optional odometer (BR-L5) and an optional note (≤ 500 chars). | contract (`IssueRequest`), bean validation, `IssueService` (UTC `Clock`, BR-L5, BR-L7) → 400; DB checks (V8); New/Edit issue form (zod) |
+| BR-IS2 | Issues never count in totals, summaries, insights, the current odometer (BR-V5) or distance (BR-I7); an issue's odometer is for information only and is never compared with the current odometer. | separate `issue` table, not read by `expenses` or `vehicles` (`IssuesApiIntegrationTest` AC4) |
+| BR-IS3 | An issue is *open* or *resolved*. Resolving an open issue records an outcome (Fixed, or Gone · not an issue) and a resolved date, not in the future and not before the date noticed. Resolving a resolved issue is rejected. | `POST /api/issues/{id}/resolve` → `IssueService.resolve` (row lock) → 400 fields `outcome` / `resolvedOn`, 409 when resolved; DB check `(outcome IS NULL) = (resolved_on IS NULL)`; Resolve issue sheet (zod) |
+| BR-IS4 | A resolved issue can be reopened: it becomes open with no outcome or resolved date (and, from v11, no linked expense); its other fields are kept. Reopening an open issue is rejected. | `POST /api/issues/{id}/reopen` → `IssueService.reopen` (row lock) → 409 when open |
+| BR-IS5 | An issue can be edited (BR-IS1 fields only; the date noticed stays on or before the resolved date) and deleted (after confirmation in the UI), open or resolved. Deleting an issue changes nothing else. | `PUT`/`DELETE /api/issues/{id}` → `IssueService` → 400 field `noticedOn`; UI confirm dialog |
+| BR-IS6 | Open issues are listed by severity (Urgent, Fix soon, Watch), then date noticed (newest first), then created (newest first). Resolved issues are listed by resolved date (newest first), then created (newest first). | `IssueService.list` (`IssueList.open` / `resolved`) |
+| BR-IS7 | Resolving can link one expense of the same vehicle: an existing expense, or a new expense created in the same step (it follows BR-E1…E6, BR-C4 and BR-L2; if it fails, nothing changes and the issue stays open). One expense may be linked to several issues. | **Planned** (v11): `ResolveIssueRequest.expenseId` / `expense` → `ExpenseApi` (same transaction) → 400 / 404 / 409 |
+| BR-IS8 | The link is cleared when the expense is deleted or turned into a log entry (the issue stays resolved), and when the issue is reopened. Linking, unlinking, reopening or deleting an issue never changes the expense. | **Planned** (v11): FK `issue.expense_id → expense.id ON DELETE SET NULL` (V9); `IssueService.reopen` |
+
 ## Insights
 
 All figures are in the display currency (BR-C6), from expenses by their date. Vehicle figures are for one
-vehicle and, unless stated otherwise, for one selected calendar year.
+vehicle and, unless stated otherwise, for the selected period: one calendar year or all time.
 
 | ID    | Rule                                                                                         | Enforced    |
 | ----- | -------------------------------------------------------------------------------------------- | ----------- |
@@ -69,7 +102,38 @@ vehicle and, unless stated otherwise, for one selected calendar year.
 | BR-I3 | Average monthly cost = the selected year's total ÷ months elapsed in that year: 12 for a past year, January through the current month for the current year (months without expenses count). | `InsightsService` (UTC `Clock`) |
 | BR-I4 | Cost per km (lifetime, all years) = (total expenses + purchase price) ÷ distance driven (current odometer − odometer at start). Not shown when distance driven is 0. | `InsightsService` (lifetime EUR sum + purchase price at its snapshot via `VehicleApi.findOwned`; `costPerKm` null at 0 km → UI "—") |
 | BR-I5 | The projection covers the next 12 calendar months, starting with the current one, from planned expenses only (no estimated running costs): one-time items in their due month, recurring items in every month they fall due (due date + k·N months). Overdue items count in the current month. | `PlannedExpenseService.occurrencesInProjection` (UTC `Clock`): occurrences before today count once, then every occurrence from today to the end of the 11th month after the current one |
+| BR-I7 | Distance in a year = odometer at the end of that year − odometer at the end of the previous year; the odometer at the end of a year = the highest of the odometer at start and all journal entry readings (expenses and log entries) dated on or before 31 December of that year. Unknown when no journal entry in the year has an odometer reading. Yearly distances add up to distance driven. | `InsightsService` (`VehicleInsights.yearDistanceKm`, null → UI "—") |
+| BR-I8 | Cost per km in a year = the year's total ÷ distance in that year (no purchase price). Not shown when that distance is unknown or 0. | `InsightsService` (`VehicleInsights.yearCostPerKm`, null → UI "—") |
+| BR-I9 | All-time figures: total and category breakdown over all of a vehicle's expenses; one total per calendar year from the first expense's year to the current year; average monthly cost = total ÷ months from the month of the earlier of the purchase date and the first expense through the current month (both inclusive). | `InsightsService.allTime` (UTC `Clock`; `GET /api/vehicles/{vehicleId}/insights/all-time`) |
 | BR-I6 | All-cars summary (Garage): this year's total = sum of all the user's expenses dated in the current calendar year, across vehicles; average per month = that total ÷ the number of months elapsed this year, including the current month. | `ExpenseService.summary` + `ExpenseSummaryReadDao` (`GET /api/expenses/summary`) |
+
+## Assistant (MCP)
+
+An *assistant* is an MCP client (e.g. Claude) the user has authorized to act for them (specs/assistant-mcp.md).
+
+| ID    | Rule                                                                                         | Enforced    |
+| ----- | -------------------------------------------------------------------------------------------- | ----------- |
+| BR-A1 | An assistant acts only as the user who authorized it; every tool applies the same ownership (BR-U2), validation and calculation rules as the matching API operation, with the same results. | Supabase OAuth token validated like app tokens; `<module>/internal/mcp` tools call the controllers' service methods with `CurrentUser`; input via `McpToolArguments` (Jackson + bean validation); `McpToolsIntegrationTest` compares every tool with the API |
+| BR-A2 | An assistant can do only what the user can do in the app; no tool adds behavior without an API operation. | One tool per API operation (specs/assistant-mcp.md, API impact); no tool-only service code |
+| BR-A3 | autojournal never receives or stores images; the assistant extracts values from photos and sends only expense fields. | Tools accept only contract fields (no image input); no MCP resources or uploads |
+| BR-A4 | Tools that delete data are marked destructive, so the client asks the user to confirm.       | `McpTool.Access.DESTRUCTIVE` → `destructiveHint` (`McpServerIntegrationTest`) |
+
+## Limits
+
+Limits protect the database from abuse (one account filling it with data) while staying well above
+realistic use (specs/data-limits.md). All limits are application configuration, like exchange rates
+(BR-C3); users cannot change them. Values in *italics* are configurable; the default is in parentheses.
+
+| ID    | Rule                                                                                         | Enforced    |
+| ----- | -------------------------------------------------------------------------------------------- | ----------- |
+| BR-L1 | A user has at most *vehicles per user* vehicles (default 10). Adding one more is rejected.    | `VehicleService` → 409; `autojournal.limits.vehicles-per-user` (env `LIMIT_VEHICLES_PER_USER`) |
+| BR-L2 | A vehicle has at most *journal entries per vehicle* journal entries, expenses and log entries together (default 3,000). Adding one more expense or log entry is rejected, also through mark as paid (BR-PL2), which then leaves the planned expense unchanged. | `JournalRules` (`ExpenseService`, `LogEntryService`) → 409; `autojournal.limits.journal-entries-per-vehicle` (env `LIMIT_JOURNAL_ENTRIES_PER_VEHICLE`) |
+| BR-L3 | A vehicle has at most *planned expenses per vehicle* planned expenses (default 50). Adding one more is rejected. | `PlannedExpenseService` → 409; `autojournal.limits.planned-expenses-per-vehicle` (env `LIMIT_PLANNED_EXPENSES_PER_VEHICLE`) |
+| BR-L4 | Limits only block creating. Data above a limit (e.g. after a limit is lowered) is never deleted or hidden and can still be viewed, edited and deleted; creating works again once the count is below the limit. Editing never counts as creating. | Service create paths only (`LimitsIntegrationTest`) |
+| BR-L5 | Odometer readings (vehicle odometer at start, expense and log entry odometer) are between 0 and *max odometer* km (default 2,000,000). | `VehicleService`, `JournalRules` → 400 with the field; `autojournal.limits.max-odometer-km` (env `LIMIT_MAX_ODOMETER_KM`) |
+| BR-L6 | A planned expense recurs every N months, N between 1 and *max recurrence months* (default 120). | `PlannedExpenseService` → 400 field `recurrenceMonths`; `autojournal.limits.max-recurrence-months` (env `LIMIT_MAX_RECURRENCE_MONTHS`) |
+| BR-L7 | Purchase date and journal entry date (expense or log entry) are on or after *earliest date* (default 1900-01-01). A planned expense's due date is at most *planned years ahead* years after today (default 10). | services (UTC `Clock`) → 400 with the field; `autojournal.limits.earliest-date` (env `LIMIT_EARLIEST_DATE`), `autojournal.limits.planned-years-ahead` (env `LIMIT_PLANNED_YEARS_AHEAD`) |
+| BR-L8 | A vehicle has at most *issues per vehicle* issues, open and resolved together (default 200). Adding one more is rejected. | `IssueService` → 409; `autojournal.limits.issues-per-vehicle` (env `LIMIT_ISSUES_PER_VEHICLE`) |
 
 ## Interpretation notes (assumptions, confirm before changing)
 

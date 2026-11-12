@@ -1,10 +1,11 @@
 /**
- * The only module that talks to Supabase, and only for auth (ADR 0015): sign in, session, token
- * refresh and sign out. Never use the Supabase client for data — only the backend reads the database.
+ * The only module that talks to Supabase, and only for auth (ADR 0015): sign in (password or Google,
+ * ADR 0019), session, token refresh, sign out, and the consent step of Supabase's OAuth server for
+ * assistants (ADR 0018). Never use the Supabase client for data — only the backend reads the database.
  * Tests replace this module with `src/test/fakeSession.ts`.
  */
 import { createClient, isAuthApiError, type SupabaseClient } from '@supabase/supabase-js';
-import { InvalidCredentialsError, type AuthSession } from './errors';
+import { InvalidCredentialsError, type AuthorizationRequest, type AuthSession } from './errors';
 
 let client: SupabaseClient | undefined;
 
@@ -17,7 +18,9 @@ const supabase = (): SupabaseClient => {
       throw new Error('VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be set (see .env.example).');
     }
     client = createClient(url, key, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+      // PKCE: Google sign-in returns a one-time `?code=` to /auth/callback, exchanged there by
+      // completeGoogleSignIn (not detected automatically, so the exchange happens exactly once).
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'pkce' },
     });
   }
   return client;
@@ -39,6 +42,27 @@ export async function signIn(email: string, password: string): Promise<void> {
   throw error;
 }
 
+/**
+ * Leaves the app for Google's sign-in page. Supabase sends the browser back to `/auth/callback` with a
+ * one-time code; `redirect` is the app path to open afterwards. Any Google account may sign in
+ * (a new one becomes a new user, specs/auth.md BR-U5).
+ */
+export async function signInWithGoogle(redirect: string): Promise<void> {
+  const callback = new URL('/auth/callback', window.location.origin);
+  callback.searchParams.set('redirect', redirect);
+  const { error } = await supabase().auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: callback.toString() },
+  });
+  if (error) throw error;
+}
+
+/** Exchanges the code from the Google sign-in callback for a session. Throws if it is invalid or used. */
+export async function completeGoogleSignIn(code: string): Promise<void> {
+  const { error } = await supabase().auth.exchangeCodeForSession(code);
+  if (error) throw error;
+}
+
 /** Clears the session on this device only. Listeners registered with {@link onSignedOut} run. */
 export async function signOut(): Promise<void> {
   await supabase().auth.signOut({ scope: 'local' });
@@ -52,4 +76,23 @@ export function onSignedOut(listener: () => void): () => void {
   return () => {
     data.subscription.unsubscribe();
   };
+}
+
+/** The OAuth authorization request `authorizationId` (from the consent URL), for the signed-in user. */
+export async function getAuthorizationRequest(authorizationId: string): Promise<AuthorizationRequest> {
+  const { data, error } = await supabase().auth.oauth.getAuthorizationDetails(authorizationId);
+  if (error) throw error;
+  if ('client' in data) return { kind: 'consent', clientName: data.client.name, email: data.user.email };
+  return { kind: 'redirect', redirectUrl: data.redirect_url };
+}
+
+/** Approves (or denies) the request and returns the URL that sends the user back to the client. */
+export async function decideAuthorization(authorizationId: string, approve: boolean): Promise<string> {
+  const oauth = supabase().auth.oauth;
+  const options = { skipBrowserRedirect: true };
+  const { data, error } = approve
+    ? await oauth.approveAuthorization(authorizationId, options)
+    : await oauth.denyAuthorization(authorizationId, options);
+  if (error) throw error;
+  return data.redirect_url;
 }

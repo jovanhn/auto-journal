@@ -1,13 +1,18 @@
 import type {
   Expense,
   ExpenseSummary,
+  Issue,
+  IssueList,
   ExpenseYear,
+  Journal,
+  LogEntry,
   Money,
   PlannedExpense,
   PlannedExpenseList,
   ProblemDetail,
   UserProfile,
   Vehicle,
+  VehicleAllTimeInsights,
   VehicleInsights,
 } from '@/shared/api/generated/model';
 
@@ -41,17 +46,37 @@ export const anExpense = (overrides: Partial<Expense> = {}): Expense => ({
   category: 'FUEL',
   odometer: 184320,
   note: null,
+  approximate: false,
   createdAt: '2026-10-18T10:00:00Z',
   ...overrides,
 });
 
-/** A year with no expenses unless overridden; month totals are all 0. */
+export const aLogEntry = (overrides: Partial<LogEntry> = {}): LogEntry => ({
+  id: nextId(),
+  vehicleId: '00000000-0000-4000-8000-0000000000aa',
+  date: '2026-10-20',
+  odometer: 185000,
+  note: null,
+  createdAt: '2026-10-20T10:00:00Z',
+  ...overrides,
+});
+
+/** A year with no journal entries unless overridden; month totals are all 0. */
 export const anExpenseYear = (overrides: Partial<ExpenseYear> = {}): ExpenseYear => ({
   year: new Date().getFullYear(),
   firstYear: new Date().getFullYear(),
   yearTotal: eur('0.00'),
   monthTotals: Array.from({ length: 12 }, () => eur('0.00')),
   expenses: [],
+  logEntries: [],
+  ...overrides,
+});
+
+/** A journal (all years) with no entries unless overridden. */
+export const aJournal = (overrides: Partial<Journal> = {}): Journal => ({
+  firstYear: new Date().getFullYear(),
+  expenses: [],
+  logEntries: [],
   ...overrides,
 });
 
@@ -62,6 +87,23 @@ export const aVehicleInsights = (overrides: Partial<VehicleInsights> = {}): Vehi
   total: eur('0.00'),
   averagePerMonth: eur('0.00'),
   monthTotals: Array.from({ length: 12 }, () => eur('0.00')),
+  categories: [],
+  carValue: eur('8500.00'),
+  distanceKm: 0,
+  costPerKm: null,
+  yearDistanceKm: null,
+  yearCostPerKm: null,
+  ...overrides,
+});
+
+/** All-time insights of a car without expenses unless overridden. */
+export const aVehicleAllTimeInsights = (
+  overrides: Partial<VehicleAllTimeInsights> = {},
+): VehicleAllTimeInsights => ({
+  firstYear: new Date().getFullYear(),
+  total: eur('0.00'),
+  averagePerMonth: eur('0.00'),
+  yearTotals: [{ year: new Date().getFullYear(), total: eur('0.00') }],
   categories: [],
   carValue: eur('8500.00'),
   distanceKm: 0,
@@ -108,5 +150,29 @@ export const problem = (status: number, overrides: Partial<ProblemDetail> = {}):
   type: 'about:blank',
   title: 'Error',
   status,
+  ...overrides,
+});
+
+/** An open Fix soon issue noticed by the mechanic unless overridden. */
+export const anIssue = (overrides: Partial<Issue> = {}): Issue => ({
+  id: nextId(),
+  vehicleId: '00000000-0000-4000-8000-0000000000aa',
+  title: 'Brake pads at ~30%',
+  severity: 'FIX_SOON',
+  source: 'MECHANIC',
+  noticedOn: '2026-10-12',
+  odometer: 184200,
+  note: 'Replace within ~5,000 km',
+  status: 'OPEN',
+  outcome: null,
+  resolvedOn: null,
+  createdAt: '2026-10-12T10:00:00Z',
+  ...overrides,
+});
+
+/** No issues unless overridden. */
+export const anIssueList = (overrides: Partial<IssueList> = {}): IssueList => ({
+  open: [],
+  resolved: [],
   ...overrides,
 });

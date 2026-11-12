@@ -1,8 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getGetExpenseSummaryQueryKey,
+  getGetVehicleAllTimeInsightsQueryKey,
   getGetVehicleInsightsQueryKey,
   getListExpensesQueryKey,
+  getListJournalQueryKey,
 } from '@/shared/api/generated/endpoints/expenses/expenses';
 import {
   getGetVehicleQueryKey,
@@ -10,15 +12,17 @@ import {
 } from '@/shared/api/generated/endpoints/vehicles/vehicles';
 
 /**
- * Refreshes everything an expense change affects: the vehicle's year lists and insights, the Garage summary,
- * and the vehicle itself (its current odometer follows expense readings, BR-V5).
+ * Refreshes everything a journal change affects: the vehicle's journal (all years and each year) and insights, the Garage summary,
+ * and the vehicle itself (its current odometer follows journal entry readings, BR-V5).
  */
 export function useInvalidateExpenses() {
   const queryClient = useQueryClient();
   return (vehicleId: string) =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: getListExpensesQueryKey(vehicleId) }),
+      queryClient.invalidateQueries({ queryKey: getListJournalQueryKey(vehicleId) }),
       queryClient.invalidateQueries({ queryKey: getGetVehicleInsightsQueryKey(vehicleId) }),
+      queryClient.invalidateQueries({ queryKey: getGetVehicleAllTimeInsightsQueryKey(vehicleId) }),
       queryClient.invalidateQueries({ queryKey: getGetExpenseSummaryQueryKey() }),
       queryClient.invalidateQueries({ queryKey: getGetVehicleQueryKey(vehicleId) }),
       queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() }),

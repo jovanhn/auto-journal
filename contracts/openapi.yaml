@@ -24,8 +24,29 @@ tags:
     description: Expenses module (what each car costs)
   - name: planning
     description: Planning module (a car's upcoming costs and the 12-month projection)
+  - name: issues
+    description: Issues module (problems with a car to keep an eye on until fixed, ADR 0021)
+  - name: system
+    description: Service status for clients that wait for a sleeping backend (implemented in `shared`, ADR 0018)
 
 paths:
+  /api/status:
+    get:
+      tags: [system]
+      operationId: getStatus
+      summary: Check that the backend is up (public, no database access)
+      description: |
+        Clients use it for the wake-up protocol (specs/assistant-mcp.md): call it with a 5 s timeout; on a
+        timeout, a connection error, a 502/503/504 or a body that is not this JSON, wait 50 s and retry,
+        at most 3 times.
+      security: []
+      responses:
+        '200':
+          description: The backend is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceStatus'
   /api/me:
     get:
       tags: [users]
@@ -82,6 +103,9 @@ paths:
       tags: [vehicles]
       operationId: createVehicle
       summary: Add a vehicle
+      description: |
+        A user has at most *vehicles per user* vehicles (BR-L1, configurable, default 10), checked by the server.
+        Adding one more responds `409` with the limit in `detail`.
       requestBody:
         required: true
         content:
@@ -165,6 +189,29 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/vehicles/{vehicleId}/journal:
+    get:
+      tags: [expenses]
+      operationId: listJournal
+      summary: List a vehicle's whole journal, all years
+      description: |
+        Every expense and log entry of the vehicle (BR-J1, BR-J6), without totals: the client filters by period,
+        type and search and sums `Expense.displayAmount` (BR-J7). At most *journal entries per vehicle* entries
+        (BR-L2), so not paginated.
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: The vehicle's expenses and log entries of all years
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journal'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/vehicles/{vehicleId}/expenses:
     get:
       tags: [expenses]
@@ -197,6 +244,10 @@ paths:
       tags: [expenses]
       operationId: createExpense
       summary: Add an expense to a vehicle
+      description: |
+        A vehicle has at most *journal entries per vehicle* journal entries, expenses and log entries together
+        (BR-L2, configurable, default 3,000), checked by the server. Adding one more responds `409` with the
+        limit in `detail`.
       parameters:
         - $ref: '#/components/parameters/VehicleId'
       requestBody:
@@ -218,6 +269,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/vehicles/{vehicleId}/insights:
     get:
@@ -243,6 +296,25 @@ paths:
                 $ref: '#/components/schemas/VehicleInsights'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/vehicles/{vehicleId}/insights/all-time:
+    get:
+      tags: [expenses]
+      operationId: getVehicleAllTimeInsights
+      summary: A vehicle's figures over all time (BR-I9) plus its car value, distance and cost per km
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: The vehicle's all-time insights, all money in the display currency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleAllTimeInsights'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -324,6 +396,166 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/expenses/{expenseId}/log-entry:
+    post:
+      tags: [expenses]
+      operationId: convertExpenseToLogEntry
+      summary: Turn an expense into a log entry, removing its cost
+      description: |
+        The entry keeps its id and place in the journal (BR-J5). Date, odometer and note are replaced from the
+        request (like an edit); amount, currency, rate snapshot, category and approximate are deleted. The result
+        must follow BR-J2 (`400`, field `note`). Converting is not adding, so the journal entry limit does not
+        apply (BR-L2, BR-L4).
+      parameters:
+        - $ref: '#/components/parameters/ExpenseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogEntryRequest'
+      responses:
+        '200':
+          description: The log entry, with the expense's id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/vehicles/{vehicleId}/log-entries:
+    post:
+      tags: [expenses]
+      operationId: createLogEntry
+      summary: Add a log entry (an odometer reading, condition or observation without a cost) to a vehicle
+      description: |
+        A log entry needs an odometer reading, a note or both (BR-J2; `400`, field `note`). It never counts in
+        totals; its odometer reading counts for the current odometer and distances (BR-J3). A vehicle has at most
+        *journal entries per vehicle* journal entries, expenses and log entries together (BR-L2, configurable,
+        default 3,000), checked by the server. Adding one more responds `409` with the limit in `detail`.
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogEntryRequest'
+      responses:
+        '201':
+          description: The created log entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/log-entries/{logEntryId}:
+    get:
+      tags: [expenses]
+      operationId: getLogEntry
+      summary: Get a log entry
+      description: An expense's id is not a log entry (`404`), like another user's (BR-U2).
+      parameters:
+        - $ref: '#/components/parameters/LogEntryId'
+      responses:
+        '200':
+          description: The log entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [expenses]
+      operationId: updateLogEntry
+      summary: Replace a log entry's data
+      description: Omitting `odometer` or `note` clears it; the result must follow BR-J2 (`400`, field `note`).
+      parameters:
+        - $ref: '#/components/parameters/LogEntryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogEntryRequest'
+      responses:
+        '200':
+          description: The updated log entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [expenses]
+      operationId: deleteLogEntry
+      summary: Delete a log entry
+      parameters:
+        - $ref: '#/components/parameters/LogEntryId'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/log-entries/{logEntryId}/expense:
+    post:
+      tags: [expenses]
+      operationId: convertLogEntryToExpense
+      summary: Turn a log entry into an expense
+      description: |
+        The entry keeps its id and place in the journal (BR-J5). All fields are replaced from the request (like an
+        edit), the expense follows BR-E1…E6 and takes a rate snapshot now (BR-C4). Converting is not adding, so
+        the journal entry limit does not apply (BR-L2, BR-L4).
+      parameters:
+        - $ref: '#/components/parameters/LogEntryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseRequest'
+      responses:
+        '200':
+          description: The expense, with the log entry's id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/vehicles/{vehicleId}/planned-expenses:
     get:
       tags: [planning]
@@ -348,6 +580,9 @@ paths:
       tags: [planning]
       operationId: createPlannedExpense
       summary: Plan an upcoming expense for a vehicle
+      description: |
+        A vehicle has at most *planned expenses per vehicle* planned expenses (BR-L3, configurable, default 50),
+        checked by the server. Adding one more responds `409` with the limit in `detail`.
       parameters:
         - $ref: '#/components/parameters/VehicleId'
       requestBody:
@@ -369,6 +604,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /api/planned-expenses/next-due:
     get:
@@ -437,7 +674,8 @@ paths:
       description: |
         Creates the expense from the request (BR-PL2) with the plan's category (the request's `category` is
         ignored), then removes a one-time plan or moves a recurring plan's due date forward by its recurrence
-        (BR-PL3), in one transaction. The expense is not linked to the plan afterwards.
+        (BR-PL3), in one transaction. The expense is not linked to the plan afterwards. When the vehicle already
+        has *journal entries per vehicle* journal entries (BR-L2), it responds `409` and the plan is unchanged.
       parameters:
         - $ref: '#/components/parameters/PlannedExpenseId'
       requestBody:
@@ -459,6 +697,183 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/vehicles/{vehicleId}/issues:
+    get:
+      tags: [issues]
+      operationId: listIssues
+      summary: List a vehicle's issues, open and resolved
+      description: |
+        Not paginated: a vehicle has at most *issues per vehicle* issues (BR-L8). Both lists are in BR-IS6 order.
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: The vehicle's open and resolved issues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [issues]
+      operationId: createIssue
+      summary: Note an open issue for a vehicle
+      description: |
+        A vehicle has at most *issues per vehicle* issues, open and resolved together (BR-L8, configurable,
+        default 200), checked by the server. Adding one more responds `409` with the limit in `detail`.
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRequest'
+      responses:
+        '201':
+          description: The created (open) issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/issues/{issueId}:
+    get:
+      tags: [issues]
+      operationId: getIssue
+      summary: Get one issue
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      responses:
+        '200':
+          description: The issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [issues]
+      operationId: updateIssue
+      summary: Replace an issue's editable fields
+      description: |
+        Open or resolved (BR-IS5). Never changes the status, outcome or resolved date. For a resolved issue the
+        date noticed must stay on or before the resolved date (`400`, field `noticedOn`).
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRequest'
+      responses:
+        '200':
+          description: The updated issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [issues]
+      operationId: deleteIssue
+      summary: Delete an issue (open or resolved); nothing else changes
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      responses:
+        '204':
+          description: Deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/issues/{issueId}/resolve:
+    post:
+      tags: [issues]
+      operationId: resolveIssue
+      summary: Resolve an open issue as fixed or gone
+      description: |
+        BR-IS3: `resolvedOn` is not in the future (UTC) and not before the date noticed (`400`, field
+        `resolvedOn`). Resolving an issue that is already resolved responds `409`.
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveIssueRequest'
+      responses:
+        '200':
+          description: The resolved issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/issues/{issueId}/reopen:
+    post:
+      tags: [issues]
+      operationId: reopenIssue
+      summary: Reopen a resolved issue
+      description: |
+        BR-IS4: clears the outcome and resolved date and keeps the other fields. Reopening an open issue responds
+        `409`.
+      parameters:
+        - $ref: '#/components/parameters/IssueId'
+      responses:
+        '200':
+          description: The reopened issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
 components:
   securitySchemes:
@@ -483,8 +898,22 @@ components:
       schema:
         type: string
         format: uuid
+    LogEntryId:
+      name: logEntryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     PlannedExpenseId:
       name: plannedExpenseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IssueId:
+      name: issueId
       in: path
       required: true
       schema:
@@ -518,6 +947,39 @@ components:
             $ref: '#/components/schemas/ProblemDetail'
 
   schemas:
+    ServiceStatus:
+      type: object
+      description: >-
+        Liveness and build metadata of the running backend (specs/app-versioning.md). The build fields are
+        fixed when the image is built.
+      required: [status, component, version, gitSha, buildId, buildTime, startedAt]
+      properties:
+        status:
+          type: string
+          enum: [UP]
+        component:
+          type: string
+          enum: [backend]
+        version:
+          type: string
+          description: >-
+            SemVer of the running build (`X.Y.N` on main, `X.Y.N-dev` elsewhere), or `0.0.0-local`
+            when built without git tags.
+          example: 1.0.3
+        gitSha:
+          type: string
+          description: Full commit SHA of the build, or `local`.
+        buildId:
+          type: string
+          description: '`<GitHub run id>-<run attempt>` of the CI build, or `local`.'
+        buildTime:
+          type: string
+          format: date-time
+          description: When the build ran (UTC); for a local run without build metadata, when it started.
+        startedAt:
+          type: string
+          format: date-time
+          description: When this backend instance started.
     ProblemDetail:
       type: object
       description: RFC 9457 problem details, extended with field-level validation errors.
@@ -669,12 +1131,15 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: At most *max odometer* km (BR-L5, configurable, default 2,000,000; checked by the server).
         purchasePrice:
           $ref: '#/components/schemas/Money'
         purchaseDate:
           type: string
           format: date
-          description: Not in the future (checked by the server).
+          description: |
+            Not in the future and not before *earliest date* (BR-L7, configurable, default 1900-01-01); checked by
+            the server.
     UpdateVehicleRequest:
       description: Same fields as CreateVehicleRequest.
       allOf:
@@ -691,7 +1156,9 @@ components:
         date:
           type: string
           format: date
-          description: Not in the future (checked by the server); may be before the purchase date.
+          description: |
+            Not in the future and not before *earliest date* (BR-L7, configurable, default 1900-01-01); checked by
+            the server. May be before the purchase date.
         amount:
           $ref: '#/components/schemas/Money'
         category:
@@ -701,15 +1168,23 @@ components:
           format: int32
           minimum: 0
           nullable: true
-          description: Optional reading in km; may be lower than the current odometer (BR-E4).
+          description: |
+            Optional reading in km, at most *max odometer* (BR-L5, configurable, default 2,000,000; checked by the
+            server); may be lower than the current odometer (BR-E4).
         note:
           type: string
           maxLength: 500
           nullable: true
           description: Optional; trimmed, blank is stored as null.
+        approximate:
+          type: boolean
+          default: false
+          description: |
+            The amount, the date or both are a best guess (BR-E6). Only marks the expense; it counts in every total
+            like any other. Omitted = false (also on update, which replaces all fields).
     Expense:
       type: object
-      required: [id, vehicleId, date, amount, displayAmount, category, odometer, note, createdAt]
+      required: [id, vehicleId, date, amount, displayAmount, category, odometer, note, approximate, createdAt]
       properties:
         id:
           type: string
@@ -737,13 +1212,18 @@ components:
         note:
           type: string
           nullable: true
+        approximate:
+          type: boolean
+          description: The amount, the date or both are a best guess (BR-E6).
         createdAt:
           type: string
           format: date-time
     ExpenseYear:
       type: object
-      description: One vehicle's expenses of a calendar year; all totals in the display currency (BR-I1).
-      required: [year, firstYear, yearTotal, monthTotals, expenses]
+      description: |
+        One vehicle's journal of a calendar year: its expenses and log entries (BR-J1). All totals are in the
+        display currency and come from expenses only (BR-I1, BR-J3).
+      required: [year, firstYear, yearTotal, monthTotals, expenses, logEntries]
       properties:
         year:
           type: integer
@@ -751,7 +1231,8 @@ components:
         firstYear:
           type: integer
           format: int32
-          description: Year of the vehicle's earliest expense, or the current year if it has none.
+          description: |
+            Year of the vehicle's earliest journal entry (expense or log entry), or the current year if it has none.
         yearTotal:
           $ref: '#/components/schemas/Money'
         monthTotals:
@@ -766,6 +1247,87 @@ components:
           description: Newest date first; for the same date, newest created first.
           items:
             $ref: '#/components/schemas/Expense'
+        logEntries:
+          type: array
+          description: |
+            The year's log entries, newest date first; for the same date, newest created first. Merge them with
+            `expenses` by `date`, then `createdAt`, for the journal timeline (BR-J1).
+          items:
+            $ref: '#/components/schemas/LogEntry'
+    Journal:
+      type: object
+      description: |
+        One vehicle's whole journal: its expenses and log entries of all years (BR-J1, BR-J6). No totals; amounts
+        are in the display currency in `Expense.displayAmount` (BR-J7).
+      required: [firstYear, expenses, logEntries]
+      properties:
+        firstYear:
+          type: integer
+          format: int32
+          description: |
+            Year of the vehicle's earliest journal entry (expense or log entry), or the current year if it has none.
+        expenses:
+          type: array
+          description: All years, newest date first; for the same date, newest created first.
+          items:
+            $ref: '#/components/schemas/Expense'
+        logEntries:
+          type: array
+          description: |
+            All years, newest date first; for the same date, newest created first. Merge them with `expenses` by
+            `date`, then `createdAt`, for the journal timeline (BR-J1).
+          items:
+            $ref: '#/components/schemas/LogEntry'
+    LogEntryRequest:
+      type: object
+      required: [date]
+      description: |
+        A log entry needs `odometer`, `note` or both (BR-J2); the server checks it (`400`, field `note`). A note
+        that is blank after trimming counts as none.
+      properties:
+        date:
+          type: string
+          format: date
+          description: |
+            Not in the future and not before *earliest date* (BR-L7, configurable, default 1900-01-01); checked by
+            the server. May be before the purchase date.
+        odometer:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: |
+            Optional reading in km, at most *max odometer* (BR-L5, configurable, default 2,000,000; checked by the
+            server); may be lower than the current odometer and never lowers it (BR-J3).
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional condition or observation; trimmed, blank is stored as null.
+    LogEntry:
+      type: object
+      description: A journal entry without a cost (BR-J2); never counts in totals (BR-J3).
+      required: [id, vehicleId, date, odometer, note, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        odometer:
+          type: integer
+          format: int32
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
     ExpenseSummary:
       type: object
       description: The current year across all the user's vehicles, in the display currency (BR-I6).
@@ -798,6 +1360,8 @@ components:
         - carValue
         - distanceKm
         - costPerKm
+        - yearDistanceKm
+        - yearCostPerKm
       properties:
         year:
           type: integer
@@ -838,6 +1402,74 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/Money'
+        yearDistanceKm:
+          type: integer
+          format: int32
+          nullable: true
+          description: Distance driven in the year (BR-I7); null when no expense in the year has an odometer reading.
+        yearCostPerKm:
+          description: The year's total ÷ distance driven in the year (BR-I8); null when that distance is null or 0.
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Money'
+    VehicleAllTimeInsights:
+      type: object
+      description: One vehicle's figures over all time (BR-I9) and its lifetime figures (BR-I4, BR-V7), in the display currency.
+      required:
+        - firstYear
+        - total
+        - averagePerMonth
+        - yearTotals
+        - categories
+        - carValue
+        - distanceKm
+        - costPerKm
+      properties:
+        firstYear:
+          type: integer
+          format: int32
+          description: Year of the vehicle's earliest expense, or the current year if it has none.
+        total:
+          $ref: '#/components/schemas/Money'
+        averagePerMonth:
+          description: total ÷ months from the month of the earlier of the purchase date and the first expense through the current month.
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        yearTotals:
+          type: array
+          description: One total per calendar year, firstYear … current year, oldest first.
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/YearTotal'
+        categories:
+          type: array
+          description: Categories with expenses, highest total first (BR-I2).
+          items:
+            $ref: '#/components/schemas/CategoryTotal'
+        carValue:
+          description: Car value (= purchase price, BR-V7) at its rate snapshot.
+          allOf:
+            - $ref: '#/components/schemas/Money'
+        distanceKm:
+          type: integer
+          format: int32
+          description: Current odometer − odometer at start.
+        costPerKm:
+          description: (all expenses + purchase price) ÷ distance driven, lifetime (BR-I4); null when the distance is 0.
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Money'
+    YearTotal:
+      type: object
+      required: [year, total]
+      properties:
+        year:
+          type: integer
+          format: int32
+        total:
+          $ref: '#/components/schemas/Money'
     CategoryTotal:
       type: object
       required: [category, total, sharePercent]
@@ -871,13 +1503,17 @@ components:
         dueDate:
           type: string
           format: date
-          description: May be in the past (the plan is then overdue, BR-PL5).
+          description: |
+            May be in the past (the plan is then overdue, BR-PL5); at most *planned years ahead* years after today
+            (BR-L7, configurable, default 10; checked by the server, UTC).
         recurrenceMonths:
           type: integer
           format: int32
           minimum: 1
           nullable: true
-          description: Null (or absent) = one-time; otherwise it repeats every N months (12 = yearly).
+          description: |
+            Null (or absent) = one-time; otherwise it repeats every N months (12 = yearly), N at most *max
+            recurrence months* (BR-L6, configurable, default 120; checked by the server).
         note:
           type: string
           maxLength: 500
@@ -952,3 +1588,131 @@ components:
           format: uuid
         plannedExpense:
           $ref: '#/components/schemas/PlannedExpense'
+
+    IssueSeverity:
+      type: string
+      description: How serious an issue is (BR-IS1); open issues are listed Urgent, Fix soon, Watch (BR-IS6).
+      enum: [WATCH, FIX_SOON, URGENT]
+    IssueSource:
+      type: string
+      description: Where an issue came from (BR-IS1).
+      enum: [NOTICED, MECHANIC, WARNING_LIGHT]
+    IssueOutcome:
+      type: string
+      description: How an issue was resolved (BR-IS3); GONE = went away by itself, not an issue.
+      enum: [FIXED, GONE]
+    IssueStatus:
+      type: string
+      enum: [OPEN, RESOLVED]
+    IssueRequest:
+      type: object
+      required: [title, severity, source, noticedOn]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 60
+          pattern: '.*\S.*'
+          description: Trimmed.
+        severity:
+          $ref: '#/components/schemas/IssueSeverity'
+        source:
+          $ref: '#/components/schemas/IssueSource'
+        noticedOn:
+          type: string
+          format: date
+          description: |
+            Not in the future and not before *earliest date* (BR-L7, configurable, default 1900-01-01); for a
+            resolved issue on or before its resolved date (BR-IS5). Checked by the server (UTC).
+        odometer:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: |
+            Optional reading in km, at most *max odometer* (BR-L5, configurable, default 2,000,000; checked by the
+            server). For information only; never changes the current odometer (BR-IS2). Omitted = cleared.
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Optional; trimmed, blank is stored as null. Omitted = cleared.
+    ResolveIssueRequest:
+      type: object
+      required: [outcome, resolvedOn]
+      properties:
+        outcome:
+          $ref: '#/components/schemas/IssueOutcome'
+        resolvedOn:
+          type: string
+          format: date
+          description: Not in the future (UTC) and not before the date noticed (BR-IS3); checked by the server.
+    Issue:
+      type: object
+      description: A problem with a vehicle to keep an eye on (BR-IS1); never counts in totals or the odometer (BR-IS2).
+      required:
+        - id
+        - vehicleId
+        - title
+        - severity
+        - source
+        - noticedOn
+        - odometer
+        - note
+        - status
+        - outcome
+        - resolvedOn
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        severity:
+          $ref: '#/components/schemas/IssueSeverity'
+        source:
+          $ref: '#/components/schemas/IssueSource'
+        noticedOn:
+          type: string
+          format: date
+        odometer:
+          type: integer
+          format: int32
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/IssueStatus'
+        outcome:
+          description: Set only when `status` is RESOLVED.
+          type: string
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/IssueOutcome'
+        resolvedOn:
+          type: string
+          format: date
+          nullable: true
+          description: Set only when `status` is RESOLVED.
+        createdAt:
+          type: string
+          format: date-time
+    IssueList:
+      type: object
+      required: [open, resolved]
+      properties:
+        open:
+          type: array
+          description: Severity (Urgent, Fix soon, Watch), then date noticed (newest first), then created (newest first).
+          items:
+            $ref: '#/components/schemas/Issue'
+        resolved:
+          type: array
+          description: Resolved date (newest first), then created (newest first).
+          items:
+            $ref: '#/components/schemas/Issue'

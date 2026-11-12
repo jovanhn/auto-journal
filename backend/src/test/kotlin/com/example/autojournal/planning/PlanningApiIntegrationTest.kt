@@ -316,6 +316,22 @@ class PlanningApiIntegrationTest
             }
         }
 
+        /** specs/approximate-expenses.md AC5. */
+        @Test
+        fun `approximate AC5 mark as paid can create an approximate expense`() {
+            val golf = createVehicle()
+            val first = createPlan(golf, plan("recurrenceMonths" to null))
+            pay(first, payment("approximate" to true)).andExpect {
+                status { isCreated() }
+                jsonPath("$.approximate") { value(true) }
+            }
+            val second = createPlan(golf, plan("recurrenceMonths" to null))
+            pay(second).andExpect {
+                status { isCreated() }
+                jsonPath("$.approximate") { value(false) }
+            }
+        }
+
         @Test
         fun `AC6 paying a recurring plan moves its due date forward by its recurrence`() {
             val golf = createVehicle()

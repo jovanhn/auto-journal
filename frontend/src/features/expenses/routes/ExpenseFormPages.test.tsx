@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { Expense, ExpenseRequest } from '@/shared/api/generated/model';
@@ -29,7 +29,7 @@ const listHandlers = () => [
 ];
 
 // specs/expenses.md — acceptance criteria 1, 2, 7 and 8 (UI side).
-describe('AddExpensePage', () => {
+describe('AddJournalEntryPage (expense)', () => {
   it('defaults the currency to the display currency and the date to today', async () => {
     server.use(http.get(api('/me'), () => HttpResponse.json(aUserProfile({ displayCurrency: 'RSD' }))));
 
@@ -59,7 +59,7 @@ describe('AddExpensePage', () => {
     await user.clear(screen.getByLabelText('Date'));
     await user.type(screen.getByLabelText('Date'), '2026-01-18');
     await user.type(screen.getByLabelText('Odometer (km, optional)'), '184,320');
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Expense added')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(`/vehicles/${vehicle.id}`);
@@ -69,6 +69,34 @@ describe('AddExpensePage', () => {
       date: '2026-01-18',
       odometer: 184320,
       note: null,
+      approximate: false,
+    });
+  });
+
+  // specs/approximate-expenses.md AC1–2.
+  it('sends an approximate expense when the Approximate box is ticked', async () => {
+    let sent: ExpenseRequest | undefined;
+    server.use(
+      http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
+      http.post(api(`/vehicles/${vehicle.id}/expenses`), async ({ request }) => {
+        sent = (await request.json()) as ExpenseRequest;
+        return HttpResponse.json(anExpense({ vehicleId: vehicle.id, approximate: true }), { status: 201 });
+      }),
+      ...listHandlers(),
+    );
+    const user = userEvent.setup();
+    renderApp(`/vehicles/${vehicle.id}/expenses/new`);
+
+    const approximate = await screen.findByRole('checkbox', { name: 'Approximate' });
+    expect(approximate).not.toBeChecked();
+    expect(approximate).toHaveAccessibleDescription('Amount or date is a best guess');
+    await user.type(screen.getByLabelText('Amount'), '300');
+    await user.click(screen.getByRole('button', { name: 'Tires' }));
+    await user.click(approximate);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(sent).toMatchObject({ amount: eur('300'), category: 'TIRES', approximate: true });
     });
   });
 
@@ -84,7 +112,7 @@ describe('AddExpensePage', () => {
     const user = userEvent.setup();
     renderApp(`/vehicles/${vehicle.id}/expenses/new`);
 
-    await user.click(await screen.findByRole('button', { name: 'Save expense' }));
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Amount is required')).toBeInTheDocument();
     expect(screen.getByText('Pick a category')).toBeInTheDocument();
 
@@ -94,7 +122,7 @@ describe('AddExpensePage', () => {
     await user.type(screen.getByLabelText('Date'), '2999-01-01');
     await user.click(screen.getByLabelText('Note (optional)'));
     await user.paste('x'.repeat(501));
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(
       await screen.findByText('Enter an amount of 0 or more with at most 2 decimals'),
@@ -120,10 +148,52 @@ describe('AddExpensePage', () => {
 
     await user.type(await screen.findByLabelText('Amount'), '10');
     await user.click(screen.getByRole('button', { name: 'Service' }));
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('must not be in the future')).toBeInTheDocument();
     expect(screen.getByLabelText('Date')).toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
+describe('AddJournalEntryPage limits (specs/data-limits.md AC 3, 10)', () => {
+  it('shows the expense limit message and stays on the form', async () => {
+    server.use(
+      http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
+      http.post(api(`/vehicles/${vehicle.id}/expenses`), () =>
+        HttpResponse.json(problem(409, { detail: 'A vehicle can have at most 3000 expenses.' }), {
+          status: 409,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const { router } = renderApp(`/vehicles/${vehicle.id}/expenses/new`);
+
+    await user.type(await screen.findByLabelText('Amount'), '10');
+    await user.click(screen.getByRole('button', { name: 'Service' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('A vehicle can have at most 3000 expenses.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(`/vehicles/${vehicle.id}/expenses/new`);
+  });
+
+  it('shows an odometer bound error on the odometer field', async () => {
+    server.use(
+      http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
+      http.post(api(`/vehicles/${vehicle.id}/expenses`), () =>
+        HttpResponse.json(
+          problem(400, { errors: [{ field: 'odometer', message: 'must be at most 2000000' }] }),
+          { status: 400 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderApp(`/vehicles/${vehicle.id}/expenses/new`);
+
+    await user.type(await screen.findByLabelText('Amount'), '10');
+    await user.click(screen.getByRole('button', { name: 'Service' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('must be at most 2000000')).toBeInTheDocument();
   });
 });
 
@@ -163,6 +233,32 @@ describe('EditExpensePage', () => {
       date: expense.date,
       odometer: 184320,
       note: 'OMV',
+      approximate: false,
+    });
+  });
+
+  // specs/approximate-expenses.md AC3.
+  it('pre-fills the Approximate box and saves it unticked', async () => {
+    const expense = anExpense({ vehicleId: vehicle.id, approximate: true });
+    let sent: ExpenseRequest | undefined;
+    server.use(
+      http.get(api(`/expenses/${expense.id}`), () => HttpResponse.json(expense)),
+      http.put(api(`/expenses/${expense.id}`), async ({ request }) => {
+        sent = (await request.json()) as ExpenseRequest;
+        return HttpResponse.json({ ...expense, ...sent });
+      }),
+      ...listHandlers(),
+    );
+    const user = userEvent.setup();
+    renderApp(editUrl(expense));
+
+    const approximate = await screen.findByRole('checkbox', { name: 'Approximate' });
+    expect(approximate).toBeChecked();
+    await user.click(approximate);
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => {
+      expect(sent).toMatchObject({ amount: expense.amount, approximate: false });
     });
   });
 

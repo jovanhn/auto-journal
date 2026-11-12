@@ -1,12 +1,18 @@
 import { createRoute } from '@tanstack/react-router';
 import { authenticatedRoute } from '@/app/authenticatedRoute';
-import { AddExpensePage } from './AddExpensePage';
+import { isJournalType, type JournalSearch } from '../journal';
+import { AddIssuePage } from './AddIssuePage';
+import { AddJournalEntryPage } from './AddJournalEntryPage';
 import { AddPlannedExpensePage } from './AddPlannedExpensePage';
 import { EditExpensePage } from './EditExpensePage';
+import { EditIssuePage } from './EditIssuePage';
+import { EditLogEntryPage } from './EditLogEntryPage';
 import { EditPlannedExpensePage } from './EditPlannedExpensePage';
 import { InsightsPage } from './InsightsPage';
+import { IssuesPage } from './IssuesPage';
 import { PayPlannedExpensePage } from './PayPlannedExpensePage';
 import { PlannedPage } from './PlannedPage';
+import { ResolvedIssuePage } from './ResolvedIssuePage';
 import { VehicleExpensesPage } from './VehicleExpensesPage';
 
 export type YearSearch = {
@@ -19,32 +25,60 @@ const validateYearSearch = (search: Record<string, unknown>): YearSearch => {
   return Number.isInteger(year) && year > 0 ? { year } : {};
 };
 
-/** The vehicle page opens on its Expenses tab (specs/expenses.md, UI notes). */
+const validateJournalSearch = (search: Record<string, unknown>): JournalSearch => ({
+  ...(search.year === 'all' ? { year: 'all' as const } : validateYearSearch(search)),
+  ...(isJournalType(search.type) ? { type: search.type } : {}),
+  ...(typeof search.q === 'string' && search.q !== '' ? { q: search.q } : {}),
+});
+
+export type InsightsSearch = YearSearch & {
+  /** `all` shows all-time insights; one year (`year`) when absent. */
+  period?: 'all';
+};
+
+const validateInsightsSearch = (search: Record<string, unknown>): InsightsSearch =>
+  search.period === 'all' ? { period: 'all' } : validateYearSearch(search);
+
+/** The vehicle page opens on its Journal tab (specs/journal.md, UI notes). */
 export const vehicleExpensesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId',
-  validateSearch: (search: Record<string, unknown>) => validateYearSearch(search),
+  validateSearch: validateJournalSearch,
   component: VehicleExpensesPage,
 });
 
-/** Vehicle · Insights (specs/insights.md); same year switcher as Expenses. */
+/** Vehicle · Insights (specs/insights.md); Year (same year switcher as Journal) or All time. */
 export const vehicleInsightsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/insights',
-  validateSearch: (search: Record<string, unknown>) => validateYearSearch(search),
+  validateSearch: (search: Record<string, unknown>) => validateInsightsSearch(search),
   component: InsightsPage,
 });
 
+/** Add to journal: Expense | Log (specs/journal.md). */
 export const addExpenseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/expenses/new',
-  component: AddExpensePage,
+  // Keeps the journal filters so Save and Cancel return to the same view (specs/journal-filters.md AC8).
+  validateSearch: validateJournalSearch,
+  component: AddJournalEntryPage,
 });
 
 export const editExpenseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/expenses/$expenseId/edit',
+  // Keeps the journal filters so Save and Cancel return to the same view (specs/journal-filters.md AC8).
+  validateSearch: validateJournalSearch,
   component: EditExpensePage,
+});
+
+/** Edit log (specs/journal.md, UI notes). */
+export const editLogEntryRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/log-entries/$logEntryId/edit',
+  // Keeps the journal filters so Save and Cancel return to the same view (specs/journal-filters.md AC8).
+  validateSearch: validateJournalSearch,
+  component: EditLogEntryPage,
 });
 
 /** Vehicle · Planned (specs/planned-expenses.md). */
@@ -70,4 +104,30 @@ export const payPlannedExpenseRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/vehicles/$vehicleId/planned/$plannedExpenseId/pay',
   component: PayPlannedExpensePage,
+});
+
+/** Vehicle · Issues (specs/issues.md). */
+export const vehicleIssuesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/issues',
+  component: IssuesPage,
+});
+
+export const addIssueRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/issues/new',
+  component: AddIssuePage,
+});
+
+export const editIssueRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/issues/$issueId/edit',
+  component: EditIssuePage,
+});
+
+/** Resolved issue: details and Reopen. */
+export const resolvedIssueRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: '/vehicles/$vehicleId/issues/$issueId',
+  component: ResolvedIssuePage,
 });

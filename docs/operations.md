@@ -36,11 +36,16 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `SERVER_PORT`            | backend          | `8080`                                          | optional                      |
 | `SPRING_PROFILES_ACTIVE` | backend          | `local` (default profile)                       | `prod`                        |
 | `CORS_ALLOWED_ORIGINS`   | backend          | `http://localhost:5173,http://localhost:4173` (the Vite proxy forwards the browser's `Origin`) | frontend origin(s), comma-separated (ADR 0017) |
+| `MCP_RESOURCE_URL`       | backend (`autojournal.mcp.resource-url`) | `http://localhost:8080/mcp` | `https://be-autojournal.skverly.com/mcp`; **required** in `prod` (ADR 0018) |
+| `APP_VERSION`, `GIT_SHA`, `BUILD_ID`, `BUILD_TIME` | backend (`autojournal.build.*`, `GET /api/status`) | `0.0.0-local`, `local`, `local`, blank (= start time) | set by the image from CI build args (ADR 0023); never set on Render |
 | `VITE_API_BASE_URL`      | frontend (build) | `/api`                                          | URL of the backend `/api`     |
+| `VITE_SHOW_BUILD_INFO`   | frontend (build) | unset (footer shown)                            | optional; `false` hides the build-info footer on Settings (specs/app-versioning.md) |
+| `RELEASE_BUILD`          | `scripts/version.sh`, `vite.config.ts` | unset                          | `true` in `backend-image` / `frontend-deploy`: a missing tag or history fails the build |
 | `SUPABASE_URL`           | backend          | project URL (from `.env`)                       | project URL (JWT issuer `<url>/auth/v1`) |
 | `VITE_SUPABASE_URL`      | frontend (build) | project URL                                     | project URL                   |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | frontend (build) | project publishable key                  | project publishable key       |
 | `EXCHANGE_RATE_RSD_PER_EUR`, `EXCHANGE_RATE_USD_PER_EUR` | backend (`autojournal.exchange-rates.rsd-per-eur` / `usd-per-eur` → `shared.money.ExchangeRates`) | `117.00`, `1.10` | set by the owner (ADR 0014); a change affects only new rate snapshots and display conversions |
+| `LIMIT_VEHICLES_PER_USER`, `LIMIT_JOURNAL_ENTRIES_PER_VEHICLE`, `LIMIT_PLANNED_EXPENSES_PER_VEHICLE`, `LIMIT_ISSUES_PER_VEHICLE`, `LIMIT_MAX_ODOMETER_KM`, `LIMIT_MAX_RECURRENCE_MONTHS`, `LIMIT_EARLIEST_DATE`, `LIMIT_PLANNED_YEARS_AHEAD` | backend (`autojournal.limits.*` → `shared.limits.LimitProperties`) | `10`, `3000`, `50`, `200`, `2000000`, `120`, `1900-01-01`, `10` | optional data limits (BR-L1…L8, specs/data-limits.md, specs/issues.md); numbers ≥ 1, earliest date not in the future, otherwise the backend does not start |
 | `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` | e2e | test user in the Supabase project               | CI secrets only               |
 
 The Supabase and E2E variables come from the single Supabase project (specs/auth.md, ADR 0015). Locally,
@@ -82,16 +87,16 @@ they are not part of the gate. Configure **only `ci-ok`** as the required status
 
 The `e2e` job signs in a real Supabase user and needs these repository secrets: `SUPABASE_URL`,
 `SUPABASE_PUBLISHABLE_KEY`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD` (the test user is created by hand in the
-Supabase dashboard; sign-up is closed).
+Supabase dashboard; there is no email sign-up).
 
 ## Deployment
 
-ADRs 0016 (backend) and 0017 (frontend). Everything deploys from `main`; there are no staging or preview
+ADRs 0016 (backend), 0017 (frontend hosting) and 0022 (frontend delivery). Everything deploys from `main`; there are no staging or preview
 environments.
 
 | Part     | URL                                  | Host                                           | Deployed by                                   |
 | -------- | ------------------------------------ | ---------------------------------------------- | --------------------------------------------- |
-| Frontend | https://autojournal.skverly.com      | Cloudflare Worker `auto-journal` (static assets) | Cloudflare Workers Builds, every push to `main` |
+| Frontend | https://autojournal.skverly.com      | Cloudflare Worker `auto-journal` (static assets) | GitHub Actions `ci.yml` → `wrangler deploy`     |
 | Backend  | https://be-autojournal.skverly.com   | Render web service (Docker image from GHCR)    | GitHub Actions `ci.yml` → Render deploy hook  |
 | Database | —                                    | Supabase project `dnkgfohtcbidlzjivkkl` (Postgres + Auth) | Flyway at backend startup             |
 
@@ -101,11 +106,12 @@ DNS for `skverly.com` is on Cloudflare.
 ### Backend (Render)
 
 **Flow:** push to `main` touching `backend/**` or `contracts/**` → CI passes (`ci-ok`) →
-`backend-image` builds `backend/Dockerfile` and pushes `ghcr.io/jovanhn/auto-journal-backend:<sha>` and
+`backend-image` computes the version (`scripts/version.sh backend`, ADR 0023), builds `backend/Dockerfile`
+with the build metadata and pushes `ghcr.io/jovanhn/auto-journal-backend:<sha>`, `:<version>` and
 `:latest` → `backend-deploy` (GitHub environment `production`, no approval) calls the Render deploy hook
 with `imgURL=<sha image>`. Render pulls it, starts it, and waits for `/actuator/health`. Flyway migrations
 run at startup, so a merged migration reaches production with the next backend deploy. The free instance
-sleeps when idle; the first request after that takes ~30–60 s.
+sleeps when idle; the first request after that waits for a cold start (2–3 min as of 2026-11).
 
 **Render service** (workspace "Code's workspace" `tea-d8peuf1o3t8c73elqip0`):
 
@@ -128,12 +134,14 @@ sleeps when idle; the first request after that takes ~30–60 s.
 | `DB_PASSWORD`          | secret — Supabase database password (`SUPABASE_DB_PASSWORD` in the local `.env`)   |
 | `SUPABASE_URL`         | `https://dnkgfohtcbidlzjivkkl.supabase.co`                                         |
 | `CORS_ALLOWED_ORIGINS` | `https://autojournal.skverly.com`                                                  |
+| `MCP_RESOURCE_URL`     | `https://be-autojournal.skverly.com/mcp` (ADR 0018)                                |
 | `SPRING_PROFILES_ACTIVE` | not set — `prod` is the image default                                            |
 
-Exchange rates use the defaults from `application.yml`; set `EXCHANGE_RATE_*` on Render to change them.
+Exchange rates and data limits use the defaults from `application.yml`; set `EXCHANGE_RATE_*` or `LIMIT_*` on
+Render to change them.
 Changing an environment variable on Render restarts the service with the current image.
 
-**Rollback:** in Render, redeploy an earlier deploy, or deploy an older `:<sha>` tag. Avoid "Manual
+**Rollback:** in Render, redeploy an earlier deploy, or deploy an older `:<sha>` / `:<version>` tag. Avoid "Manual
 Deploy" of `:latest` for releases: the running version then no longer names its commit.
 
 Build and run the image locally:
@@ -144,20 +152,79 @@ docker run --rm -p 8080:8080 -e DB_URL=jdbc:postgresql://host.docker.internal:54
   -e DB_USERNAME=autojournal -e DB_PASSWORD=autojournal -e SUPABASE_URL=<project url> autojournal-backend
 ```
 
+**Public endpoints besides `/api`:** `GET /api/status` (no token, no database; wake-up check),
+`/actuator/health`, `GET /.well-known/oauth-protected-resource` (RFC 9728 metadata for MCP clients) and
+`POST /mcp` (MCP server for assistants, Bearer token required). See [assistant.md](assistant.md).
+
+**Wake-up protocol** (the free plan sleeps after 15 min idle): a client calls `GET /api/status` with a 5 s
+timeout; on a timeout, a connection error, a 502/503/504 or a body that is not the status JSON, it waits
+50 s and retries, at most 3 times, then reports the backend as unavailable. The MCP server tells
+assistants the same (specs/assistant-mcp.md, AC 2–3). Cold starts currently take 133–169 s (Render logs,
+2026-11), so the 3 retries are needed; a faster startup or keep-warm ping is a separate decision.
+
+### Google sign-in (ADR 0019)
+
+Owner steps; agents have no access to the Supabase or Google dashboards:
+
+1. Google Cloud console → OAuth client (type *Web application*); Authorized redirect URI
+   `https://dnkgfohtcbidlzjivkkl.supabase.co/auth/v1/callback`. The client secret goes only into Supabase.
+2. Supabase → Authentication → Sign In / Providers → Google: enabled, with the client id and secret.
+   **Allow new users to sign up** is on (any Google account becomes a user). Keep **Confirm email** on, so
+   an email sign-up made directly against the Supabase API needs a verified address.
+3. Authentication → URL Configuration → **Redirect URLs** must include `https://autojournal.skverly.com/**`
+   and `http://localhost:5173/**`; the app returns to `<origin>/auth/callback`. A URL not on the list falls
+   back to the Site URL and the sign-in is lost. Keep the Site URL exact (see below).
+
+### Supabase OAuth server (assistants, ADR 0018)
+
+Owner steps in the Supabase dashboard (project `dnkgfohtcbidlzjivkkl`); agents have no access:
+
+1. Authentication → OAuth Server → enable it; Authorization Path `/oauth/consent` (with the Site URL this
+   is `https://autojournal.skverly.com/oauth/consent`, served by the frontend). Authentication → URL
+   Configuration → **Site URL** must be exactly `https://autojournal.skverly.com`. Supabase sends the
+   browser to `<Site URL>/oauth/consent`, so `http://localhost:3000` or a `/**` wildcard there breaks the
+   consent step (the authorization stays `pending`). Wildcards belong in **Redirect URLs**.
+2. Register the OAuth app **Claude** with redirect URIs `https://claude.ai/api/mcp/auth_callback` and
+   `https://claude.com/api/mcp/auth_callback`. Keep dynamic client registration **off**. The user enters
+   the client id (and secret) in the connector's "Advanced settings" in Claude.
+3. JWT signing key: asymmetric ES256 (the backend already requires it). OAuth tokens then validate like
+   app tokens.
+
+Grants can be revoked in the dashboard; a user revokes access by removing the connector in Claude.
+
 ### Frontend (Cloudflare)
 
 The Worker `auto-journal` serves the Vite build as static assets (`frontend/wrangler.jsonc`; unknown paths
-fall back to `index.html`). Cloudflare Workers Builds builds and deploys every push to `main` on its own,
-independent of CI; its "Workers Builds: auto-journal" check shows on PRs but is not part of `ci-ok`.
+fall back to `index.html`). Cloudflare only hosts it; Workers Builds is disconnected from the repo (ADR 0022).
 
-Workers Builds settings (Cloudflare dashboard → Worker → Settings → Build):
+**Flow:** push to `main` touching `frontend/**`, `contracts/**` or `ci.yml` → CI passes (`ci-ok`) →
+`frontend-deploy` (GitHub environment `production`) runs `pnpm build` with the production `VITE_*` values,
+then `npx --yes wrangler@<pinned> deploy` from `frontend/`. Pull requests never deploy.
 
-- Root directory `frontend`; build command `pnpm build`; deploy command `npx wrangler deploy`.
-- **Build** variables (not the Worker's runtime variables — Vite inlines `VITE_*` at build time;
-  publishable values only):
-  `VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`,
-  `VITE_SUPABASE_URL=https://dnkgfohtcbidlzjivkkl.supabase.co`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
-- Custom domain `autojournal.skverly.com`.
+GitHub environment `production` (the owner sets the secret; the variables are publishable values, which
+Vite inlines at build time):
+
+- Secret `CLOUDFLARE_API_TOKEN`: custom API token, *Account → Workers Scripts → Edit* on the account.
+- Variables `CLOUDFLARE_ACCOUNT_ID`, `VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`,
+  `VITE_SUPABASE_URL=https://dnkgfohtcbidlzjivkkl.supabase.co`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and the
+  optional `VITE_SHOW_BUILD_INFO` (`false` hides the build-info footer on Settings; unset shows it).
+- Custom domain `autojournal.skverly.com` (Cloudflare dashboard).
+
+**Redeploy** without a code change (e.g. after changing a `VITE_*` variable): re-run the `frontend-deploy`
+job of the latest `main` run. **Rollback:** Cloudflare dashboard → Worker → Deployments, or
+`wrangler rollback`.
+
+### Versions (ADR 0023)
+
+Every production build has a version per component, independent of the other: `X.Y.N` on `main`, where the
+annotated tag `<component>/vX.Y.0` sets MAJOR.MINOR and N counts the commits since it (branches get
+`X.Y.N-dev`, builds without tags `0.0.0-local`). `make version` prints both. The Settings page footer shows
+both versions (frontend from the bundle, backend from `GET /api/status`) unless `VITE_SHOW_BUILD_INFO=false`.
+
+**Bump MAJOR or MINOR:** `scripts/tag-release.sh backend 1.3` (or `frontend 2.0`) creates
+`backend/v1.3.0` on `origin/main` and pushes it. The tag triggers nothing; the next deploy of that component
+is `1.3.N`. PATCH is never bumped by hand. Tags are never moved or deleted. Production builds check out the
+full history (`fetch-depth: 0`) and fail if no tag is reachable.
 
 A frontend origin that must call the API (another domain, the `*.workers.dev` URL) has to be added to
 `CORS_ALLOWED_ORIGINS` on Render, comma-separated. Supabase → Authentication → URL Configuration: the Site
@@ -165,8 +232,8 @@ URL is `https://autojournal.skverly.com`.
 
 ### GitHub
 
-- Environment `production` (no protection rules): secret `RENDER_DEPLOY_HOOK_URL` (a credential: anyone
-  with it can deploy). The mock workflow `deploy-protected.yml` also uses this environment.
+- Environment `production` (no protection rules): secrets `RENDER_DEPLOY_HOOK_URL` (a credential: anyone
+  with it can deploy) and `CLOUDFLARE_API_TOKEN`; variables for the frontend build (see above). The mock workflow `deploy-protected.yml` also uses this environment.
 - Repository secrets for the `e2e` job: see [CI](#ci).
 - The GHCR package `auto-journal-backend` is public and linked to the repo (`org.opencontainers.image.source`).
 
@@ -175,10 +242,11 @@ URL is `https://autojournal.skverly.com`.
 | Change                               | Also do                                                                     |
 | ------------------------------------ | --------------------------------------------------------------------------- |
 | New/renamed backend env var          | `application*.yml`, `.env.example`, the env var table above, **and set it on Render before merging** (a missing `prod` value stops the app from starting) |
-| New/renamed `VITE_*` variable        | `.env.example`, this doc, **and the Cloudflare build variables** (owner)     |
+| New/renamed `VITE_*` variable        | `.env.example`, this doc, `frontend-deploy` env in `ci.yml`, **and the `production` environment variables** |
 | New frontend domain                  | `CORS_ALLOWED_ORIGINS` on Render; Supabase URL configuration                 |
+| Supabase OAuth server / OAuth apps   | Owner, in the dashboard (see above); the consent page is `/oauth/consent`   |
 | New Flyway migration                 | Nothing extra — runs on the next backend deploy; it must be safe against production data |
-| `Dockerfile` / `ci.yml` delivery jobs | ADR 0016; verify on `main` (the image jobs never run on PRs)                |
+| `Dockerfile` / `ci.yml` delivery jobs | ADR 0016/0022; verify on `main` (the deploy jobs never run on PRs)          |
 
 ### Access for agents
 
@@ -188,8 +256,8 @@ URL is `https://autojournal.skverly.com`.
   create image-backed services or change service settings (domains, health check, plan) — those are
   dashboard-only. Use `list_events` to see why a deploy failed (it reports exit codes and health check
   failures that logs may not show).
-- **Cloudflare:** no agent access. The GitHub check for Workers Builds only links to the dashboard; ask the
-  owner for the build log or to change build settings.
+- **Cloudflare:** no dashboard access for agents. Deploys run in GitHub Actions (`frontend-deploy` logs via
+  `gh`); ask the owner for dashboard changes (domains, rollback in the UI).
 - **Ask before** changing Render environment variables, triggering deploys or rollbacks, or touching
   GitHub environments and secrets — these change production. Reading status and logs is fine.
 - **Secrets:** never read secret values from `.env` into the conversation or logs, and never commit them.

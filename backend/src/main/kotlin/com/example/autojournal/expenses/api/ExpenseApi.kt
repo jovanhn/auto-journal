@@ -28,6 +28,8 @@ data class NewExpense(
     val category: Category,
     val odometer: Int?,
     val note: String?,
+    /** BR-E6. */
+    val approximate: Boolean = false,
 )
 
 /** An added expense with its amount in the owner's display currency (BR-C6). */
@@ -42,5 +44,6 @@ data class CreatedExpense(
     val category: Category,
     val odometer: Int?,
     val note: String?,
+    val approximate: Boolean,
     val createdAt: Instant,
 )

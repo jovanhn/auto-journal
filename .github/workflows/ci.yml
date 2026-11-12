@@ -5,10 +5,11 @@ on:
   push:
     branches: [main]
 
-# New runs for the same ref cancel in-progress ones.
+# On PR branches a new push cancels the in-progress run. On main every push runs to the end (queued),
+# because each push may carry a deploy: a newer push without backend changes would otherwise cancel it.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -26,6 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       # docs/** is intentionally not part of any filter: docs-only changes trigger no build jobs.
+      # A change to this workflow runs (and on main, deploys) every component it builds (ADR 0022).
       - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
@@ -33,9 +35,13 @@ jobs:
             backend:
               - 'backend/**'
               - 'contracts/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
             frontend:
               - 'frontend/**'
               - 'contracts/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
             contracts:
               - 'contracts/**'
             e2e:
@@ -43,6 +49,7 @@ jobs:
               - 'frontend/**'
               - 'backend/**'
               - 'contracts/**'
+              - '.github/workflows/ci.yml'
 
   contracts:
     name: Contracts (Redocly lint)
@@ -98,6 +105,9 @@ jobs:
           node-version-file: frontend/.nvmrc
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Version script tests
+        working-directory: .
+        run: make scripts-test
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Generate API client
@@ -197,18 +207,34 @@ jobs:
     outputs:
       image: ${{ steps.image.outputs.image }}
     steps:
+      # Full history and tags: scripts/version.sh counts the commits since the backend/vX.Y.0 tag (ADR 0023).
       - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
       - id: image
-        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}-backend:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+        env:
+          RELEASE_BUILD: 'true'
+        run: |
+          version="$(sh scripts/version.sh backend)"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}-backend:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
       - name: Build and push
         env:
           IMAGE: ${{ steps.image.outputs.image }}
+          VERSION: ${{ steps.image.outputs.version }}
         run: |
           LATEST="${IMAGE%:*}:latest"
-          docker build -f backend/Dockerfile -t "$IMAGE" -t "$LATEST" .
+          VERSIONED="${IMAGE%:*}:${VERSION}"
+          docker build -f backend/Dockerfile \
+            --build-arg APP_VERSION="$VERSION" \
+            --build-arg GIT_SHA="$GITHUB_SHA" \
+            --build-arg BUILD_ID="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "$IMAGE" -t "$VERSIONED" -t "$LATEST" .
           docker push "$IMAGE"
+          docker push "$VERSIONED"
           docker push "$LATEST"
 
   backend-deploy:
@@ -225,6 +251,65 @@ jobs:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           IMAGE: ${{ needs.backend-image.outputs.image }}
         run: curl -fsS -X POST -G --data-urlencode "imgURL=$IMAGE" "$RENDER_DEPLOY_HOOK_URL" > /dev/null
+
+  # Frontend delivery (ADR 0022): GitHub Actions builds, Cloudflare only hosts (Worker static assets).
+  frontend-deploy:
+    name: Deploy frontend (Cloudflare)
+    needs: [changes, ci-ok]
+    # !cancelled(): ci-ok runs with always(), so skipped jobs upstream must not skip this one.
+    if: >-
+      !cancelled() && needs.ci-ok.result == 'success'
+      && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      # Optional: `false` hides the build-info footer on Settings (specs/app-versioning.md, decision 8a).
+      VITE_SHOW_BUILD_INFO: ${{ vars.VITE_SHOW_BUILD_INFO }}
+      # vite.config.ts fails the build instead of shipping a -dev or 0.0.0-local version (ADR 0023).
+      RELEASE_BUILD: 'true'
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check production configuration
+        run: |
+          missing=""
+          for name in VITE_API_BASE_URL VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing in the GitHub environment 'production':$missing"
+            exit 1
+          fi
+        working-directory: .
+      # Full history and tags: scripts/version.sh counts the commits since the frontend/vX.Y.0 tag (ADR 0023).
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6.1.1
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Generate API client
+        run: pnpm gen
+      - name: Build
+        run: pnpm build
+      # Wrangler is not a project dependency (ADR 0017/0022); pinned here and updated by hand.
+      - name: Deploy to Cloudflare Workers
+        run: npx --yes wrangler@4.155.0 deploy
 
   # The only job to mark as a required status check. Skipped jobs count as success.
   ci-ok:

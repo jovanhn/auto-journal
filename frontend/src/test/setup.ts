@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
-import { fakeAuth } from './fakeSession';
+import { fakeAuth, fakeGoogle, fakeOAuth } from './fakeSession';
 import { server } from './server';
 
 // Component tests never call Supabase: the auth module is replaced by an in-memory fake.
@@ -22,6 +22,14 @@ Object.defineProperty(window, 'matchMedia', {
     }) as MediaQueryList,
 });
 
+// jsdom does not implement ResizeObserver (used by Radix primitives such as Checkbox to size hidden inputs).
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+Object.defineProperty(window, 'ResizeObserver', { writable: true, value: ResizeObserverStub });
+
 // The first render of a test file (cold module load) can take over the 1 s default under a parallel full run.
 configure({ asyncUtilTimeout: 3000 });
 
@@ -31,6 +39,8 @@ beforeAll(() => {
 });
 beforeEach(() => {
   fakeAuth.signedIn();
+  fakeOAuth.reset();
+  fakeGoogle.reset();
 });
 afterEach(() => {
   cleanup();

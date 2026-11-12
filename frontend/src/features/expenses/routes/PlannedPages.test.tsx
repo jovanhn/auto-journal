@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import type { ExpenseRequest, PlannedExpenseRequest } from '@/shared/api/generated/model';
@@ -227,6 +227,28 @@ describe('Plan an expense / Edit plan', () => {
     expect(await screen.findByText('must be greater than or equal to 1')).toBeInTheDocument();
   });
 
+  // specs/data-limits.md — AC 6 (UI side).
+  it('shows the planned expense limit message and stays on the form', async () => {
+    server.use(
+      http.get(api('/me'), () => HttpResponse.json(aUserProfile())),
+      http.post(api(`/vehicles/${vehicle.id}/planned-expenses`), () =>
+        HttpResponse.json(problem(409, { detail: 'A vehicle can have at most 50 planned expenses.' }), {
+          status: 409,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const { router } = renderApp(`/vehicles/${vehicle.id}/planned/new`);
+
+    await user.type(await screen.findByLabelText('Estimated amount'), '10');
+    await user.click(screen.getByRole('button', { name: 'Other' }));
+    await user.type(screen.getByLabelText('Due date'), '2027-01-01');
+    await user.click(screen.getByRole('button', { name: 'Save plan' }));
+
+    expect(await screen.findByText('A vehicle can have at most 50 planned expenses.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(`/vehicles/${vehicle.id}/planned/new`);
+  });
+
   it('edits a plan pre-filled from the list, keeping an unusual recurrence selectable', async () => {
     const plan = aPlannedExpense({ vehicleId: vehicle.id, recurrenceMonths: 5 });
     let sent: PlannedExpenseRequest | undefined;
@@ -314,6 +336,30 @@ describe('Mark as paid', () => {
       date: plan.dueDate,
       odometer: null,
       note: 'timing belt',
+      approximate: false,
+    });
+  });
+
+  // specs/approximate-expenses.md AC5.
+  it('can record the payment as approximate', async () => {
+    let sent: ExpenseRequest | undefined;
+    server.use(
+      ...plannedHandlers(aPlannedExpenseList({ items: [plan] })),
+      http.post(api(`/planned-expenses/${plan.id}/pay`), async ({ request }) => {
+        sent = (await request.json()) as ExpenseRequest;
+        return HttpResponse.json(anExpense({ vehicleId: vehicle.id }), { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp(`/vehicles/${vehicle.id}/planned/${plan.id}/pay`);
+
+    const approximate = await screen.findByRole('checkbox', { name: 'Approximate' });
+    expect(approximate).not.toBeChecked();
+    await user.click(approximate);
+    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    await waitFor(() => {
+      expect(sent).toMatchObject({ category: 'REPAIRS', approximate: true });
     });
   });
 
@@ -335,6 +381,25 @@ describe('Mark as paid', () => {
     await user.click(await screen.findByRole('button', { name: 'Save expense' }));
 
     expect(await screen.findByText('must not be in the future')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(`/vehicles/${vehicle.id}/planned/${plan.id}/pay`);
+  });
+
+  // specs/data-limits.md — AC 5 (UI side).
+  it('shows the expense limit message when paying and stays on the form', async () => {
+    server.use(
+      ...plannedHandlers(aPlannedExpenseList({ items: [plan] })),
+      http.post(api(`/planned-expenses/${plan.id}/pay`), () =>
+        HttpResponse.json(problem(409, { detail: 'A vehicle can have at most 3000 expenses.' }), {
+          status: 409,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    const { router } = renderApp(`/vehicles/${vehicle.id}/planned/${plan.id}/pay`);
+
+    await user.click(await screen.findByRole('button', { name: 'Save expense' }));
+
+    expect(await screen.findByText('A vehicle can have at most 3000 expenses.')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(`/vehicles/${vehicle.id}/planned/${plan.id}/pay`);
   });
 

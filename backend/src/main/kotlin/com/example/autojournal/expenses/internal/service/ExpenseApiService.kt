@@ -27,22 +27,22 @@ class ExpenseApiService(
                 category = expense.category,
                 odometer = expense.odometer,
                 note = expense.note,
+                approximate = expense.approximate,
             )
         val view = expenseService.create(ownerId, vehicleId, data)
-        return with(view.expense) {
-            CreatedExpense(
-                id = id,
-                vehicleId = vehicleId,
-                date = date,
-                amount = amount,
-                currency = currency,
-                displayAmount = view.displayAmount,
-                displayCurrency = view.displayCurrency,
-                category = category,
-                odometer = odometer,
-                note = note,
-                createdAt = createdAt,
-            )
-        }
+        return CreatedExpense(
+            id = view.entry.id,
+            vehicleId = view.entry.vehicleId,
+            date = view.entry.date,
+            amount = view.cost.amount,
+            currency = view.cost.currency,
+            displayAmount = view.displayAmount,
+            displayCurrency = view.displayCurrency,
+            category = view.cost.category,
+            odometer = view.entry.odometer,
+            note = view.entry.note,
+            approximate = view.cost.approximate,
+            createdAt = view.entry.createdAt,
+        )
     }
 }

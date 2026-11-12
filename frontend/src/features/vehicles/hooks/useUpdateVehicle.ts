@@ -1,5 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetVehicleInsightsQueryKey } from '@/shared/api/generated/endpoints/expenses/expenses';
+import {
+  getGetVehicleAllTimeInsightsQueryKey,
+  getGetVehicleInsightsQueryKey,
+} from '@/shared/api/generated/endpoints/expenses/expenses';
 import {
   getGetVehicleQueryKey,
   getListVehiclesQueryKey,
@@ -16,6 +19,7 @@ export function useUpdateVehicle() {
           queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() }),
           queryClient.invalidateQueries({ queryKey: getGetVehicleQueryKey(vehicleId) }),
           queryClient.invalidateQueries({ queryKey: getGetVehicleInsightsQueryKey(vehicleId) }),
+          queryClient.invalidateQueries({ queryKey: getGetVehicleAllTimeInsightsQueryKey(vehicleId) }),
         ]),
     },
   });

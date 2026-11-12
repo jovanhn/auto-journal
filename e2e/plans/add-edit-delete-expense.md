@@ -20,13 +20,14 @@ Because every test shares one user, the flow only looks at vehicle `A`, which no
 Expected:
 - The vehicle page shows the heading `A` and the subtitle ends with `184,320 km`.
 - The **This year** and **This month** tiles show `€0`.
-- An empty state says "No expenses in <current year>".
+- An empty state says "No journal entries in <current year>" (journal, v8).
 
 ### 2. Add an expense
 
-1. Click **Add expense**. Expect the **New expense** form; **Currency** is `EUR` and **Date** is today.
+1. Click **Add**. Expect the **Add to journal** form with **Expense** selected; **Currency** is `EUR` and **Date**
+   is today.
 2. Enter **Amount** `52.40`, pick the **Fuel** category, enter **Odometer** `184,500`, and **Note** `N`.
-3. Click **Save expense**.
+3. Click **Save**.
 
 Expected:
 - A toast says "Expense added" and the vehicle page of `A` is shown again.
@@ -58,5 +59,5 @@ Expected:
 
 Expected:
 - A toast says "Expense deleted" and the vehicle page of `A` is shown again.
-- No row "Fuel · `N`" is left; the empty state "No expenses in <current year>" is shown again.
+- No row "Fuel · `N`" is left; the empty state "No journal entries in <current year>" is shown again.
 - The **This year** tile shows `€0` and the subtitle ends with `184,320 km` again.

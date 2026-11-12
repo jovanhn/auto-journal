@@ -2,11 +2,11 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { aUserProfile } from '@/test/fixtures';
-import { fakeAuth, TEST_EMAIL, TEST_PASSWORD } from '@/test/fakeSession';
+import { fakeAuth, fakeGoogle, TEST_EMAIL, TEST_PASSWORD } from '@/test/fakeSession';
 import { renderApp } from '@/test/renderApp';
 import { api, server } from '@/test/server';
 
-// specs/auth.md — acceptance criteria 7–10.
+// specs/auth.md — acceptance criteria 7–10 and 12.
 describe('SignInPage', () => {
   beforeEach(() => {
     fakeAuth.signedOut();
@@ -79,5 +79,26 @@ describe('SignInPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Garage' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/');
+  });
+
+  it('starts Google sign-in and returns to the page the user opened', async () => {
+    const user = userEvent.setup();
+    renderApp('/settings');
+
+    await user.click(await screen.findByRole('button', { name: 'Continue with Google' }));
+
+    expect(fakeGoogle.redirects).toEqual(['/settings']);
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeDisabled();
+  });
+
+  it('shows an error when Google sign-in cannot start', async () => {
+    fakeGoogle.failStart = true;
+    const user = userEvent.setup();
+    renderApp('/sign-in');
+
+    await user.click(await screen.findByRole('button', { name: 'Continue with Google' }));
+
+    expect(await screen.findByText(/could not start google sign-in/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeEnabled();
   });
 });

@@ -11,10 +11,16 @@ compatibility). Lint: `make contracts-lint` (Redocly, config in `redocly.yaml`).
   `createVehicle`, `updateVehicle`, `deleteVehicle`. They become backend method names and frontend hook names
   (`useListVehicles`) — renaming one is a breaking change for code.
 - **Tags:** exactly one per operation, equal to the owning backend module (`users`, `vehicles`). The tag
-  decides the generated interface (`VehiclesApi`) and frontend file.
+  decides the generated interface (`VehiclesApi`) and frontend file. One exception: `system`
+  (`GET /api/status`) is implemented in `shared` (ADR 0018). That public operation has no 4xx response,
+  which `.redocly.lint-ignore.yaml` records.
 - **Schemas:** PascalCase names; properties camelCase; list `required` explicitly; use `nullable: true` for
   optional values that may be null; put limits (`minLength`, `maxLength`, `pattern`, `minimum`, `maximum`)
-  in the contract — they drive bean validation and frontend Zod schemas.
+  in the contract — they drive bean validation and frontend Zod schemas. **Exception:** limits that are
+  application configuration (`autojournal.limits.*`, BR-L1…L7, specs/data-limits.md) are not schema
+  keywords, because a fixed `maximum` could not follow the configuration. The property or operation
+  `description` names the limit and says the server checks it; violations respond with the declared
+  `BadRequest` (value bound, field error) or `Conflict` (count limit).
 - **Requests/responses:** `Create<Thing>Request` bodies; created resources return `201` with the resource.
 
 ## Errors: ProblemDetail
@@ -27,6 +33,7 @@ validation or business-rule errors. Reuse the shared responses: `BadRequest` (40
 ## Pagination
 
 Lists are not paginated for now (a user has a handful of vehicles; `listVehicles` returns `Vehicle[]`).
+List sizes are bounded by the count limits (BR-L1…L3).
 When a spec needs pagination, add shared `Page` (`page`, zero-based, default 0) and `Size` (`size`, 1–100,
 default 20) query parameters under `components.parameters` and return an envelope
 `{ items, page, size, totalItems }` named `<Thing>Page`. Changing an existing list to a page is breaking.

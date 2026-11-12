@@ -1,7 +1,6 @@
 // Flow: plan-and-pay-expense — "plan a recurring expense, mark it as paid, and see the new expense in the
 // Expenses list and the plan's due date moved forward" (CRITICAL_FLOWS.md)
 // Spec: docs/specs/planned-expenses.md · Plan: e2e/plans/plan-and-pay-expense.md
-import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/test';
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -19,10 +18,6 @@ const nextYear = (date: Date) => {
   const day = Math.min(date.getDate(), new Date(date.getFullYear() + 1, date.getMonth() + 1, 0).getDate());
   return new Date(date.getFullYear() + 1, date.getMonth(), day);
 };
-
-/** A stat tile: its label and value share one box. */
-const tile = (page: Page, label: string) =>
-  page.getByText(label, { exact: true }).locator('xpath=..');
 
 test.describe('Plan and pay an expense', () => {
   test('plans a yearly expense, marks it as paid, and finds the expense and the moved due date', async ({
@@ -90,11 +85,13 @@ test.describe('Plan and pay an expense', () => {
     await expect(card).toContainText(/In 1[12] months/);
     await expect(card).toHaveCount(1);
 
-    // 4. The expense is in the Expenses list
-    await page.getByRole('link', { name: 'Expenses' }).click();
+    // 4. The expense is in the journal
+    await page.getByRole('link', { name: 'Journal', exact: true }).click();
     const row = page.getByRole('link', { name: new RegExp(escape(title)) });
     await expect(row).toContainText(`${MONTHS[today.getMonth()]} ${today.getDate()}`);
     await expect(row).toContainText('€330.00');
-    await expect(tile(page, 'This month')).toContainText('€330');
+    // The month total moved from the removed "This month" tile to the month header (specs/journal-filters.md).
+    const monthName = today.toLocaleString('en-US', { month: 'long' });
+    await expect(page.getByRole('region', { name: monthName }).getByRole('heading')).toContainText('€330.00');
   });
 });

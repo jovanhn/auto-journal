@@ -8,7 +8,11 @@
 | **User preferences**   | Per-user app settings stored by autojournal. For now only the display currency.                      |
 | **Vehicle**            | A car owned by exactly one user: nickname, make, model, year, optional plate, odometer at start, purchase price and date. |
 | **Garage**             | The list of the user's vehicles (home screen).                                                       |
-| **Expense**            | A real, paid cost of a vehicle: date, amount, currency, category, optional odometer and note.        |
+| **Journal**            | A vehicle's timeline of journal entries (expenses and log entries), newest first. Replaces the "Expenses" list in the UI. |
+| **Journal entry**      | Anything recorded in a vehicle's journal: date, optional odometer and note. Either an expense or a log entry. |
+| **Expense**            | A journal entry with a real, paid cost: amount, currency, category (plus the entry's date, optional odometer and note). |
+| **Log entry**          | A journal entry without a cost: an odometer reading, a condition or an observation. Shown as "Log" in the UI; never counts in totals. |
+| **Approximate expense** | An expense whose amount, date or both are a best guess. Marked with `≈` in the list; counts like any other expense in totals. |
 | **Category**           | Fixed classification of an expense or planned expense: Fuel, Service, Repairs, Insurance, Registration & tax, Tires, Parking & tolls, Other. |
 | **Planned expense**    | An expected future cost of a vehicle: category, estimated amount, currency, due date, recurrence, optional note. No title. |
 | **Recurrence**         | How often a planned expense repeats: *one-time*, or *every N months* (N ≥ 1; 12 = yearly).           |
@@ -19,9 +23,17 @@
 | **Exchange rate**      | Fixed conversion rate between currencies, set in application configuration (not by users).           |
 | **Rate snapshot**      | The exchange rate stored with an expense (and a vehicle's purchase price) when it is saved, so past totals don't change when rates change. |
 | **Odometer at start**  | The vehicle's odometer reading when it was added to the app; starting point for distance driven.     |
-| **Current odometer**   | Derived: the highest of the odometer at start and all of the vehicle's expense odometer readings. Never entered directly. |
+| **Current odometer**   | Derived: the highest of the odometer at start and all of the vehicle's journal entry odometer readings (expenses and log entries). Never entered directly. |
 | **Distance driven**    | Current odometer − odometer at start (distance since the vehicle was added).                         |
+| **Distance in a year** | Odometer at the end of the year − odometer at the end of the previous year, from the readings logged up to then; unknown when the year has no reading. |
+| **All time**           | The Insights period covering all of a vehicle's expenses, from its first expense (or purchase) to today. |
 | **Car value**          | For now equal to the purchase price. Later estimated from age and market data.                       |
 | **Cost per km**        | (Total expenses + purchase price) ÷ distance driven, over the vehicle's whole history, in the display currency. |
 | **Average monthly cost** | A year's total expenses ÷ months elapsed in that year (12 for a past year, through the current month for this year), including months without expenses. |
 | **Due soon**           | A planned expense due within the next 30 days, or already overdue.                                   |
+| **Issue**              | A problem with a vehicle to keep an eye on (a warning light, a noise, a mechanic's remark): title, severity, source, date noticed, optional odometer and note. *Open* until resolved; never counts in totals or the odometer. |
+| **Severity**           | How serious an issue is: *Watch*, *Fix soon* or *Urgent*. Orders the open issues.                    |
+| **Source**             | Where an issue came from: *I noticed*, *Mechanic* or *Warning light*.                                |
+| **Resolve**            | Close an issue with an outcome — *Fixed*, or *Gone* (not an issue) — and a resolved date; from v11 optionally linking the expense that fixed it. *Reopen* undoes it. |
+| **Linked expense**     | The expense recorded as the fix of a resolved issue (v11). One expense can be linked by several issues. |
+| **Assistant**          | An AI client (e.g. Claude) connected over MCP that the user authorized to read and change their data on their behalf. |

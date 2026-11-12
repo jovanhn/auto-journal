@@ -5,7 +5,7 @@
 - **Test:** `e2e/tests/plan-and-pay-expense.spec.ts`
 - **Status:** Reviewed 2026-10-31
 
-## Critical flow: plan a recurring expense, mark it as paid, and see the new expense in the Expenses list and the plan's due date moved forward
+## Critical flow: plan a recurring expense, mark it as paid, and see the new expense in the journal and the plan's due date moved forward
 
 Starting state: the app is running and the E2E test user is signed in (display currency EUR). Setup (via the
 `api` fixture): a vehicle with a unique nickname `A` exists. `N` is a unique note. "Today" is the browser's
@@ -48,9 +48,9 @@ Expected:
 - The card "Insurance · `N`" now shows `T+1y` · "repeats yearly" and a neutral pill ("In 12 months" or
   "In 11 months" at a month end); there is still exactly one card.
 
-### 4. The expense is in the Expenses list
+### 4. The expense is in the journal
 
-1. Click the **Expenses** tab.
+1. Click the **Journal** tab.
 
 Expected:
 - A row "Insurance · `N`" shows today's short date and `€330.00`.

@@ -2,6 +2,7 @@ package com.example.autojournal.expenses.internal.dto
 
 import com.example.autojournal.expenses.api.Category
 import com.example.autojournal.expenses.internal.entity.ExpenseEntity
+import com.example.autojournal.expenses.internal.entity.JournalEntryEntity
 import com.example.autojournal.shared.money.Currency
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -15,16 +16,32 @@ data class ExpenseData(
     val category: Category,
     val odometer: Int?,
     val note: String?,
+    /** BR-E6. */
+    val approximate: Boolean,
+)
+
+/** A log entry's editable data, note trimmed (blank = null); the same for create, update and conversion. */
+data class LogEntryData(
+    val date: LocalDate,
+    val odometer: Int?,
+    val note: String?,
+)
+
+/** A journal entry (ADR 0020): an expense when it has a [cost], a log entry otherwise. */
+data class JournalEntry(
+    val entry: JournalEntryEntity,
+    val cost: ExpenseEntity?,
 )
 
 /** An expense with its amount in the user's display currency (BR-C6). */
 data class ExpenseView(
-    val expense: ExpenseEntity,
+    val entry: JournalEntryEntity,
+    val cost: ExpenseEntity,
     val displayAmount: BigDecimal,
     val displayCurrency: Currency,
 )
 
-/** One vehicle's expenses of a year; totals in [currency] (BR-I1). */
+/** One vehicle's journal of a year; totals in [currency] from expenses only (BR-I1, BR-J3). */
 data class ExpenseYearView(
     val year: Int,
     val firstYear: Int,
@@ -33,6 +50,16 @@ data class ExpenseYearView(
     /** January … December. */
     val monthTotals: List<BigDecimal>,
     val expenses: List<ExpenseView>,
+    /** Newest date first; for the same date, newest created first (BR-J1). */
+    val logEntries: List<JournalEntryEntity>,
+)
+
+/** One vehicle's whole journal, all years, without totals (BR-J6, BR-J7). */
+data class JournalView(
+    val firstYear: Int,
+    val expenses: List<ExpenseView>,
+    /** Newest date first; for the same date, newest created first (BR-J1). */
+    val logEntries: List<JournalEntryEntity>,
 )
 
 /** The current year across all of a user's vehicles; totals in [currency] (BR-I6). */
@@ -65,4 +92,28 @@ data class VehicleInsightsView(
     val distanceKm: Int,
     /** BR-I4; null when the distance driven is 0. */
     val costPerKm: BigDecimal?,
+    /** BR-I7; null when no journal entry in the year has an odometer reading. */
+    val yearDistanceKm: Int?,
+    /** BR-I8; null when [yearDistanceKm] is null or 0. */
+    val yearCostPerKm: BigDecimal?,
+)
+
+/** One vehicle's all-time insights (BR-I9); every amount in [currency] (BR-C6). */
+data class VehicleAllTimeInsightsView(
+    val firstYear: Int,
+    val currency: Currency,
+    val total: BigDecimal,
+    val averagePerMonth: BigDecimal,
+    /** firstYear … current year, oldest first. */
+    val yearTotals: List<YearTotalView>,
+    val categories: List<CategoryTotalView>,
+    val carValue: BigDecimal,
+    val distanceKm: Int,
+    /** BR-I4; null when the distance driven is 0. */
+    val costPerKm: BigDecimal?,
+)
+
+data class YearTotalView(
+    val year: Int,
+    val total: BigDecimal,
 )
