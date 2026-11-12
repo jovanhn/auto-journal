@@ -1,11 +1,14 @@
 import { getRouteApi } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { signOut } from '@/shared/auth/session';
+import { BUILD_INFO, showBuildInfo } from '@/shared/buildInfo';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { ErrorState } from '@/shared/ui/ErrorState';
 import { LoadingState } from '@/shared/ui/LoadingState';
+import { type BackendBuild, BuildInfoFooter } from '../components/BuildInfoFooter';
 import { DisplayCurrencyForm } from '../components/DisplayCurrencyForm';
+import { useBackendBuildInfo } from '../hooks/useBackendBuildInfo';
 import { useMe } from '../hooks/useMe';
 import { useUpdateDisplayCurrency } from '../hooks/useUpdateDisplayCurrency';
 import type { DisplayCurrencyFormValues } from '../schemas';
@@ -17,6 +20,13 @@ export function SettingsPage() {
   const { session } = route.useRouteContext();
   const me = useMe();
   const updateDisplayCurrency = useUpdateDisplayCurrency();
+  const buildInfoShown = showBuildInfo();
+  const backendStatus = useBackendBuildInfo({ enabled: buildInfoShown });
+  const backend: BackendBuild = backendStatus.isPending
+    ? { state: 'checking' }
+    : backendStatus.data
+      ? { state: 'ready', info: backendStatus.data }
+      : { state: 'unavailable' };
 
   const handleSave = async (values: DisplayCurrencyFormValues) => {
     await updateDisplayCurrency.mutateAsync({ data: values });
@@ -59,6 +69,8 @@ export function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {buildInfoShown && <BuildInfoFooter frontend={BUILD_INFO} backend={backend} />}
     </div>
   );
 }
