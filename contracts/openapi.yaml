@@ -949,14 +949,33 @@ components:
   schemas:
     ServiceStatus:
       type: object
-      required: [status, version, startedAt]
+      description: >-
+        Liveness and build metadata of the running backend (specs/app-versioning.md). The build fields are
+        fixed when the image is built.
+      required: [status, component, version, gitSha, buildId, buildTime, startedAt]
       properties:
         status:
           type: string
           enum: [UP]
+        component:
+          type: string
+          enum: [backend]
         version:
           type: string
-          description: Commit SHA of the running build, or `local`.
+          description: >-
+            SemVer of the running build (`X.Y.N` on main, `X.Y.N-dev` elsewhere), or `0.0.0-local`
+            when built without git tags.
+          example: 1.0.3
+        gitSha:
+          type: string
+          description: Full commit SHA of the build, or `local`.
+        buildId:
+          type: string
+          description: '`<GitHub run id>-<run attempt>` of the CI build, or `local`.'
+        buildTime:
+          type: string
+          format: date-time
+          description: When the build ran (UTC); for a local run without build metadata, when it started.
         startedAt:
           type: string
           format: date-time
