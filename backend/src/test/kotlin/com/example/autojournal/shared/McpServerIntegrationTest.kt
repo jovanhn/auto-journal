@@ -34,7 +34,7 @@ class McpServerIntegrationTest
                     status { isOk() }
                     header { string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://app.example.test") }
                     jsonPath("$.status") { value("UP") }
-                    jsonPath("$.version") { value("local") }
+                    jsonPath("$.version") { value("0.0.0-local") }
                     jsonPath("$.startedAt") { exists() }
                 }
         }

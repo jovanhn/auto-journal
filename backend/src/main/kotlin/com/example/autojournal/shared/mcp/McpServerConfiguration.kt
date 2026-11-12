@@ -52,7 +52,7 @@ class McpServerConfiguration {
         providers: List<McpToolProvider>,
         jsonMapper: JsonMapper,
         validator: Validator,
-        @Value("\${autojournal.version}") version: String,
+        @Value("\${autojournal.build.version}") version: String,
     ): McpStatelessSyncServer =
         McpServer
             .sync(transport)
