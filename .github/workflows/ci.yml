@@ -35,10 +35,12 @@ jobs:
             backend:
               - 'backend/**'
               - 'contracts/**'
+              - 'scripts/**'
               - '.github/workflows/ci.yml'
             frontend:
               - 'frontend/**'
               - 'contracts/**'
+              - 'scripts/**'
               - '.github/workflows/ci.yml'
             contracts:
               - 'contracts/**'
@@ -103,6 +105,9 @@ jobs:
           node-version-file: frontend/.nvmrc
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Version script tests
+        working-directory: .
+        run: make scripts-test
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Generate API client
@@ -202,18 +207,34 @@ jobs:
     outputs:
       image: ${{ steps.image.outputs.image }}
     steps:
+      # Full history and tags: scripts/version.sh counts the commits since the backend/vX.Y.0 tag (ADR 0023).
       - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
       - id: image
-        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}-backend:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+        env:
+          RELEASE_BUILD: 'true'
+        run: |
+          version="$(sh scripts/version.sh backend)"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}-backend:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
       - name: Build and push
         env:
           IMAGE: ${{ steps.image.outputs.image }}
+          VERSION: ${{ steps.image.outputs.version }}
         run: |
           LATEST="${IMAGE%:*}:latest"
-          docker build -f backend/Dockerfile --build-arg APP_VERSION="$GITHUB_SHA" -t "$IMAGE" -t "$LATEST" .
+          VERSIONED="${IMAGE%:*}:${VERSION}"
+          docker build -f backend/Dockerfile \
+            --build-arg APP_VERSION="$VERSION" \
+            --build-arg GIT_SHA="$GITHUB_SHA" \
+            --build-arg BUILD_ID="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --build-arg BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "$IMAGE" -t "$VERSIONED" -t "$LATEST" .
           docker push "$IMAGE"
+          docker push "$VERSIONED"
           docker push "$LATEST"
 
   backend-deploy:
@@ -250,6 +271,10 @@ jobs:
       VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      # Optional: `false` hides the build-info footer on Settings (specs/app-versioning.md, decision 8a).
+      VITE_SHOW_BUILD_INFO: ${{ vars.VITE_SHOW_BUILD_INFO }}
+      # vite.config.ts fails the build instead of shipping a -dev or 0.0.0-local version (ADR 0023).
+      RELEASE_BUILD: 'true'
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
@@ -264,7 +289,10 @@ jobs:
             exit 1
           fi
         working-directory: .
+      # Full history and tags: scripts/version.sh counts the commits since the frontend/vX.Y.0 tag (ADR 0023).
       - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6.1.1
         with:
           package_json_file: frontend/package.json
