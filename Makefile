@@ -8,7 +8,8 @@ PNPM  := pnpm
 .DEFAULT_GOAL := help
 
 .PHONY: help db-up db-down install gen contracts-lint be-run be-test be-check \
-        fe-install fe-gen fe-run fe-test fe-check e2e-install e2e design-unpack lint test check
+        fe-install fe-gen fe-run fe-test fe-check e2e-install e2e design-unpack lint test check \
+        version scripts-test
 
 help: ## List targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-16s %s\n", $$1, $$2}'
@@ -74,6 +75,15 @@ e2e: e2e-install fe-gen ## Playwright critical flows against the full local stac
 	cd frontend && $(PNPM) build
 	cd e2e && $(PNPM) test
 
+# --- Versioning (specs/app-versioning.md, ADR 0023) -------------------------
+
+version: ## Print the frontend and backend versions computed from git tags
+	@echo "frontend $$(sh scripts/version.sh frontend)"
+	@echo "backend  $$(sh scripts/version.sh backend)"
+
+scripts-test: ## Tests for scripts/version.sh
+	sh scripts/version.test.sh
+
 # --- Design -----------------------------------------------------------------
 
 design-unpack: ## Extract readable screen sources from the Claude Design export
@@ -87,4 +97,4 @@ lint: contracts-lint fe-gen ## All linters (Redocly, ESLint, Prettier, tsc, ktli
 
 test: be-test fe-test ## All unit and integration tests
 
-check: contracts-lint be-check fe-check e2e ## Exactly what CI runs
+check: contracts-lint scripts-test be-check fe-check e2e ## Exactly what CI runs
