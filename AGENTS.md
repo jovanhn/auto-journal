@@ -55,12 +55,12 @@ access: [docs/operations.md#deployment](docs/operations.md#deployment).
 
 | Part     | URL                                | How it deploys                                                        |
 | -------- | ---------------------------------- | --------------------------------------------------------------------- |
-| Frontend | https://autojournal.skverly.com    | Cloudflare Workers Builds on every push to `main` (`frontend/wrangler.jsonc`) |
+| Frontend | https://autojournal.skverly.com    | `ci.yml`: after `ci-ok`, `wrangler deploy` to Cloudflare Workers (ADR 0022) |
 | Backend  | https://be-autojournal.skverly.com | `ci.yml`: after `ci-ok`, image → GHCR → Render deploy hook (ADR 0016)  |
 | Database | Supabase                           | Flyway migrations run when the backend starts                         |
 
-- A new or renamed env var must also be set where it runs (Render for the backend, Cloudflare **build**
-  variables for `VITE_*`) **before** the merge, or production breaks (the `prod` profile has no defaults).
+- A new or renamed env var must also be set where it runs (Render for the backend, GitHub environment
+  `production` variables for `VITE_*`) **before** the merge, or production breaks (the `prod` profile has no defaults).
 - Migrations reach production with the next backend deploy; they must be safe against existing data.
 - Ask before changing production (Render env vars, deploys, rollbacks, GitHub environments/secrets).
   Reading status and logs (Render MCP, `gh`) is fine. There is no agent access to Cloudflare.

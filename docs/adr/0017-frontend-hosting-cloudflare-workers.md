@@ -1,6 +1,6 @@
 # 0017. Frontend hosting: Cloudflare Workers static assets, API cross-origin with CORS
 
-- **Status:** Accepted
+- **Status:** Accepted; delivery part superseded by [0022](0022-frontend-delivery-github-actions.md)
 - **Date:** 2026-10-31
 
 ## Context
