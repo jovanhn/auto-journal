@@ -27,6 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       # docs/** is intentionally not part of any filter: docs-only changes trigger no build jobs.
+      # A change to this workflow runs (and on main, deploys) every component it builds (ADR 0022).
       - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
@@ -34,9 +35,11 @@ jobs:
             backend:
               - 'backend/**'
               - 'contracts/**'
+              - '.github/workflows/ci.yml'
             frontend:
               - 'frontend/**'
               - 'contracts/**'
+              - '.github/workflows/ci.yml'
             contracts:
               - 'contracts/**'
             e2e:
@@ -44,6 +47,7 @@ jobs:
               - 'frontend/**'
               - 'backend/**'
               - 'contracts/**'
+              - '.github/workflows/ci.yml'
 
   contracts:
     name: Contracts (Redocly lint)
@@ -226,6 +230,58 @@ jobs:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           IMAGE: ${{ needs.backend-image.outputs.image }}
         run: curl -fsS -X POST -G --data-urlencode "imgURL=$IMAGE" "$RENDER_DEPLOY_HOOK_URL" > /dev/null
+
+  # Frontend delivery (ADR 0022): GitHub Actions builds, Cloudflare only hosts (Worker static assets).
+  frontend-deploy:
+    name: Deploy frontend (Cloudflare)
+    needs: [changes, ci-ok]
+    # !cancelled(): ci-ok runs with always(), so skipped jobs upstream must not skip this one.
+    if: >-
+      !cancelled() && needs.ci-ok.result == 'success'
+      && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check production configuration
+        run: |
+          missing=""
+          for name in VITE_API_BASE_URL VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing in the GitHub environment 'production':$missing"
+            exit 1
+          fi
+        working-directory: .
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.1
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Generate API client
+        run: pnpm gen
+      - name: Build
+        run: pnpm build
+      # Wrangler is not a project dependency (ADR 0017/0022); pinned here and updated by hand.
+      - name: Deploy to Cloudflare Workers
+        run: npx --yes wrangler@4.155.0 deploy
 
   # The only job to mark as a required status check. Skipped jobs count as success.
   ci-ok:
