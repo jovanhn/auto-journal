@@ -29,8 +29,13 @@ spring:
     create-schemas: true
 
 autojournal:
-  # Commit SHA of the build (set by the Docker image, ADR 0016); `local` otherwise. Shown by GET /api/status.
-  version: ${APP_VERSION:local}
+  # Build metadata (specs/app-versioning.md, ADR 0023), set by the Docker image from CI build args; local
+  # defaults otherwise. Shown by GET /api/status. A blank build-time reports the start time.
+  build:
+    version: ${APP_VERSION:0.0.0-local}
+    git-sha: ${GIT_SHA:local}
+    build-id: ${BUILD_ID:local}
+    build-time: ${BUILD_TIME:}
   # The MCP endpoint's public URL (ADR 0018), published in /.well-known/oauth-protected-resource.
   # Profile prod requires MCP_RESOURCE_URL (https://be-autojournal.skverly.com/mcp).
   mcp:
