@@ -37,8 +37,10 @@ All variables with local defaults are listed in [`.env.example`](../.env.example
 | `SPRING_PROFILES_ACTIVE` | backend          | `local` (default profile)                       | `prod`                        |
 | `CORS_ALLOWED_ORIGINS`   | backend          | `http://localhost:5173,http://localhost:4173` (the Vite proxy forwards the browser's `Origin`) | frontend origin(s), comma-separated (ADR 0017) |
 | `MCP_RESOURCE_URL`       | backend (`autojournal.mcp.resource-url`) | `http://localhost:8080/mcp` | `https://be-autojournal.skverly.com/mcp`; **required** in `prod` (ADR 0018) |
-| `APP_VERSION`            | backend (`autojournal.version`, `GET /api/status`) | `local` | set by the image (`--build-arg APP_VERSION=<sha>` in CI) |
+| `APP_VERSION`, `GIT_SHA`, `BUILD_ID`, `BUILD_TIME` | backend (`autojournal.build.*`, `GET /api/status`) | `0.0.0-local`, `local`, `local`, blank (= start time) | set by the image from CI build args (ADR 0023); never set on Render |
 | `VITE_API_BASE_URL`      | frontend (build) | `/api`                                          | URL of the backend `/api`     |
+| `VITE_SHOW_BUILD_INFO`   | frontend (build) | unset (footer shown)                            | optional; `false` hides the build-info footer on Settings (specs/app-versioning.md) |
+| `RELEASE_BUILD`          | `scripts/version.sh`, `vite.config.ts` | unset                          | `true` in `backend-image` / `frontend-deploy`: a missing tag or history fails the build |
 | `SUPABASE_URL`           | backend          | project URL (from `.env`)                       | project URL (JWT issuer `<url>/auth/v1`) |
 | `VITE_SUPABASE_URL`      | frontend (build) | project URL                                     | project URL                   |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | frontend (build) | project publishable key                  | project publishable key       |
@@ -104,7 +106,8 @@ DNS for `skverly.com` is on Cloudflare.
 ### Backend (Render)
 
 **Flow:** push to `main` touching `backend/**` or `contracts/**` → CI passes (`ci-ok`) →
-`backend-image` builds `backend/Dockerfile` and pushes `ghcr.io/jovanhn/auto-journal-backend:<sha>` and
+`backend-image` computes the version (`scripts/version.sh backend`, ADR 0023), builds `backend/Dockerfile`
+with the build metadata and pushes `ghcr.io/jovanhn/auto-journal-backend:<sha>`, `:<version>` and
 `:latest` → `backend-deploy` (GitHub environment `production`, no approval) calls the Render deploy hook
 with `imgURL=<sha image>`. Render pulls it, starts it, and waits for `/actuator/health`. Flyway migrations
 run at startup, so a merged migration reaches production with the next backend deploy. The free instance
@@ -138,7 +141,7 @@ Exchange rates and data limits use the defaults from `application.yml`; set `EXC
 Render to change them.
 Changing an environment variable on Render restarts the service with the current image.
 
-**Rollback:** in Render, redeploy an earlier deploy, or deploy an older `:<sha>` tag. Avoid "Manual
+**Rollback:** in Render, redeploy an earlier deploy, or deploy an older `:<sha>` / `:<version>` tag. Avoid "Manual
 Deploy" of `:latest` for releases: the running version then no longer names its commit.
 
 Build and run the image locally:
@@ -203,12 +206,25 @@ Vite inlines at build time):
 
 - Secret `CLOUDFLARE_API_TOKEN`: custom API token, *Account → Workers Scripts → Edit* on the account.
 - Variables `CLOUDFLARE_ACCOUNT_ID`, `VITE_API_BASE_URL=https://be-autojournal.skverly.com/api`,
-  `VITE_SUPABASE_URL=https://dnkgfohtcbidlzjivkkl.supabase.co`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+  `VITE_SUPABASE_URL=https://dnkgfohtcbidlzjivkkl.supabase.co`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and the
+  optional `VITE_SHOW_BUILD_INFO` (`false` hides the build-info footer on Settings; unset shows it).
 - Custom domain `autojournal.skverly.com` (Cloudflare dashboard).
 
 **Redeploy** without a code change (e.g. after changing a `VITE_*` variable): re-run the `frontend-deploy`
 job of the latest `main` run. **Rollback:** Cloudflare dashboard → Worker → Deployments, or
 `wrangler rollback`.
+
+### Versions (ADR 0023)
+
+Every production build has a version per component, independent of the other: `X.Y.N` on `main`, where the
+annotated tag `<component>/vX.Y.0` sets MAJOR.MINOR and N counts the commits since it (branches get
+`X.Y.N-dev`, builds without tags `0.0.0-local`). `make version` prints both. The Settings page footer shows
+both versions (frontend from the bundle, backend from `GET /api/status`) unless `VITE_SHOW_BUILD_INFO=false`.
+
+**Bump MAJOR or MINOR:** `scripts/tag-release.sh backend 1.3` (or `frontend 2.0`) creates
+`backend/v1.3.0` on `origin/main` and pushes it. The tag triggers nothing; the next deploy of that component
+is `1.3.N`. PATCH is never bumped by hand. Tags are never moved or deleted. Production builds check out the
+full history (`fetch-depth: 0`) and fail if no tag is reachable.
 
 A frontend origin that must call the API (another domain, the `*.workers.dev` URL) has to be added to
 `CORS_ALLOWED_ORIGINS` on Render, comma-separated. Supabase → Authentication → URL Configuration: the Site
