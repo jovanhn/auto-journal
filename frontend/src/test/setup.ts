@@ -16,10 +16,8 @@ Object.defineProperty(window, 'matchMedia', {
       onchange: null,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
       dispatchEvent: () => false,
-    }) as MediaQueryList,
+    }) as Partial<MediaQueryList> as MediaQueryList,
 });
 
 // jsdom does not implement ResizeObserver (used by Radix primitives such as Checkbox to size hidden inputs).
