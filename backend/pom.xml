@@ -24,10 +24,10 @@
         <postgresql.version>42.7.14</postgresql.version>
         <!-- Not managed by Spring Boot. -->
         <spring-modulith.version>2.1.2</spring-modulith.version>
-        <mockk.version>1.14.11</mockk.version>
+        <mockk.version>1.14.12</mockk.version>
         <openapi-generator.version>7.27.0</openapi-generator.version>
         <ktlint-maven-plugin.version>3.7.1</ktlint-maven-plugin.version>
-        <build-helper-maven-plugin.version>3.6.2</build-helper-maven-plugin.version>
+        <build-helper-maven-plugin.version>3.8.0</build-helper-maven-plugin.version>
         <!-- MCP server for assistants (ADR 0018): the SDK plus Spring AI's WebMVC transport only. -->
         <mcp-sdk.version>2.1.0</mcp-sdk.version>
         <spring-ai.version>2.0.2</spring-ai.version>
