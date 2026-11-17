@@ -1,0 +1,13 @@
+# Security headers for every response of the Cloudflare Worker (static assets, ADR 0017). Vite copies this
+# file to dist/; Cloudflare applies it, local dev and `vite preview` ignore it.
+# frame-ancestors / X-Frame-Options stop clickjacking, above all on the OAuth consent page (/oauth/consent).
+# connect-src: the backend API (VITE_API_BASE_URL) and Supabase Auth (VITE_SUPABASE_URL). Update it if
+# either production value changes (docs/operations.md#frontend-cloudflare).
+# style-src 'unsafe-inline': React and Radix set inline style attributes.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://be-autojournal.skverly.com https://dnkgfohtcbidlzjivkkl.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

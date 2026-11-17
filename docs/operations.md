@@ -210,6 +210,12 @@ Vite inlines at build time):
   optional `VITE_SHOW_BUILD_INFO` (`false` hides the build-info footer on Settings; unset shows it).
 - Custom domain `autojournal.skverly.com` (Cloudflare dashboard).
 
+**Security headers:** `frontend/public/_headers` (copied to `dist/`, applied by Cloudflare) sets the CSP,
+`X-Frame-Options: DENY` (no framing, so the OAuth consent page cannot be clickjacked), HSTS, `nosniff`,
+`Referrer-Policy` and `Permissions-Policy`. Its `connect-src` lists the production `VITE_API_BASE_URL` and
+`VITE_SUPABASE_URL` origins: change it together with either variable, or the app cannot reach them. Local dev
+and `vite preview` (e2e) ignore the file; `npx wrangler@<pinned> dev` in `frontend/` serves `dist/` with it.
+
 **Redeploy** without a code change (e.g. after changing a `VITE_*` variable): re-run the `frontend-deploy`
 job of the latest `main` run. **Rollback:** Cloudflare dashboard → Worker → Deployments, or
 `wrangler rollback`.
