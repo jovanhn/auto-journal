@@ -51,11 +51,12 @@ object TestJwt {
         audience: String = "authenticated",
         expiresAt: Instant = Instant.now().plusSeconds(3600),
         signingKey: KeyPair = keyPair,
+        subject: String? = userId.toString(),
     ): String {
         val claims =
             JWTClaimsSet
                 .Builder()
-                .subject(userId.toString())
+                .subject(subject)
                 .issuer(issuer)
                 .audience(audience)
                 .issueTime(Date.from(expiresAt.minusSeconds(3600)))
