@@ -3,15 +3,21 @@ package com.example.autojournal.shared.security
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.convert.converter.Converter
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
+import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.cors.CorsConfiguration
 import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import java.util.UUID
 
 /**
  * Every request needs a valid Supabase Auth access token (ADR 0013, BR-U1), except the health check and
@@ -62,7 +68,7 @@ class SecurityConfig {
                     .authenticated()
             }.oauth2ResourceServer { resourceServer ->
                 resourceServer
-                    .jwt(Customizer.withDefaults())
+                    .jwt { it.jwtAuthenticationConverter(subjectMustBeUserId()) }
                     .authenticationEntryPoint(entryPoint)
                     .protectedResourceMetadata { metadata ->
                         metadata.protectedResourceMetadataCustomizer {
@@ -76,4 +82,19 @@ class SecurityConfig {
                     }
             }.exceptionHandling { it.authenticationEntryPoint(entryPoint) }
             .build()
+
+    /**
+     * [CurrentUser] reads the user id from `sub`. A signed token without a UUID `sub` is rejected here as an
+     * invalid token (401) instead of failing later in a controller (500).
+     */
+    private fun subjectMustBeUserId(): Converter<Jwt, AbstractAuthenticationToken> {
+        val delegate = JwtAuthenticationConverter()
+        return Converter { jwt ->
+            val subject = jwt.subject
+            if (subject == null || runCatching { UUID.fromString(subject) }.isFailure) {
+                throw InvalidBearerTokenException("The access token has no valid user id.")
+            }
+            delegate.convert(jwt)
+        }
+    }
 }

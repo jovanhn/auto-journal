@@ -35,7 +35,7 @@ class VehicleService(
     fun list(ownerId: UUID): List<VehicleView> {
         val displayCurrency = userProfileApi.displayCurrency(ownerId)
         val vehicles = vehicleDao.findAllOwned(ownerId)
-        val readings = journalOdometerReadDao.maxReadings(vehicles.map { it.id })
+        val readings = journalOdometerReadDao.maxReadings(ownerId, vehicles.map { it.id })
         return vehicles.map { it.toView(displayCurrency, readings[it.id]) }
     }
 
@@ -158,7 +158,11 @@ class VehicleService(
             listOf(FieldViolation("nickname", "You already have a vehicle with this nickname.")),
         )
 
-    private fun maxReading(vehicle: VehicleEntity): Int? = journalOdometerReadDao.maxReadings(listOf(vehicle.id))[vehicle.id]
+    private fun maxReading(vehicle: VehicleEntity): Int? =
+        journalOdometerReadDao.maxReadings(
+            vehicle.ownerId,
+            listOf(vehicle.id),
+        )[vehicle.id]
 
     /** BR-V5: [maxReading] is the vehicle's highest expense odometer reading, if any. */
     private fun VehicleEntity.toView(

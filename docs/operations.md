@@ -216,6 +216,12 @@ Vite inlines at build time):
 `VITE_SUPABASE_URL` origins: change it together with either variable, or the app cannot reach them. Local dev
 and `vite preview` (e2e) ignore the file; `npx wrangler@<pinned> dev` in `frontend/` serves `dist/` with it.
 
+**Web Analytics:** Cloudflare Web Analytics is set to *JS Snippet installation* (the edge does not inject
+anything; an injected inline script would break the CSP). `vite.config.ts` adds the snippet (public token) to
+`index.html` in release builds only (`RELEASE_BUILD=true`), so dev, tests and e2e send no page views; the CSP
+allows `static.cloudflareinsights.com` (script) and `cloudflareinsights.com` (beacon). Cloudflare's bot
+*JavaScript detections* inject an inline script the CSP blocks; that only costs Cloudflare a bot signal.
+
 **Redeploy** without a code change (e.g. after changing a `VITE_*` variable): re-run the `frontend-deploy`
 job of the latest `main` run. **Rollback:** Cloudflare dashboard → Worker → Deployments, or
 `wrangler rollback`.
