@@ -26,7 +26,7 @@ class VehicleApiService(
         ownerId: UUID,
     ): VehicleFacts? {
         val vehicle = vehicleDao.findOwned(vehicleId, ownerId) ?: return null
-        val maxReading = journalOdometerReadDao.maxReadings(listOf(vehicleId))[vehicleId]
+        val maxReading = journalOdometerReadDao.maxReadings(ownerId, listOf(vehicleId))[vehicleId]
         return VehicleFacts(
             id = vehicle.id,
             purchasePriceAmount = vehicle.purchasePriceAmount,
