@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 /**
  * Build metadata inlined as `__BUILD_INFO__` (specs/app-versioning.md, ADR 0023). The version comes from
@@ -42,8 +42,34 @@ function buildInfo() {
   };
 }
 
+/**
+ * Cloudflare Web Analytics, installed as a manual JS snippet (the edge no longer injects it, see
+ * docs/operations.md). Only release builds (the frontend-deploy job) get it, so dev, tests and e2e send no page
+ * views. The token is public (it is in every page); public/_headers allows the script and its beacon.
+ */
+function cloudflareWebAnalytics(): Plugin {
+  return {
+    name: 'cloudflare-web-analytics',
+    apply: 'build',
+    transformIndexHtml: () =>
+      process.env.RELEASE_BUILD === 'true'
+        ? [
+            {
+              tag: 'script',
+              attrs: {
+                type: 'module',
+                src: 'https://static.cloudflareinsights.com/beacon.min.js',
+                'data-cf-beacon': JSON.stringify({ token: 'afbf6607ffb947d88c04028ab0abef31' }),
+              },
+              injectTo: 'body',
+            },
+          ]
+        : [],
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), cloudflareWebAnalytics()],
   define: { __BUILD_INFO__: JSON.stringify(buildInfo()) },
   // One .env for the whole repo (repo root); only VITE_* variables reach the client.
   envDir: '..',
